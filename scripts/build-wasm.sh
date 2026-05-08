@@ -41,6 +41,39 @@ PROFILE="${PROFILE:-release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 
+# Cross-package serialization
+# ---------------------------
+# Multiple JS packages list this script as their build / prebuild
+# (`@slideglance/core`, `@slideglance/measure`, `@slideglance/viewer`).
+# `pnpm -r build` invokes them in parallel, so two or more processes
+# can race on the wasm-pack global cache (`~/.wasm-pack/...`) and on
+# `wasm-opt`, producing platform-specific failures:
+#   - macOS:  `wasm-bindgen is not executable` (chmod race)
+#   - Linux:  `invalid type: sequence, expected a string` (cache file
+#             half-written when serde reads it)
+#   - Windows: `wasm-opt`: file lock (os error 32)
+# `mkdir` is atomic on POSIX and on NTFS via Git Bash, so it works as
+# a cheap cross-platform lock without extra binaries (`flock` is not
+# guaranteed on Windows runners). The cache check inside `build_one`
+# is then a no-op for the second arrival.
+LOCK_DIR="${ROOT}/target/.build-wasm.lock"
+acquire_lock() {
+  mkdir -p "${ROOT}/target"
+  local waited=0
+  while ! mkdir "${LOCK_DIR}" 2>/dev/null; do
+    if [[ ${waited} -ge 900 ]]; then
+      echo "[build-wasm] timeout waiting for lock at ${LOCK_DIR}" >&2
+      exit 1
+    fi
+    if [[ ${waited} -eq 0 ]]; then
+      echo "[build-wasm] another build-wasm is running, waiting on ${LOCK_DIR}"
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  trap 'rmdir "${LOCK_DIR}" 2>/dev/null || true' EXIT INT TERM
+}
+
 # (crate_dir, out_base, label) triples — one per wasm-pack invocation
 # group. Adding a new wasm-bundled crate is a single-line change here.
 CRATES=(
@@ -136,6 +169,7 @@ build_one() {
 }
 
 echo "[build-wasm] root        = ${ROOT}"
+acquire_lock
 for entry in "${CRATES[@]}"; do
   IFS=':' read -r crate_name pkg_name label <<<"${entry}"
   build_one "${crate_name}" "${pkg_name}" "${label}"
