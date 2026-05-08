@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <!-- background -->
+  <rect width="1280" height="640" fill="#f7f5f1"/>
+
+  <!-- subtle grid (matches landing page aesthetic) -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1f2024" stroke-opacity="0.045" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="orangeShadow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c43e1c" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#c43e1c" stop-opacity="0.18"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+
+  <!-- bottom orange accent band -->
+  <rect x="0" y="612" width="1280" height="28" fill="#c43e1c"/>
+
+  <!-- ====== left column: icon ====== -->
+  <g transform="translate(96 144)">
+    <!-- soft shadow -->
+    <rect x="14" y="22" width="320" height="320" rx="58" fill="#c43e1c" fill-opacity="0.16"/>
+    <!-- icon background -->
+    <rect x="0" y="0" width="320" height="320" rx="58" fill="#ffffff" stroke="#e3ddd2" stroke-width="2"/>
+
+    <!-- icon: app-window frame -->
+    <g transform="translate(38.75 57.5)">
+      <g stroke="#6b7280" stroke-width="12.5" stroke-linejoin="round" stroke-linecap="round" fill="none">
+        <rect x="0" y="0" width="242.5" height="205" rx="15" ry="15"/>
+        <line x1="6.25" y1="32.5" x2="236.25" y2="32.5"/>
+      </g>
+      <g fill="#6b7280">
+        <circle cx="26.25" cy="16.25" r="4.5"/>
+        <circle cx="41.25" cy="16.25" r="4.5"/>
+        <circle cx="56.25" cy="16.25" r="4.5"/>
+      </g>
+
+      <!-- bar chart -->
+      <g fill="#c43e1c">
+        <rect x="33.75" y="120" width="30" height="50" rx="3.75"/>
+        <rect x="77.5"  y="87.5" width="30" height="82.5" rx="3.75"/>
+        <rect x="121.25" y="61.25" width="30" height="108.75" rx="3.75"/>
+        <rect x="165" y="102.5" width="30" height="67.5" rx="3.75"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ====== right column: text ====== -->
+  <g transform="translate(496 0)">
+    <!-- eyebrow -->
+    <text x="0" y="194"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Helvetica, Arial, sans-serif"
+          font-size="20" font-weight="700"
+          fill="#c43e1c"
+          letter-spacing="2.4">
+      RUST · WEBASSEMBLY · MIT
+    </text>
+
+    <!-- title -->
+    <text x="0" y="278"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Helvetica, Arial, sans-serif"
+          font-size="96" font-weight="800"
+          fill="#1f2024"
+          letter-spacing="-2">
+      SlideGlance
+    </text>
+
+    <!-- tagline line 1 -->
+    <text x="0" y="356"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Helvetica, Arial, sans-serif"
+          font-size="34" font-weight="500"
+          fill="#1f2024">
+      Open <tspan font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+                  font-size="30" fill="#c43e1c">.pptx</tspan> files right in your browser.
+    </text>
+
+    <!-- benefits row -->
+    <g transform="translate(0 414)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Helvetica, Arial, sans-serif" font-size="22" fill="#5f6470">
+      <g>
+        <circle cx="9" cy="-7" r="4" fill="#c43e1c"/>
+        <text x="22" y="0">No upload</text>
+      </g>
+      <g transform="translate(176 0)">
+        <circle cx="9" cy="-7" r="4" fill="#c43e1c"/>
+        <text x="22" y="0">No server</text>
+      </g>
+      <g transform="translate(346 0)">
+        <circle cx="9" cy="-7" r="4" fill="#c43e1c"/>
+        <text x="22" y="0">No Office required</text>
+      </g>
+    </g>
+
+    <!-- repo url -->
+    <g transform="translate(0 488)">
+      <!-- github mark -->
+      <g transform="translate(0 -22)" fill="#1f2024">
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 6.18 4.01 11.42 9.57 13.27.7.13.96-.3.96-.67 0-.33-.01-1.41-.02-2.56-3.9.85-4.71-1.66-4.71-1.66-.63-1.6-1.55-2.03-1.55-2.03-1.27-.87.1-.85.1-.85 1.4.1 2.14 1.44 2.14 1.44 1.25 2.13 3.27 1.52 4.07 1.16.13-.9.49-1.52.88-1.87-3.1-.35-6.36-1.55-6.36-6.92 0-1.53.55-2.78 1.44-3.76-.14-.36-.62-1.78.13-3.71 0 0 1.17-.38 3.83 1.44a13.32 13.32 0 0 1 6.98 0c2.66-1.82 3.83-1.44 3.83-1.44.75 1.93.27 3.35.13 3.71.9.98 1.43 2.23 1.43 3.76 0 5.38-3.27 6.56-6.39 6.91.5.43.95 1.29.95 2.6 0 1.88-.02 3.39-.02 3.85 0 .37.25.81.97.67C23.99 25.42 28 20.18 28 14 28 6.27 21.73 0 14 0z"/>
+      </g>
+      <text x="40" y="0"
+            font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+            font-size="22"
+            fill="#1f2024">
+        github.com/SlideGlance/slideglance
+      </text>
+    </g>
+  </g>
+
+  <!-- decorative bracket on the right edge -->
+  <g stroke="#c43e1c" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6">
+    <path d="M 1208 92 L 1240 92 L 1240 124"/>
+    <path d="M 1240 516 L 1240 548 L 1208 548"/>
+  </g>
+
+  <!-- subtle bottom-right shadow band tint -->
+  <rect x="0" y="540" width="1280" height="72" fill="url(#orangeShadow)" opacity="0.6"/>
+</svg>

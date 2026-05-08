@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon/source.svg" alt="SlideGlance" width="160" height="160" />
+  <img src="assets/og-image.png" alt="SlideGlance — open .pptx files right in your browser" />
 </p>
 
 <h1 align="center">SlideGlance</h1>
