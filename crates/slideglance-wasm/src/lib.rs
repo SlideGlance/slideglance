@@ -16,7 +16,7 @@ use slideglance::{
 };
 use slideglance_font::{
     standard_resolver_chain, BufferFontResolver, CjkPlatform, FontFace, FontMapping, FontResolver,
-    FontStyle, TextMeasurer,
+    FontStyle, OpentypeTextMeasurer, TextMeasurer,
 };
 use slideglance_png::{svg_to_png, FontData, PngOptions};
 use slideglance_utils::Emu;
@@ -398,6 +398,139 @@ fn build_font_resolver(fonts: &[Vec<u8>]) -> Result<Box<dyn FontResolver + Send 
         FontMapping::new(),
         detect_browser_platform(),
     )))
+}
+
+/// JS-facing standalone text measurer. Construct once with a set of
+/// font byte buffers and reuse across many `measureWidth` calls — the
+/// fonts are parsed exactly once at construction time, which matters
+/// for callers that drive measurement from a hot path (e.g. a layout
+/// engine's wrap callback firing per word).
+///
+/// Backed by [`OpentypeTextMeasurer`] so name resolution mirrors the
+/// renderer's own measurer: the `font_family` / `font_family_ea`
+/// arguments are looked up through the standard
+/// `Mapped(CjkFallback(Buffer))` chain, and unresolved names fall
+/// back to `HeuristicTextMeasurer` instead of returning 0.
+#[wasm_bindgen(js_name = TextMeasurer)]
+pub struct WasmTextMeasurer {
+    inner: OpentypeTextMeasurer,
+}
+
+#[wasm_bindgen(js_class = TextMeasurer)]
+impl WasmTextMeasurer {
+    /// Build the measurer from font byte buffers. Each buffer is a
+    /// TTF/OTF; the first face's family name (per the OpenType `name`
+    /// table) becomes its key in the resolver. Buffers without a
+    /// `name` table are silently skipped — matches the convention
+    /// used by [`build_font_resolver`] for `convertPptxToSvg`.
+    ///
+    /// `family_names` is an optional parallel array overriding the
+    /// resolver key per buffer. When supplied it must have the same
+    /// length as `fonts`; an empty / undefined entry means "fall back
+    /// to the face's `family_name()`". Hosts use this to register
+    /// Bold variants under a synthetic key (e.g. `"Pretendard Bold"`)
+    /// because [`BufferFontResolver`] currently has no bold-variant
+    /// slot — same family name would otherwise collide.
+    ///
+    /// # Errors
+    ///
+    /// Returns a JS-side `Error` whose `message` is either the
+    /// `ttf-parser` failure for any buffer that fails to parse, or a
+    /// length-mismatch description when `family_names` is supplied
+    /// with a different length than `fonts`.
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        fonts: Vec<js_sys::Uint8Array>,
+        family_names: Option<Vec<String>>,
+    ) -> Result<WasmTextMeasurer, JsError> {
+        if let Some(names) = family_names.as_ref() {
+            if names.len() != fonts.len() {
+                return Err(JsError::new(&format!(
+                    "family_names length ({}) does not match fonts length ({})",
+                    names.len(),
+                    fonts.len()
+                )));
+            }
+        }
+        let mut font_map: BTreeMap<String, FontFace> = BTreeMap::new();
+        for (i, ua) in fonts.iter().enumerate() {
+            let bytes = ua.to_vec();
+            let face = FontFace::from_bytes(bytes, 0)
+                .map_err(|e| JsError::new(&format!("font {i} parse error: {e}")))?;
+            let override_key = family_names
+                .as_deref()
+                .and_then(|n| n.get(i))
+                .filter(|s| !s.is_empty())
+                .cloned();
+            let key = match override_key {
+                Some(custom) => custom,
+                None => match face.family_name() {
+                    Some(name) => name,
+                    None => continue,
+                },
+            };
+            font_map.insert(key, face);
+        }
+        let inner = OpentypeTextMeasurer::from_fonts(
+            font_map,
+            None,
+            FontMapping::new(),
+            CjkPlatform::Other,
+        );
+        Ok(WasmTextMeasurer { inner })
+    }
+
+    /// Pixel advance of `text` rendered at `font_size_pt`. `font_family`
+    /// is the run's Latin family, `font_family_ea` the East-Asian
+    /// family; either may be `null`/`undefined`. `bold` and `italic`
+    /// flags drive variable-axis selection on faces that expose
+    /// `wght` / `ital` axes; on static faces they are signalled to
+    /// the heuristic backend used as a last-resort fallback.
+    #[wasm_bindgen(js_name = measureWidth)]
+    pub fn measure_width(
+        &self,
+        text: &str,
+        font_size_pt: f64,
+        bold: bool,
+        italic: bool,
+        font_family: Option<String>,
+        font_family_ea: Option<String>,
+    ) -> f64 {
+        let style = FontStyle { bold, italic };
+        self.inner.measure_text_width(
+            text,
+            font_size_pt,
+            style,
+            font_family.as_deref(),
+            font_family_ea.as_deref(),
+        )
+    }
+
+    /// Natural line height as a multiple of the font size, derived from
+    /// the resolved face's vertical metrics (`(ascender + |descender|
+    /// + line_gap) / units_per_em`). Defaults to `1.2` when neither
+    /// family resolves.
+    #[wasm_bindgen(js_name = lineHeightRatio)]
+    pub fn line_height_ratio(
+        &self,
+        font_family: Option<String>,
+        font_family_ea: Option<String>,
+    ) -> f64 {
+        self.inner
+            .get_line_height_ratio(font_family.as_deref(), font_family_ea.as_deref())
+    }
+
+    /// Ascender height as a multiple of the font size (`ascender /
+    /// units_per_em`). Defaults to `1.0` when neither family resolves.
+    #[wasm_bindgen(js_name = ascenderRatio)]
+    pub fn ascender_ratio(
+        &self,
+        font_family: Option<String>,
+        font_family_ea: Option<String>,
+    ) -> f64 {
+        self.inner
+            .get_ascender_ratio(font_family.as_deref(), font_family_ea.as_deref())
+    }
 }
 
 /// Convert a PPTX byte stream to one SVG document per slide.
