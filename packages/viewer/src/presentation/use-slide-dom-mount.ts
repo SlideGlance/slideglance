@@ -18,7 +18,7 @@
  * user sees on screen.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 
 import { uniquifyIds } from "../svg-utils.js";
@@ -64,6 +64,15 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
     setErrorMsg,
   } = args;
 
+  // Track the previously rendered slide index so we can distinguish
+  // "user navigated to a not-yet-fetched slide" (where a brief
+  // loading-blank is the correct behaviour) from "the cache for the
+  // currently-visible slide was invalidated by an in-place edit-
+  // cycle update" (where keeping the stale SVG in the DOM until the
+  // refreshed one arrives prevents a perceptible white flash on
+  // every keystroke).
+  const prevSlideRef = useRef<number>(0);
+
   useEffect(() => {
     // Mount the SVG into whichever slide host is currently visible.
     // Slideshow mode uses its own overlay-mounted div with a
@@ -72,6 +81,14 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
     const host = slideshow ? slideshowSlideRef.current : slideRef.current;
     if (!host) return;
     if (!slideSvg) {
+      const sameSlide = prevSlideRef.current === currentSlide;
+      const hasContent = host.firstChild !== null;
+      // Only clear when we're transitioning to a different slide (or
+      // the host is already empty). Clearing on a same-slide cache
+      // invalidation strips the SVG out of the DOM until the worker
+      // re-renders it — every edit produces a one-frame blank
+      // through the slide stage, which the user reads as a flicker.
+      if (sameSlide && hasContent) return;
       while (host.firstChild) host.removeChild(host.firstChild);
       return;
     }
@@ -83,7 +100,6 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
     ) {
       return; // already mounted, no work
     }
-    while (host.firstChild) host.removeChild(host.firstChild);
     try {
       // Rewrite every `id="…"` / `url(#…)` reference to a
       // mount-unique namespace so the main-stage SVG can never
@@ -98,8 +114,15 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
         setErrorMsg(errNode.textContent ?? "svg parse error");
         return;
       }
-      host.appendChild(document.importNode(root, true));
+      // Atomic swap: build the new node off-DOM first, then replace
+      // the previous content in a single mutation. The browser never
+      // observes an empty host between frames, which would otherwise
+      // surface as a sub-frame flash even though the JS work
+      // completes within one event-loop turn.
+      const incoming = document.importNode(root, true);
+      host.replaceChildren(incoming);
       host.dataset.slideSvgKey = slideSvg;
+      prevSlideRef.current = currentSlide;
       // First successful mount of this deck — fire `onReady` once
       // so host-level loading overlays can dismiss right when the
       // user can actually see content. Subsequent slide changes
