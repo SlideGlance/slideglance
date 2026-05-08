@@ -4,20 +4,21 @@
 
 <h1 align="center">SlideGlance</h1>
 
-> Open and view PowerPoint `.pptx` files in your browser — no upload, no
-> server, no Microsoft Office required.
+Open and view PowerPoint `.pptx` files in your browser — no upload, no server, no Microsoft Office required.
 
-> **⚠ Pre-release / development status.** SlideGlance is **not yet
-> published** to the Chrome Web Store, npm, or crates.io. The repository
-> currently only supports building from source. Every "Install" step
+> ### ⚠ Pre-release / development status. 
+> SlideGlance is **not yet published** to the Chrome Web Store, npm, or crates.io. 
+> 
+> The repository currently only supports building from source. Every "Install" step
 > in the table below that mentions a registry name is a placeholder
 > for the eventual published artifact — for now, follow the
 > [build-from-source](#build-from-source) path or the
 > [Chrome extension build / install / run](#chrome-extension-build--install--run)
 > walkthrough.
 
-> **▶ Try it now in your browser** — the hosted web playground is
-> live at **<https://slideglance.github.io/slideglance/playground/>**.
+> ### ▶ Try it now in your browser
+> the hosted web playground is live at **<https://slideglance.github.io/slideglance/playground/>**.
+>
 > Drag any `.pptx` onto the page and it renders entirely in your tab;
 > nothing uploads, no account, no install. The same Rust + WebAssembly
 > core the desktop / Chrome / embedded surfaces use, exposed as a
