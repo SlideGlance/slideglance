@@ -8,14 +8,8 @@ import {
   useState,
 } from "react";
 
-import {
-  extractFontStyleCss,
-  parseAspect,
-  prepareSvg,
-  uniquifyIds,
-} from "./svg-utils.js";
+import { parseAspect } from "./svg-utils.js";
 import type {
-  RenderedSlide,
   SlideController,
   SlideMeta,
   SlideSvg,
@@ -27,10 +21,15 @@ import { ThumbnailSidebar } from "./presentation/Thumbnail.js";
 import { SlideshowOverlay } from "./presentation/SlideshowOverlay.js";
 import { StatusBar } from "./presentation/StatusBar.js";
 import { Toolbar } from "./presentation/Toolbar.js";
+import { useDeckLoader } from "./presentation/use-deck-loader.js";
+import { useEmbeddedFontStyle } from "./presentation/use-embedded-font-style.js";
 import { useKeyboardShortcuts } from "./presentation/use-keyboard-shortcuts.js";
 import { usePrintPdfExport } from "./presentation/use-print-pdf-export.js";
 import { useRulerGeometry } from "./presentation/use-ruler-geometry.js";
 import { useSelectionStateMachine } from "./presentation/use-selection-state-machine.js";
+import { useSlideCache } from "./presentation/use-slide-cache.js";
+import { useSlideDomMount } from "./presentation/use-slide-dom-mount.js";
+import { useWheelZoomNav } from "./presentation/use-wheel-zoom-nav.js";
 import {
   RULER_SIZE,
   SHELL_GLOBAL_CSS,
@@ -76,7 +75,6 @@ import {
 import { ShortcutsDialog } from "./ui/ShortcutsDialog.js";
 // FontUsageIndicator is now mounted inside `presentation/StatusBar.tsx`.
 import { searchSlides, type SearchHit } from "./ui/search.js";
-import { inlineMediaAsDataUrls } from "./ui/media-inline.js";
 // Print + PDF export top-level handlers live in
 // `presentation/use-print-pdf-export.ts`.
 import {
@@ -378,9 +376,9 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     panX: number;
     panY: number;
   } | null>(null);
-  const [slideCache, setSlideCache] = useState<Map<number, CachedSlide>>(
-    () => new Map(),
-  );
+  // `slideCache` + `requestSlide` + `ensureAllSlidesRendered` live in
+  // `presentation/use-slide-cache.ts` — the hook is wired up further
+  // down once the deck-epoch and pending-task refs have been declared.
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const slideRef = useRef<HTMLDivElement | null>(null);
@@ -485,312 +483,48 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     };
   }, [slideshow]);
 
-  // Optional auto-open from `src` (browser path).
-  useEffect(() => {
-    if (!controller || src == null || externalSlideCount != null) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        setPhase("loading");
-        let bytes: Uint8Array;
-        if (typeof src === "string") {
-          const res = await fetch(src);
-          if (!res.ok) throw new Error(`fetch ${src} → ${res.status}`);
-          bytes = new Uint8Array(await res.arrayBuffer());
-        } else if (src instanceof Uint8Array) {
-          bytes = src;
-        } else {
-          bytes = new Uint8Array(src);
-        }
-        const meta = await controller.open(bytes, {
-          extraFontDefsCss: props.bundledFontDefsCss,
-        });
-        if (cancelled) return;
-        setSlideCount(meta.slideCount);
-        setFontUsage(meta.fontUsage ?? []);
-        setFontDefsCss(extractFontStyleCss(meta.fontDefs ?? ""));
-        // Register MTX-decoded TTF buffers on `document.fonts` via
-        // the FontFace API. Worker already decoded the bytes and
-        // pre-filtered them through `validateCmap` (the OTS cmap
-        // checks Chromium prints uncatchable C++-level warnings
-        // for); the bytes that reach us here are expected to load
-        // cleanly. Non-OTS failure modes (e.g. CORS / detachment
-        // races) DO surface as catchable promise rejections, which
-        // we silence below since the metric-match fallback chain
-        // and bundled Google Fonts carry the visible paint.
-        if (typeof document !== "undefined" && document.fonts) {
-          for (const d of meta.decodedFonts ?? []) {
-            try {
-              const face = new FontFace(d.family, d.bytes.buffer as ArrayBuffer, {
-                weight: d.weight,
-                style: d.style,
-              });
-              face
-                .load()
-                .then((loaded) => {
-                  document.fonts.add(loaded);
-                })
-                .catch(() => {
-                  // OTS rejection or other browser-side font decode
-                  // failure — silently skip. The deck still renders
-                  // via the Phase 2 bundled Google Fonts fallback or
-                  // the metric-match catalog substitute.
-                });
-            } catch {
-              // FontFace constructor itself only throws for invalid
-              // descriptor strings — also silenced.
-            }
-          }
-        }
-        setCurrentSlide(1);
-        setZoom(1);
-        setPanX(0);
-        setPanY(0);
-        setErrorMsg(null);
-        setPhase("");
-        setSlideCache((prev) => {
-          for (const c of prev.values()) {
-            for (const u of c.blobUrls) URL.revokeObjectURL(u);
-          }
-          return new Map();
-        });
-      } catch (err) {
-        if (!cancelled) {
-          setErrorMsg(`${(err as Error).message ?? err}`);
-          setPhase("");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [controller, src, externalSlideCount]);
+  // Slide rendering + caching pipeline — see
+  // `presentation/use-slide-cache.ts`. Declared before the
+  // deck-loader hook so the loader's `setSlideCache` argument
+  // refers to the live setter.
+  const { slideCache, setSlideCache, requestSlide, ensureAllSlidesRendered } =
+    useSlideCache({
+      controller,
+      slideCount,
+      currentSlide,
+      noPrefetch,
+      resolveMeta,
+      allSlidesReady,
+      setAllSlidesReady,
+      setErrorMsg,
+      setPhase,
+      deckEpochRef,
+      pendingRef,
+    });
+
+  // Optional auto-open from `src` (browser path) — see
+  // `presentation/use-deck-loader.ts`.
+  useDeckLoader({
+    controller,
+    src,
+    externalSlideCount,
+    bundledFontDefsCss: props.bundledFontDefsCss,
+    setPhase,
+    setSlideCount,
+    setFontUsage,
+    setFontDefsCss,
+    setCurrentSlide,
+    setZoom,
+    setPanX,
+    setPanY,
+    setErrorMsg,
+    setSlideCache,
+  });
 
   // Mount the deck's embedded `@font-face` declarations into a
-  // document-scoped `<style>` so the browser's font matcher can
-  // resolve family names like "Noto Sans Bold" referenced by SVG
-  // `<text>` runs. The declarations come from PPTX
-  // `<p:embeddedFontLst>` faces extracted by the WASM core
-  // (`fontDefs()`), already de-obfuscated and base64-encoded. Without
-  // this mount the embedded fonts would only live in the worker's
-  // FontFaceSet (worker-local, invisible to `document`), and the SVG
-  // would silently fall back to a system sans-serif — which on most
-  // hosts is wider than the authored face and overflows text frames
-  // into adjacent layout regions.
-  //
-  // The `<style>` element is identified by a single id so re-mounting
-  // the component (or swapping decks) replaces the rules atomically;
-  // empty CSS removes the element entirely. We tag with
-  // `data-pptx-rs-fonts` so co-located shells can detect / clean up
-  // orphan blocks.
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const id = "pptx-rs-deck-fonts";
-    const existing = document.getElementById(id) as HTMLStyleElement | null;
-    if (fontDefsCss.length === 0) {
-      if (existing) existing.remove();
-      return;
-    }
-    const styleEl: HTMLStyleElement =
-      existing ?? document.createElement("style");
-    if (!existing) {
-      styleEl.id = id;
-      styleEl.dataset.pptxRsFonts = "true";
-      document.head.appendChild(styleEl);
-    }
-    if (styleEl.textContent !== fontDefsCss) {
-      styleEl.textContent = fontDefsCss;
-    }
-
-    // Eager-load every embedded face. CSS `@font-face` URLs are
-    // *lazily* fetched — the browser only decodes the font payload
-    // when a text node first references that family. While slide 1
-    // is on stage, embedded faces used only by later slides (e.g.
-    // "Lato Bold" used by slide 4) stay un-decoded; the
-    // `FontUsageIndicator` then sees `document.fonts.check('12px
-    // "Lato Bold"')` return `false` and walks past it to the OS
-    // Latin fallback (`Helvetica Neue`), reporting a substitute that
-    // disappears the moment the user switches to grid view (which
-    // forces every slide to render and the missing faces to load).
-    //
-    // Calling `document.fonts.load(...)` for each declared family
-    // forces the load to start *now*, so the indicator's initial
-    // state is the same as its post-render-everything state and
-    // doesn't mislead the user into thinking a substitution is in
-    // effect when one isn't. Errors are swallowed — a partial load
-    // (e.g. one variant of one face fails to decode) shouldn't
-    // block the rest of the deck from showing the right state.
-    if (document.fonts) {
-      const families = new Set<string>();
-      const matches = fontDefsCss.matchAll(
-        /font-family\s*:\s*['"]([^'"]+)['"]/gi,
-      );
-      for (const match of matches) {
-        families.add(match[1]);
-      }
-      for (const family of families) {
-        const escaped = family.replace(/"/g, '\\"');
-        document.fonts.load(`12px "${escaped}"`).catch(() => {
-          // Ignore — single-face decode failure is non-fatal.
-        });
-      }
-    }
-
-    return () => {
-      // Component-unmount cleanup: remove the deck-scoped `<style>` so
-      // we don't leak base64 font payloads when the host tears down
-      // the viewer (e.g. SPA route change, modal close).
-      styleEl.remove();
-    };
-  }, [fontDefsCss]);
-
-  const requestSlide = useCallback(
-    async (slide: number): Promise<CachedSlide | null> => {
-      if (!controller || slide < 1) return null;
-      // Snapshot the current deck epoch so we can detect a deck swap
-      // that lands while this task is in flight. Any IPC roundtrip
-      // older than the current epoch is dropped before it stamps the
-      // new deck's cache.
-      const myEpoch = deckEpochRef.current;
-      let cached: CachedSlide | undefined;
-      setSlideCache((prev) => {
-        cached = prev.get(slide);
-        return prev;
-      });
-      if (cached) return cached;
-      const inflight = pendingRef.current.get(slide);
-      if (inflight) return inflight;
-      const task = (async () => {
-        try {
-          const rendered: RenderedSlide = await controller.renderSlide(slide);
-          if (myEpoch !== deckEpochRef.current) return null; // stale
-          // Inline media as `data:` URLs rather than `blob:` URLs.
-          //
-          // `blob:` URLs are document-scoped and revoked on page
-          // teardown — they also race catastrophically with React 18
-          // StrictMode and Vite HMR (the component double-mounts;
-          // first-mount cleanup revokes URLs the second mount has
-          // already stamped into cache, surfacing as
-          // `net::ERR_FILE_NOT_FOUND` on every grid-view toggle).
-          // `data:` URLs are self-contained, never revoke, and copy
-          // intact when the SVG is exported to print / PDF. The
-          // base64 overhead is acceptable: identical media hashed to
-          // the same key only encodes once per slide and the worker
-          // already deduplicates across the deck.
-          const result =
-            rendered.media && rendered.media.size > 0
-              ? {
-                  svg: inlineMediaAsDataUrls(rendered.svg, rendered.media),
-                  blobUrls: [] as string[],
-                }
-              : { svg: rendered.svg, blobUrls: [] as string[] };
-          const inlineMeta: SlideMeta = {
-            notes: rendered.notes,
-            layout_name: rendered.layoutName,
-            section_name: rendered.sectionName,
-          };
-          let mergedMeta = inlineMeta;
-          if (resolveMeta) {
-            try {
-              const extra = await resolveMeta(slide);
-              if (extra) mergedMeta = { ...inlineMeta, ...extra };
-            } catch {
-              /* fall through */
-            }
-          }
-          if (myEpoch !== deckEpochRef.current) return null; // stale post-meta
-          const entry: CachedSlide = {
-            svg: result.svg,
-            preparedSvg: prepareSvg(result.svg),
-            blobUrls: result.blobUrls,
-            meta: mergedMeta,
-          };
-          setSlideCache((prev) => {
-            // Final defensive check inside the setState — if a deck
-            // swap happened between the prior epoch read and this
-            // commit, leave the (already-flushed) cache alone.
-            if (myEpoch !== deckEpochRef.current) return prev;
-            const existing = prev.get(slide);
-            if (existing) {
-              for (const u of entry.blobUrls) URL.revokeObjectURL(u);
-              return prev;
-            }
-            const next = new Map(prev);
-            next.set(slide, entry);
-            return next;
-          });
-          return entry;
-        } catch (err) {
-          setErrorMsg(`${(err as Error).message ?? err}`);
-          return null;
-        } finally {
-          pendingRef.current.delete(slide);
-        }
-      })();
-      pendingRef.current.set(slide, task);
-      return task;
-    },
-    [controller, resolveMeta],
-  );
-
-  const ensureAllSlidesRendered = useCallback(
-    async (
-      silent = false,
-      onProgress?: (current: number, total: number) => void,
-    ): Promise<SlideSvg[]> => {
-      if (!controller || slideCount === 0) return [];
-      const out: SlideSvg[] = [];
-      for (let n = 1; n <= slideCount; n += 1) {
-        if (!silent) {
-          setPhase(t("phase.preparingSlideOf", { current: n, total: slideCount }));
-        }
-        onProgress?.(n, slideCount);
-        const cached = await requestSlide(n);
-        if (!cached) continue;
-        out.push({
-          slide_number: n,
-          svg: cached.svg,
-          notes: cached.meta.notes ?? undefined,
-          layout_name: cached.meta.layout_name ?? undefined,
-          section_name: cached.meta.section_name ?? undefined,
-        });
-      }
-      if (!silent) setPhase("");
-      if (out.length === slideCount) setAllSlidesReady(true);
-      return out;
-    },
-    [controller, slideCount, requestSlide],
-  );
-
-  // Background prefetch — once a deck is loaded, walk every slide in
-  // the background so deck-wide actions (Print / PDF / Slideshow /
-  // Search) become available without an interactive stall. Failures
-  // here are swallowed: prefetch is a UX accelerator, not a
-  // correctness requirement. Cancellation is handled implicitly by
-  // letting `slideCount` change reset the cache and start a new pass.
-  useEffect(() => {
-    if (noPrefetch) return; // host opted out — see prop docs
-    if (!controller || slideCount === 0) return;
-    if (allSlidesReady) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        await ensureAllSlidesRendered(true);
-      } catch {
-        /* ignore background prefetch errors */
-      }
-      if (cancelled) return;
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [noPrefetch, controller, slideCount, allSlidesReady, ensureAllSlidesRendered]);
-
-  // Active slide fetch.
-  useEffect(() => {
-    if (!controller || slideCount === 0) return;
-    void requestSlide(currentSlide);
-  }, [controller, slideCount, currentSlide, requestSlide]);
+  // document-scoped `<style>` — see
+  // `presentation/use-embedded-font-style.ts`.
+  useEmbeddedFontStyle(fontDefsCss);
 
   // Cache cleanup intentionally left unmanaged on unmount.
   //
@@ -815,137 +549,24 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   const slideSvg = activeSlide?.preparedSvg ?? "";
   const slideMeta = activeSlide?.meta ?? null;
 
-  // Mount SVG.
-  //
-  // Re-runs whenever any layout-affecting state changes (sidebar /
-  // notes toggle, view mode, ruler, stage size) so the host is
-  // self-healing: if React reconciliation, a parent's display
-  // toggle, or a wrapper unmount ever clears the slide host's
-  // children, this effect re-injects the SVG immediately.
-  //
-  // The early-out check on `firstElementChild === <svg>` guarantees
-  // the effect is a cheap no-op on most renders — full re-parse only
-  // when the slide actually changed.
-  useEffect(() => {
-    // Mount the SVG into whichever slide host is currently visible.
-    // Slideshow mode uses its own overlay-mounted div with a separate
-    // ref so the slide doesn't get torn out when fullscreen flips.
-    const host = slideshow ? slideshowSlideRef.current : slideRef.current;
-    if (!host) return;
-    if (!slideSvg) {
-      while (host.firstChild) host.removeChild(host.firstChild);
-      return;
-    }
-    const existing = host.firstElementChild;
-    if (
-      existing &&
-      existing.tagName.toLowerCase() === "svg" &&
-      host.dataset.slideSvgKey === slideSvg
-    ) {
-      return; // already mounted, no work
-    }
-    while (host.firstChild) host.removeChild(host.firstChild);
-    try {
-      // Rewrite every `id="…"` / `url(#…)` reference to a mount-unique
-      // namespace so the main-stage SVG can never collide with the
-      // sibling SVGs the thumbnail strip mounts simultaneously.
-      const namespaced = uniquifyIds(slideSvg, `stage-s${currentSlide}`);
-      const doc = new DOMParser().parseFromString(namespaced, "image/svg+xml");
-      const root = doc.documentElement;
-      if (!root) return;
-      const errNode = root.querySelector("parsererror");
-      if (errNode) {
-        setErrorMsg(errNode.textContent ?? "svg parse error");
-        return;
-      }
-      host.appendChild(document.importNode(root, true));
-      host.dataset.slideSvgKey = slideSvg;
-      // First successful mount of this deck — fire `onReady` once so
-      // host-level loading overlays can dismiss right when the user
-      // can actually see content. Subsequent slide changes re-enter
-      // this branch but the ref guard short-circuits.
-      if (!onReadyFiredRef.current) {
-        onReadyFiredRef.current = true;
-        try {
-          onReady?.();
-        } catch {
-          // Host-supplied callback errors must never derail the SVG
-          // mount path — the slide is already in the DOM at this
-          // point and a thrown onReady would leak through to the
-          // try/catch below and surface as a parser error to the user.
-        }
-      }
-      // Rebuild bbox map for hit-testing. We use `getBoundingClientRect()`
-      // (the browser-truth painted bounds) and project back into SVG
-      // user space via the inverse of `getScreenCTM()` so the stored
-      // rect always matches what the user actually sees.
-      //
-      // Why not `getBBox()` + `getCTM()`?
-      //   `<g>.getBBox()` is unreliable for groups whose children are
-      //   `<text>` runs whose width depends on font substitution: with
-      //   web-font fallback in flight the geometric bbox can clip the
-      //   visible glyph row, leaving the selection rectangle drawn too
-      //   small / shifted relative to the glyph the user can see (a
-      //   common artefact on table cells whose `<g>` wraps text laid
-      //   out at the original metric-match width).
-      //   `getBoundingClientRect()` reflects the rendered geometry
-      //   after font load and after every transform on the chain, so
-      //   it's the authoritative source for "where the shape is on
-      //   screen" — converting through `inverseScreenCTM` then gives a
-      //   user-space rect that the existing zoom-aware projection step
-      //   in `selectionBoxes` can transform back to screen space.
-      const map = new Map<string, { x: number; y: number; w: number; h: number }>();
-      const svgEl = host.firstElementChild as SVGSVGElement | null;
-      const screenCTM = svgEl?.getScreenCTM?.() ?? null;
-      if (
-        svgEl &&
-        screenCTM &&
-        typeof (svgEl as unknown as { createSVGPoint?: () => unknown })
-          .createSVGPoint === "function"
-      ) {
-        let inverse: DOMMatrix | null = null;
-        try {
-          inverse = screenCTM.inverse();
-        } catch {
-          inverse = null;
-        }
-        if (inverse) {
-          const els = svgEl.querySelectorAll<SVGGraphicsElement>("[data-sp-id]");
-          for (const el of Array.from(els)) {
-            const id = (el as unknown as HTMLElement).dataset.spId;
-            if (!id) continue;
-            const rect = el.getBoundingClientRect();
-            // Skip elements that haven't laid out yet (e.g. inside
-            // `display:none` ancestors or detached subtrees) — their
-            // 0×0 rect would otherwise project to a 0-area selection
-            // box anchored at the SVG origin.
-            if (rect.width === 0 && rect.height === 0) continue;
-            const p = svgEl.createSVGPoint();
-            const corners = [
-              [rect.left, rect.top],
-              [rect.right, rect.top],
-              [rect.left, rect.bottom],
-              [rect.right, rect.bottom],
-            ].map(([x, y]) => {
-              p.x = x;
-              p.y = y;
-              return p.matrixTransform(inverse!);
-            });
-            const xs = corners.map((c) => c.x);
-            const ys = corners.map((c) => c.y);
-            const minX = Math.min(...xs);
-            const maxX = Math.max(...xs);
-            const minY = Math.min(...ys);
-            const maxY = Math.max(...ys);
-            map.set(id, { x: minX, y: minY, w: maxX - minX, h: maxY - minY });
-          }
-        }
-      }
-      bboxMapRef.current = map;
-    } catch (err) {
-      setErrorMsg(`${(err as Error).message ?? err}`);
-    }
-  }, [slideSvg, currentSlide, sidebarWidth, notesOpen, viewMode, slideshow, stageSize.w, stageSize.h]);
+  // Mount SVG into the slide host + rebuild bbox cache — see
+  // `presentation/use-slide-dom-mount.ts`.
+  useSlideDomMount({
+    slideSvg,
+    currentSlide,
+    slideshow,
+    slideRef,
+    slideshowSlideRef,
+    bboxMapRef,
+    onReadyFiredRef,
+    onReady,
+    setErrorMsg,
+    sidebarWidth,
+    notesOpen,
+    viewMode,
+    stageW: stageSize.w,
+    stageH: stageSize.h,
+  });
 
   // Clear selection when navigating away (sp-ids are slide-scoped).
   useEffect(() => {
@@ -998,121 +619,15 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   // configurable extra travel (`BOUNDARY_THRESHOLD`) before the
   // jump fires, plus a brief post-jump cooldown so the tail end of
   // an inertial gesture can't immediately advance again.
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    // Tuned conservatively — historic Lit shell used a fixed 1.1/0.9
-    // step which felt jumpy on trackpads. A base of ~0.0035 gives
-    // the same perceived speed for a Cmd-wheel "click" (~100 deltaY)
-    // while making pinch feel proportional.
-    const SENSITIVITY = 0.0035;
-    // How much wheel travel past the slide edge is required before
-    // we commit to the next/previous slide. Sized so a single mouse-
-    // wheel "click" (~100 px deltaY) doesn't immediately flip the
-    // page — the user has to push deliberately past the boundary.
-    const BOUNDARY_THRESHOLD = 240;
-    // Window after a slide change during which subsequent wheel
-    // events are swallowed. Covers macOS trackpad inertia tails
-    // (~250 ms typical) so the residual deltas don't keep firing
-    // page jumps after the user lifted their fingers.
-    const COOLDOWN_MS = 350;
-    // Inactivity reset — if the user pauses scrolling at the
-    // boundary without committing, the accumulator decays so the
-    // next gesture starts from zero. Otherwise idle decks could
-    // accumulate drift across unrelated wheel events.
-    const RESET_AFTER_MS = 250;
-
-    let pendingZoomDelta = 0;
-    let raf = 0;
-    let boundaryDelta = 0;
-    let lastWheelAt = 0;
-    let cooldownUntil = 0;
-
-    const flushZoom = (): void => {
-      raf = 0;
-      if (pendingZoomDelta === 0) return;
-      // exp(-d * k): negative delta (zoom-in) → factor > 1.
-      const factor = Math.exp(-pendingZoomDelta * SENSITIVITY);
-      pendingZoomDelta = 0;
-      setZoom((z) => clamp(z * factor, ZOOM_MIN, ZOOM_MAX));
-    };
-
-    const onWheel = (ev: WheelEvent): void => {
-      // DOM_DELTA_LINE / PAGE → multiply to a px-equivalent so the
-      // sensitivity / threshold constants work the same regardless
-      // of input device. Most trackpads ship pixel deltas already.
-      let dy = ev.deltaY;
-      if (ev.deltaMode === 1) dy *= 16; // line → px
-      else if (ev.deltaMode === 2) dy *= stage.clientHeight; // page
-
-      // ctrlKey covers both real Ctrl-wheel AND the synthetic pinch
-      // event the browser fires as ctrlKey=true.
-      const isZoomIntent = ev.ctrlKey || ev.metaKey;
-      if (isZoomIntent) {
-        ev.preventDefault();
-        pendingZoomDelta += dy;
-        if (raf === 0) raf = requestAnimationFrame(flushZoom);
-        return;
-      }
-
-      // Slideshow / grid view manage their own navigation; only the
-      // normal slide stage opts into wheel-driven page flipping.
-      if (slideshow) return;
-      if (viewMode !== "normal") return;
-      if (slideCount <= 0) return;
-
-      const now = performance.now();
-      if (now < cooldownUntil) {
-        // Inertia tail after a recent slide change — block native
-        // scroll too so the new slide stays put while the gesture
-        // dies down.
-        ev.preventDefault();
-        return;
-      }
-      if (now - lastWheelAt > RESET_AFTER_MS) {
-        boundaryDelta = 0;
-      }
-      lastWheelAt = now;
-
-      // Treat sub-pixel rounding as still-at-edge.
-      const atBottom = stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 1;
-      const atTop = stage.scrollTop <= 0;
-
-      if (dy > 0) {
-        if (!atBottom) {
-          boundaryDelta = 0;
-          return; // native scroll handles it
-        }
-        ev.preventDefault();
-        boundaryDelta = Math.max(0, boundaryDelta) + dy;
-        if (boundaryDelta >= BOUNDARY_THRESHOLD) {
-          boundaryDelta = 0;
-          cooldownUntil = now + COOLDOWN_MS;
-          setCurrentSlide((s) => Math.min(slideCount, s + 1));
-        }
-      } else if (dy < 0) {
-        if (!atTop) {
-          boundaryDelta = 0;
-          return;
-        }
-        ev.preventDefault();
-        boundaryDelta = Math.min(0, boundaryDelta) + dy;
-        if (boundaryDelta <= -BOUNDARY_THRESHOLD) {
-          boundaryDelta = 0;
-          cooldownUntil = now + COOLDOWN_MS;
-          setCurrentSlide((s) => Math.max(1, s - 1));
-        }
-      }
-    };
-
-    stage.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      stage.removeEventListener("wheel", onWheel);
-      if (raf !== 0) cancelAnimationFrame(raf);
-    };
-    // Re-bind on slideshow / viewMode / slideCount changes so the
-    // handler closes over the current values instead of stale state.
-  }, [slideshow, viewMode, slideCount]);
+  // Wheel + pinch handler — see `presentation/use-wheel-zoom-nav.ts`.
+  useWheelZoomNav({
+    stageRef,
+    slideshow,
+    viewMode,
+    slideCount,
+    setZoom,
+    setCurrentSlide,
+  });
 
   // Fullscreen change handling for slideshow exit.
   useEffect(() => {
@@ -1227,15 +742,18 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
 
   // Section nav data.
   const sectionSlides: SlideSvg[] = useMemo(() => {
-    return Array.from(slideCache.entries())
-      .map(([n, c]) => ({
+    const entries: SlideSvg[] = [];
+    for (const [n, c] of slideCache) {
+      entries.push({
         slide_number: n,
         svg: c.svg,
         notes: c.meta.notes ?? undefined,
         layout_name: c.meta.layout_name ?? undefined,
         section_name: c.meta.section_name ?? undefined,
-      }))
-      .sort((a, b) => a.slide_number - b.slide_number);
+      });
+    }
+    entries.sort((a, b) => a.slide_number - b.slide_number);
+    return entries;
   }, [slideCache]);
   const hasSections = sectionSlides.some((s) => !!s.section_name);
 
