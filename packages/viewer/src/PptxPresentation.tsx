@@ -25,6 +25,9 @@ import type {
 import { GridView } from "./presentation/GridView.js";
 import { NotesPanel } from "./presentation/NotesPanel.js";
 import { ThumbnailSidebar } from "./presentation/Thumbnail.js";
+import { useKeyboardShortcuts } from "./presentation/use-keyboard-shortcuts.js";
+import { usePrintPdfExport } from "./presentation/use-print-pdf-export.js";
+import { useRulerGeometry } from "./presentation/use-ruler-geometry.js";
 import {
   RULER_SIZE,
   SHELL_GLOBAL_CSS,
@@ -98,9 +101,9 @@ import {
 import { ShortcutsDialog } from "./ui/ShortcutsDialog.js";
 import { FontUsageIndicator } from "./ui/FontUsageIndicator.js";
 import { searchSlides, type SearchHit } from "./ui/search.js";
-import { printDeck } from "./ui/print.js";
-import { exportToPdf } from "./ui/pdf.js";
 import { inlineMediaAsDataUrls } from "./ui/media-inline.js";
+// Print + PDF export top-level handlers live in
+// `presentation/use-print-pdf-export.ts`.
 import {
   applyTheme,
   detectSystemTheme,
@@ -994,120 +997,30 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     setRubberBand(null);
   }, [currentSlide]);
 
-  // Keyboard shortcuts.
-  useEffect(() => {
-    const onKey = (ev: KeyboardEvent): void => {
-      const mod = ev.metaKey || ev.ctrlKey;
-      if (mod && ev.key === "f") {
-        ev.preventDefault();
-        setSearchOpen((o) => !o);
-        return;
-      }
-      // Cmd/Ctrl+P → Print. Honour the same readiness gate as the
-      // toolbar button so the user never gets a partial deck in
-      // their print preview.
-      if (mod && ev.key === "p") {
-        ev.preventDefault();
-        if (slideCount > 0 && allSlidesReady) void handlePrintRef.current?.();
-        return;
-      }
-      if (ev.key === "Escape") {
-        if (slideshow) {
-          setSlideshow(false);
-          if (document.fullscreenElement) void document.exitFullscreen();
-          ev.preventDefault();
-          return;
-        }
-        if (searchOpen) {
-          setSearchOpen(false);
-          ev.preventDefault();
-          return;
-        }
-        // Esc clears selection / exits text-edit mode (PowerPoint
-        // convention — same single keystroke deselects everything).
-        setSelectedIds(new Set());
-        setTextEditId(null);
-        setRubberBand(null);
-      }
-      // Cmd/Ctrl + A → select every shape with a known bbox on the
-      // active slide.  Defer to the input field if the user is editing
-      // a text shape — text-edit owns the keyboard.
-      if (mod && ev.key.toLowerCase() === "a" && !textEditId) {
-        ev.preventDefault();
-        setSelectedIds(new Set(bboxMapRef.current.keys()));
-        return;
-      }
-      // Cmd/Ctrl+C — copy selected shapes' text content.
-      if (mod && ev.key.toLowerCase() === "c" && selectedIds.size > 0
-          && !textEditId) {
-        const host = slideRef.current;
-        if (host) {
-          const parts: string[] = [];
-          for (const id of selectedIds) {
-            const el = host.querySelector(`[data-sp-id="${CSS.escape(id)}"]`);
-            const txt = el?.textContent?.trim();
-            if (txt) parts.push(txt);
-          }
-          if (parts.length > 0 && navigator.clipboard) {
-            ev.preventDefault();
-            void navigator.clipboard.writeText(parts.join("\n\n"));
-          }
-        }
-        return;
-      }
-      // Space → engage pan mode. Don't preventDefault on the space
-      // itself (it's not a default-bound key in this context) — just
-      // flip the flag so pointer handlers know to pan instead of
-      // select.
-      if (ev.key === " " && !ev.repeat && !textEditId) {
-        setSpaceHeld(true);
-      }
-      // `?` → toggle shortcuts help dialog. Honour both the literal
-      // `?` (US layout) and Shift+/ (most layouts) without colliding
-      // with text-edit input.
-      if (ev.key === "?" && !textEditId) {
-        ev.preventDefault();
-        setShortcutsOpen((o) => !o);
-        return;
-      }
-      if (ev.key === "ArrowRight" || ev.key === "PageDown") {
-        setCurrentSlide((s) => Math.min(slideCount, s + 1));
-        ev.preventDefault();
-      } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") {
-        setCurrentSlide((s) => Math.max(1, s - 1));
-        ev.preventDefault();
-      } else if (ev.key === "Home") {
-        setCurrentSlide(1);
-        ev.preventDefault();
-      } else if (ev.key === "End") {
-        setCurrentSlide(slideCount);
-        ev.preventDefault();
-      } else if (mod && (ev.key === "=" || ev.key === "+")) {
-        setZoom((z) => clamp(z * 1.25, ZOOM_MIN, ZOOM_MAX));
-        ev.preventDefault();
-      } else if (mod && ev.key === "-") {
-        setZoom((z) => clamp(z * 0.8, ZOOM_MIN, ZOOM_MAX));
-        ev.preventDefault();
-      } else if (mod && ev.key === "0") {
-        setZoom(1);
-        setPanX(0);
-        setPanY(0);
-        ev.preventDefault();
-      }
-    };
-    const onKeyUp = (ev: KeyboardEvent): void => {
-      if (ev.key === " ") setSpaceHeld(false);
-    };
-    const onBlur = (): void => setSpaceHeld(false);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", onBlur);
-    };
-  }, [slideCount, searchOpen, slideshow, selectedIds, textEditId]);
+  // Keyboard shortcuts — see `presentation/use-keyboard-shortcuts.ts`
+  // for the full binding table and rationale.
+  useKeyboardShortcuts({
+    slideCount,
+    allSlidesReady,
+    searchOpen,
+    slideshow,
+    selectedIds,
+    textEditId,
+    handlePrintRef,
+    bboxMapRef,
+    slideRef,
+    setSearchOpen,
+    setSlideshow,
+    setSelectedIds,
+    setTextEditId,
+    setRubberBand,
+    setSpaceHeld,
+    setShortcutsOpen,
+    setCurrentSlide,
+    setZoom,
+    setPanX,
+    setPanY,
+  });
 
   // Pinch / Cmd-wheel zoom + plain-wheel slide navigation.
   //
@@ -1545,113 +1458,23 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   );
 
   // ---- Print / PDF ---------------------------------------------------------
-  const handlePrint = useCallback(async () => {
-    const printTitle = t("progress.titlePrint");
-    setProgress({ title: printTitle, step: t("phase.preparingPrint") });
-    try {
-      const slides = await ensureAllSlidesRendered(false, (current, total) => {
-        setProgress({
-          title: printTitle,
-          step: t("phase.preparingSlideOf", { current, total }),
-          current,
-          total,
-        });
-      });
-      if (slides.length === 0) {
-        setErrorMsg(t("status.nothingToPrint"));
-        return;
-      }
-      const inlined = slides.map((s) => ({
-        ...s,
-        svg: inlineMediaAsDataUrls(s.svg, new Map()),
-      }));
-      await printDeck(inlined, {
-        title: name ?? t("dialog.title"),
-        onProgress: ({ phase: p, current, total }) => {
-          setProgress({
-            title: printTitle,
-            step:
-              p === "open-dialog"
-                ? t("phase.openingPrintDialog")
-                : t("phase.layingOutPrintOf", { current: current + 1, total }),
-            current: p === "open-dialog" ? total : current + 1,
-            total,
-          });
-        },
-      });
-    } catch (err) {
-      setErrorMsg((err as Error).message ?? String(err));
-    } finally {
-      // Leave the overlay up briefly so the "Opening print dialog…"
-      // step is visible — the native print dialog itself can take a
-      // moment to surface and a too-fast dismiss feels jarring.
-      setTimeout(() => setProgress(null), 400);
-    }
-  }, [ensureAllSlidesRendered, name]);
+  // Both handlers live in `usePrintPdfExport` — they share the same
+  // pre-flight (force-render every slide, surface progress, inline
+  // media as data URIs) and only differ on the final dispatch
+  // (`printDeck` vs `exportToPdf`). The `handlePrintRef` indirection
+  // stays here because the keyboard handler at line ~1011 needs to
+  // call into `handlePrint` before its `useCallback` body has been
+  // initialised on the first render.
+  const { handlePrint, handleExportPdf } = usePrintPdfExport({
+    name,
+    ensureAllSlidesRendered,
+    setProgress,
+    setErrorMsg,
+    setPhase,
+  });
   useEffect(() => {
     handlePrintRef.current = handlePrint;
   }, [handlePrint]);
-
-  const handleExportPdf = useCallback(async () => {
-    const pdfTitle = t("progress.titlePdf");
-    setProgress({ title: pdfTitle, step: t("phase.preparingPdf") });
-    setPhase(t("phase.preparingPdf"));
-    try {
-      const slides = await ensureAllSlidesRendered(false, (current, total) => {
-        setProgress({
-          title: pdfTitle,
-          step: t("phase.preparingSlideOf", { current, total }),
-          current,
-          total,
-        });
-      });
-      if (slides.length === 0) {
-        setErrorMsg(t("status.nothingToExport"));
-        return;
-      }
-      const inlined = slides.map((s) => ({
-        ...s,
-        svg: inlineMediaAsDataUrls(s.svg, new Map()),
-      }));
-      const bytes = await exportToPdf({
-        slides: inlined,
-        onProgress: ({ phase: p, current, total }) => {
-          if (p === "rasterize") {
-            setPhase(t("phase.renderingPdf", { current: current + 1, total }));
-            setProgress({
-              title: pdfTitle,
-              step: t("phase.renderingPdf", { current: current + 1, total }),
-              current: current + 1,
-              total,
-            });
-          } else {
-            setPhase(t("phase.encodingPdf"));
-            setProgress({
-              title: pdfTitle,
-              step: t("phase.encodingPdf"),
-              current: total,
-              total,
-            });
-          }
-        },
-      });
-      setProgress({ title: pdfTitle, step: t("phase.savingPdf") });
-      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const baseName = (name ?? "presentation").replace(/\.[^.]+$/, "");
-      a.download = `${baseName}.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-      setPhase(t("status.exported", { count: slides.length }));
-    } catch (err) {
-      setErrorMsg(t("status.pdfFailed", { reason: (err as Error).message ?? String(err) }));
-    } finally {
-      setTimeout(() => setPhase(""), 2000);
-      setTimeout(() => setProgress(null), 400);
-    }
-  }, [ensureAllSlidesRendered, name]);
 
   const handleSlideshow = useCallback(async () => {
     setSlideshow(true);
@@ -1677,78 +1500,21 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   }, [slideCache]);
   const hasSections = sectionSlides.some((s) => !!s.section_name);
 
-  // Ruler geometry — derived from the actual slide DOM rect rather
-  // than from the JS layout math, so the tick at `0` always lines up
-  // with the slide centre regardless of zoom, pan, sidebar resize,
-  // or scrolled stage. Mirrors the historic Lit shell, which tracked
-  // `slideRect()` via a ResizeObserver on the viewer-wrap.
-  // Gate ruler rendering on an actually-loaded slide so the placeholder
-  // 16:9 fallback dimensions (`slideW` derived from a default aspect) don't
-  // leak ticks into the empty-state UI before the user opens a deck.
+  // Ruler geometry — see `presentation/use-ruler-geometry.ts`.
   const rulerOn =
     settings.showRuler && !slideshow && viewMode === "normal" && !!slideSvg;
-  const intrinsicViewBox = useMemo(() => {
-    const m = slideSvg.match(/viewBox=["']([^"']+)["']/);
-    if (!m) return { w: 0, h: 0 };
-    const parts = m[1].split(/\s+/).map(Number);
-    if (parts.length < 4) return { w: 0, h: 0 };
-    return { w: parts[2], h: parts[3] };
-  }, [slideSvg]);
-  const intrinsic = {
-    px: intrinsicViewBox.w,
-    cm: (intrinsicViewBox.w * 2.54) / 96,
-  };
-  const intrinsicY = {
-    px: intrinsicViewBox.h,
-    cm: (intrinsicViewBox.h * 2.54) / 96,
-  };
-
-  // Live slide rect, recomputed whenever zoom/pan/stageSize/aspect
-  // changes — useState so a render bump propagates to the Ruler.
-  const [rulerRect, setRulerRect] = useState<{
-    originX: number;
-    originY: number;
-    extentX: number;
-    extentY: number;
-  }>({ originX: 0, originY: 0, extentX: 0, extentY: 0 });
-  useEffect(() => {
-    if (!rulerOn) return;
-    const stage = stageRef.current;
-    const slide = slideRef.current;
-    if (!stage || !slide) return;
-    const measure = (): void => {
-      const stageRect = stage.getBoundingClientRect();
-      const slideR = slide.getBoundingClientRect();
-      if (slideR.width <= 0 || slideR.height <= 0) return;
-      setRulerRect((prev) => {
-        const next = {
-          originX: slideR.left - stageRect.left,
-          originY: slideR.top - stageRect.top,
-          extentX: slideR.width,
-          extentY: slideR.height,
-        };
-        if (
-          Math.abs(prev.originX - next.originX) < 0.5 &&
-          Math.abs(prev.originY - next.originY) < 0.5 &&
-          Math.abs(prev.extentX - next.extentX) < 0.5 &&
-          Math.abs(prev.extentY - next.extentY) < 0.5
-        ) {
-          return prev;
-        }
-        return next;
-      });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(stage);
-    ro.observe(slide);
-    const onScroll = (): void => measure();
-    stage.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      ro.disconnect();
-      stage.removeEventListener("scroll", onScroll);
-    };
-  }, [rulerOn, slideW, slideH, panX, panY, stageSize.w, stageSize.h]);
+  const { intrinsic, intrinsicY, rulerRect } = useRulerGeometry({
+    rulerOn,
+    slideSvg,
+    stageRef,
+    slideRef,
+    slideW,
+    slideH,
+    panX,
+    panY,
+    stageW: stageSize.w,
+    stageH: stageSize.h,
+  });
 
   return (
     <div
