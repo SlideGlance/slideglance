@@ -1,0 +1,12 @@
+{
+  "name": "@slideglance/landing",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Taehwan Kwag",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "node build.mjs && node serve.mjs"
+  }
+}

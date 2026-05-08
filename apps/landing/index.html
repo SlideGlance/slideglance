@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideGlance — PPTX viewer that runs entirely in your browser</title>
+    <meta
+      name="description"
+      content="Open and view PowerPoint .pptx files in your browser — no upload, no server, no Microsoft Office required. A Rust + WebAssembly PPTX renderer."
+    />
+    <meta property="og:title" content="SlideGlance" />
+    <meta
+      property="og:description"
+      content="Open and view PowerPoint .pptx files in your browser — no upload, no server, no Microsoft Office required."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="SlideGlance home">
+        <img src="./icon.svg" alt="" width="36" height="36" />
+        <span class="brand-name">SlideGlance</span>
+      </a>
+      <nav class="site-nav">
+        <a href="./playground/" class="nav-link" data-open-playground
+          >Playground</a
+        >
+        <a
+          href="https://github.com/SlideGlance/slideglance"
+          class="nav-link"
+          rel="noopener"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-art" aria-hidden="true">
+          <img src="./icon.svg" alt="" width="240" height="240" />
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">Rust + WebAssembly · MIT</p>
+          <h1>Open <code>.pptx</code> right in your browser.</h1>
+          <p class="lede">
+            SlideGlance renders PowerPoint decks to SVG and PNG using a
+            Rust + WebAssembly core. No upload, no server roundtrip, no
+            Microsoft Office required — every file is parsed and drawn
+            inside the tab you opened it in.
+          </p>
+          <div class="cta-row">
+            <a
+              class="btn btn-primary"
+              href="./playground/"
+              data-open-playground
+            >
+              <span>Open Web Playground</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/SlideGlance/slideglance"
+              rel="noopener"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.16-.02-2.11-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.96 10.96 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.36.78 1.06.78 2.13 0 1.54-.01 2.79-.01 3.16 0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"
+                />
+              </svg>
+              <span>View on GitHub</span>
+            </a>
+          </div>
+          <ul class="repo-stats">
+            <li>
+              <span class="stat-label">Repository</span>
+              <a
+                href="https://github.com/SlideGlance/slideglance"
+                rel="noopener"
+                >SlideGlance/slideglance</a
+              >
+            </li>
+            <li>
+              <span class="stat-label">License</span>
+              <span>MIT</span>
+            </li>
+            <li>
+              <span class="stat-label">Stack</span>
+              <span>Rust, WebAssembly, React</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="features" aria-labelledby="features-heading">
+        <h2 id="features-heading">Why use it</h2>
+        <ul class="feature-grid">
+          <li>
+            <h3>Local-first</h3>
+            <p>
+              Files never leave your tab, process, or worker. No upload,
+              no server, no telemetry path for the deck contents.
+            </p>
+          </li>
+          <li>
+            <h3>Deterministic</h3>
+            <p>
+              Same input plus pinned fonts produce byte-identical SVG and
+              pixel-identical PNG across machines.
+            </p>
+          </li>
+          <li>
+            <h3>Offline-capable</h3>
+            <p>
+              Once the WebAssembly bundle is loaded, the viewer needs
+              zero network access — open decks on a plane.
+            </p>
+          </li>
+          <li>
+            <h3>Selectable text</h3>
+            <p>
+              Text-mode SVG keeps copy / search / accessibility intact;
+              path-mode glyphs are available for resvg-rasterized PNG.
+            </p>
+          </li>
+          <li>
+            <h3>Wide PPTX coverage</h3>
+            <p>
+              Theme inheritance, tables, charts, gradients, EMF-wrapped
+              bitmaps, WordArt warps, transitions, notes, sections,
+              embedded fonts.
+            </p>
+          </li>
+          <li>
+            <h3>Multi-surface</h3>
+            <p>
+              Same Rust + WASM core powers the Chrome extension, web
+              playground, desktop viewer, embeddable React/Vue/Web
+              Component, and a native CLI.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="screenshots" aria-labelledby="screenshots-heading">
+        <h2 id="screenshots-heading">Screenshots</h2>
+        <p class="section-lede">
+          Captures from the Chrome extension surface — the same React
+          viewer the desktop app, web playground, and embeddable
+          component all use.
+        </p>
+        <div class="shot-grid">
+          <figure>
+            <a
+              href="./screenshots/01-empty-state.png"
+              data-lightbox
+              data-caption="Empty state — drag a .pptx or click Open file. Nothing leaves the tab."
+            >
+              <img
+                src="./screenshots/01-empty-state.png"
+                alt="Empty state — drag a .pptx or click Open file"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Empty state</strong> — drag a <code>.pptx</code>
+              or click <em>Open file</em>. Nothing leaves the tab.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="./screenshots/04-presentation-viewer.png"
+              data-lightbox
+              data-caption="Presentation viewer — thumbnails, ruler, slideshow, print, PDF export."
+            >
+              <img
+                src="./screenshots/04-presentation-viewer.png"
+                alt="Presentation viewer with thumbnails, ruler, slideshow controls"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Presentation viewer</strong> — thumbnails, ruler,
+              slideshow, print, PDF export.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="./screenshots/06-grid-view.png"
+              data-lightbox
+              data-caption="Grid view for scanning large decks at a glance."
+            >
+              <img
+                src="./screenshots/06-grid-view.png"
+                alt="Grid view of slides for scanning large decks"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Grid view</strong> for scanning large decks at a
+              glance.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="./screenshots/05-font-mapping-popover.png"
+              data-lightbox
+              data-caption="Font mapping — every authored-font → installed-font substitution surfaced."
+            >
+              <img
+                src="./screenshots/05-font-mapping-popover.png"
+                alt="Font mapping popover showing authored-to-installed font substitutions"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Font mapping</strong> — every authored-font →
+              installed-font substitution surfaced.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="./screenshots/02-settings-appearance.png"
+              data-lightbox
+              data-caption="Settings — theme + 8 interface languages, ruler / units."
+            >
+              <img
+                src="./screenshots/02-settings-appearance.png"
+                alt="Settings panel with theme and language options"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Settings</strong> — theme + 8 interface languages,
+              ruler / units.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="./screenshots/03-settings-about.png"
+              data-lightbox
+              data-caption="About — browser-only WebAssembly engine, offline-capable, MIT licensed."
+            >
+              <img
+                src="./screenshots/03-settings-about.png"
+                alt="About panel describing the WebAssembly engine"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>About</strong> — browser-only WebAssembly engine,
+              offline-capable, MIT licensed.
+            </figcaption>
+          </figure>
+        </div>
+        <p class="screenshots-credit">
+          Sample deck used for the screenshots:
+          <a
+            href="https://www.slidescarnival.com/template/business-infographic-presentation/19319"
+            rel="noopener"
+            ><em>Business Infographic Presentation</em></a
+          >
+          by SlidesCarnival.
+        </p>
+      </section>
+
+      <section class="cta-band">
+        <h2>Ready to try it?</h2>
+        <p>
+          The web playground is a drag-and-drop SPA — drop any
+          <code>.pptx</code> on the page and it renders entirely in your
+          tab.
+        </p>
+        <div class="cta-row">
+          <a
+            class="btn btn-primary"
+            href="./playground/"
+            data-open-playground
+          >
+            <span>Open Web Playground</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="https://github.com/SlideGlance/slideglance"
+            rel="noopener"
+            >Browse the source</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-row">
+        <div class="footer-brand">
+          <img src="./icon.svg" alt="" width="28" height="28" />
+          <span>SlideGlance</span>
+        </div>
+        <div class="footer-links">
+          <a href="./playground/" data-open-playground>Web Playground</a>
+          <a
+            href="https://github.com/SlideGlance/slideglance"
+            rel="noopener"
+            >GitHub</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/issues"
+            rel="noopener"
+            >Issues</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/blob/main/LICENSE-MIT"
+            rel="noopener"
+            >MIT License</a
+          >
+        </div>
+      </div>
+      <p class="copy">
+        Copyright © 2026 SimpleCORE Inc. Released under the MIT License.
+      </p>
+    </footer>
+
+    <dialog
+      id="lightbox-dialog"
+      class="lightbox-dialog"
+      aria-label="Screenshot preview"
+    >
+      <button
+        type="button"
+        class="lightbox-close"
+        aria-label="Close screenshot preview"
+        data-close-lightbox
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav-prev"
+        aria-label="Previous screenshot"
+        data-lightbox-nav="-1"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 6l-6 6 6 6" />
+        </svg>
+      </button>
+      <figure class="lightbox-figure">
+        <img class="lightbox-image" alt="" />
+        <figcaption class="lightbox-caption"></figcaption>
+      </figure>
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav-next"
+        aria-label="Next screenshot"
+        data-lightbox-nav="1"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+    </dialog>
+
+    <dialog
+      id="playground-dialog"
+      class="playground-dialog"
+      aria-labelledby="playground-dialog-title"
+    >
+      <header class="playground-dialog-bar">
+        <h2 id="playground-dialog-title">
+          <img src="./icon.svg" alt="" width="22" height="22" />
+          <span>SlideGlance Playground</span>
+        </h2>
+        <div class="playground-dialog-actions">
+          <a
+            class="playground-dialog-link"
+            href="./playground/"
+            target="_blank"
+            rel="noopener"
+            title="Open the playground in a new tab"
+            >Open in new tab ↗</a
+          >
+          <button
+            type="button"
+            class="playground-dialog-close"
+            aria-label="Close playground"
+            data-close-playground
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <iframe
+        class="playground-dialog-frame"
+        title="SlideGlance Playground"
+        allow="clipboard-read; clipboard-write; fullscreen"
+      ></iframe>
+    </dialog>
+
+    <script>
+      (() => {
+        const dialog = document.getElementById("playground-dialog");
+        const frame = dialog.querySelector(".playground-dialog-frame");
+        const playgroundUrl = "./playground/";
+
+        function openDialog() {
+          if (!frame.getAttribute("src")) {
+            frame.setAttribute("src", playgroundUrl);
+          }
+          if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+          } else {
+            dialog.setAttribute("open", "");
+          }
+          document.body.classList.add("playground-open");
+        }
+
+        function closeDialog() {
+          if (typeof dialog.close === "function") {
+            dialog.close();
+          } else {
+            dialog.removeAttribute("open");
+          }
+          document.body.classList.remove("playground-open");
+        }
+
+        document.querySelectorAll("[data-open-playground]").forEach((el) => {
+          el.addEventListener("click", (event) => {
+            // Preserve middle-click / cmd-click / ctrl-click "open in
+            // new tab" behavior — only intercept the plain primary
+            // click.
+            if (
+              event.defaultPrevented ||
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+            event.preventDefault();
+            openDialog();
+          });
+        });
+
+        dialog.addEventListener("click", (event) => {
+          if (event.target === dialog) closeDialog();
+        });
+
+        document
+          .querySelectorAll("[data-close-playground]")
+          .forEach((el) => {
+            el.addEventListener("click", () => closeDialog());
+          });
+
+        dialog.addEventListener("close", () => {
+          document.body.classList.remove("playground-open");
+        });
+      })();
+
+      (() => {
+        const lightbox = document.getElementById("lightbox-dialog");
+        const image = lightbox.querySelector(".lightbox-image");
+        const caption = lightbox.querySelector(".lightbox-caption");
+        const triggers = Array.from(
+          document.querySelectorAll("[data-lightbox]"),
+        );
+        let index = 0;
+
+        function show(i) {
+          if (triggers.length === 0) return;
+          index = (i + triggers.length) % triggers.length;
+          const trigger = triggers[index];
+          image.setAttribute("src", trigger.getAttribute("href"));
+          const alt = trigger.querySelector("img")?.alt ?? "";
+          image.setAttribute("alt", alt);
+          caption.textContent =
+            trigger.getAttribute("data-caption") ?? alt;
+        }
+
+        function open(i) {
+          show(i);
+          if (typeof lightbox.showModal === "function") {
+            lightbox.showModal();
+          } else {
+            lightbox.setAttribute("open", "");
+          }
+          document.body.classList.add("lightbox-open");
+        }
+
+        function close() {
+          if (typeof lightbox.close === "function") {
+            lightbox.close();
+          } else {
+            lightbox.removeAttribute("open");
+          }
+          document.body.classList.remove("lightbox-open");
+          // Drop the src so a heavy PNG doesn't sit in memory after
+          // dismiss.
+          image.removeAttribute("src");
+        }
+
+        triggers.forEach((trigger, i) => {
+          trigger.addEventListener("click", (event) => {
+            if (
+              event.defaultPrevented ||
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+            event.preventDefault();
+            open(i);
+          });
+        });
+
+        lightbox.addEventListener("click", (event) => {
+          // Click on backdrop OR on the figure surface (everything
+          // outside the image) closes. The image itself does not
+          // bubble close.
+          const t = event.target;
+          if (
+            t === lightbox ||
+            t.classList.contains("lightbox-figure") ||
+            t.classList.contains("lightbox-caption")
+          ) {
+            close();
+          }
+        });
+
+        document
+          .querySelectorAll("[data-close-lightbox]")
+          .forEach((el) => el.addEventListener("click", close));
+
+        document
+          .querySelectorAll("[data-lightbox-nav]")
+          .forEach((el) =>
+            el.addEventListener("click", (event) => {
+              event.stopPropagation();
+              const dir = Number.parseInt(
+                el.getAttribute("data-lightbox-nav") ?? "1",
+                10,
+              );
+              show(index + dir);
+            }),
+          );
+
+        document.addEventListener("keydown", (event) => {
+          if (!lightbox.hasAttribute("open")) return;
+          if (event.key === "ArrowRight") show(index + 1);
+          if (event.key === "ArrowLeft") show(index - 1);
+        });
+
+        lightbox.addEventListener("close", () => {
+          document.body.classList.remove("lightbox-open");
+          image.removeAttribute("src");
+        });
+      })();
+    </script>
+  </body>
+</html>

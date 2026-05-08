@@ -49,9 +49,18 @@ jobs:
       # `.pptx` binaries in the repo for a use case the empty state
       # already covers.
       - run: pnpm --filter @slideglance/web-playground build
+      - run: pnpm --filter @slideglance/landing build
+      - name: Assemble GitHub Pages site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp -R apps/landing/dist/. _site/
+          mkdir -p _site/playground
+          cp -R apps/web-playground/dist/. _site/playground/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web-playground/dist
+          path: _site
 
   deploy:
     needs: build

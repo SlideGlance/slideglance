@@ -1,4 +1,8 @@
-# SlideGlance
+<p align="center">
+  <img src="assets/icon/source.svg" alt="SlideGlance" width="160" height="160" />
+</p>
+
+<h1 align="center">SlideGlance</h1>
 
 > Open and view PowerPoint `.pptx` files in your browser — no upload, no
 > server, no Microsoft Office required.
@@ -13,12 +17,14 @@
 > walkthrough.
 
 > **▶ Try it now in your browser** — the hosted web playground is
-> live at **<https://slideglance.github.io/slideglance/>**. Drag any
-> `.pptx` onto the page and it renders entirely in your tab; nothing
-> uploads, no account, no install. The same Rust + WebAssembly core
-> the desktop / Chrome / embedded surfaces use, exposed as a
+> live at **<https://slideglance.github.io/slideglance/playground/>**.
+> Drag any `.pptx` onto the page and it renders entirely in your tab;
+> nothing uploads, no account, no install. The same Rust + WebAssembly
+> core the desktop / Chrome / embedded surfaces use, exposed as a
 > drag-and-drop SPA so you can evaluate fidelity against your own
-> decks before committing to the build-from-source path.
+> decks before committing to the build-from-source path. The project
+> landing page (overview + screenshots) lives at the root,
+> <https://slideglance.github.io/slideglance/>.
 
 SlideGlance converts PPTX decks to SVG / PNG with a Rust + WebAssembly
 core and ships across four user-facing surfaces: a Chrome extension, a
@@ -28,7 +34,7 @@ JavaScript viewer.
 | Surface                  | What you get                                                                | Install                                                                                              |
 | ------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Chrome extension**     | Right-click a `.pptx` link → opens in a tab. No upload.                     | Build `apps/chrome-extension` and load unpacked, or install from the Chrome Web Store *(once published)*. |
-| **Web playground**       | Drag-and-drop a `.pptx` into a browser tab. Useful for one-off viewing.     | Open <https://slideglance.github.io/slideglance/> — no install required. Run locally with `pnpm --filter @slideglance/web-playground dev`. |
+| **Web playground**       | Drag-and-drop a `.pptx` into a browser tab. Useful for one-off viewing.     | Open <https://slideglance.github.io/slideglance/playground/> — no install required. Run locally with `pnpm --filter @slideglance/web-playground dev`. |
 | **Desktop viewer**       | Native Tauri 2 app with menubar, drag-drop, recent files, element select.   | Run `pnpm tauri:dev` (development) or `pnpm tauri:build` (per-OS installer).                         |
 | **Embeddable viewer**    | React component / `<pptx-viewer>` Web Component for your own app.           | `npm i @slideglance/viewer @slideglance/core`                                                        |
 | **Native CLI**           | `slideglance convert / render / inspect` — batch SVG / PNG conversion.      | `cargo install slideglance` *(once published)* or build from source.                                 |
