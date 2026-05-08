@@ -17,15 +17,13 @@ Open and view PowerPoint `.pptx` files in your browser — no upload, no server,
 > walkthrough.
 
 > ### ▶ Try it now in your browser
-> the hosted web playground is live at **<https://slideglance.github.io/slideglance/playground/>**.
+> the hosted web playground is live at **<https://slideglance.github.io/slideglance/>**.
 >
 > Drag any `.pptx` onto the page and it renders entirely in your tab;
 > nothing uploads, no account, no install. The same Rust + WebAssembly
 > core the desktop / Chrome / embedded surfaces use, exposed as a
 > drag-and-drop SPA so you can evaluate fidelity against your own
-> decks before committing to the build-from-source path. The project
-> landing page (overview + screenshots) lives at the root,
-> <https://slideglance.github.io/slideglance/>.
+> decks before committing to the build-from-source path.
 
 SlideGlance converts PPTX decks to SVG / PNG with a Rust + WebAssembly
 core and ships across four user-facing surfaces: a Chrome extension, a
