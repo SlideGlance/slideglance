@@ -3557,6 +3557,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "slideglance-measure-wasm"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "js-sys",
+ "slideglance-font",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "slideglance-model"
 version = "0.1.0"
 dependencies = [

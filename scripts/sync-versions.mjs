@@ -47,6 +47,7 @@ if (typeof targetVersion !== "string" || !/^\d+\.\d+\.\d+/.test(targetVersion)) 
 
 const packageJsonTargets = [
   "packages/core/package.json",
+  "packages/measure/package.json",
   "packages/viewer/package.json",
   "apps/chrome-extension/package.json",
   "apps/web-playground/package.json",
@@ -55,12 +56,13 @@ const packageJsonTargets = [
 
 const cargoTargets = [
   "Cargo.toml",
-  // slideglance-wasm pins its package version inline because
-  // wasm-pack's manifest parser cannot resolve workspace
-  // inheritance — see the comment in that crate's Cargo.toml. Sync
-  // applies the same regex (matches the first `version = "..."`
-  // line in the file, which is the [package] one).
+  // slideglance-wasm and slideglance-measure-wasm pin their package
+  // versions inline because wasm-pack's manifest parser cannot resolve
+  // workspace inheritance — see the comment in those crates' Cargo.toml.
+  // Sync applies the same regex (matches the first `version = "..."`
+  // line in each file, which is the [package] one).
   "crates/slideglance-wasm/Cargo.toml",
+  "crates/slideglance-measure-wasm/Cargo.toml",
 ];
 
 const drift = [];

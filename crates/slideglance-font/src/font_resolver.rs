@@ -153,6 +153,20 @@ pub struct BufferFontResolver {
     /// last-insert wins, matching the existing `insert` overwrite
     /// semantics on the primary map).
     normalized: BTreeMap<String, Arc<FontFace>>,
+    /// Bold-variant slot. A static Bold face (e.g. `Pretendard-Bold.ttf`)
+    /// usually shares its `family_name()` with the Regular face, so
+    /// inserting both into `fonts` would silently overwrite. Hosts that
+    /// care about weight-accurate measurement / rendering register Bold
+    /// faces here via [`Self::insert_bold_variant`]; lookups happen
+    /// through [`FontVariantResolver::resolve_variant`] when a run
+    /// requests `style.bold == true`. When no Bold variant is registered
+    /// for a name, [`FontVariantResolver::resolve_variant`] returns
+    /// `None` and callers fall back to the Regular face plus
+    /// synthetic-bold.
+    bold_variants: BTreeMap<String, Arc<FontFace>>,
+    /// Normalized index for `bold_variants`, mirroring the role of
+    /// [`Self::normalized`] for the regular slot.
+    bold_normalized: BTreeMap<String, Arc<FontFace>>,
 }
 
 impl BufferFontResolver {
@@ -198,6 +212,32 @@ impl BufferFontResolver {
         self.fonts.insert(s, face);
     }
 
+    /// Registers `face` as the Bold variant for `name`. Looked up by
+    /// [`FontVariantResolver::resolve_variant`] when a run requests
+    /// `style.bold == true`. The variant slot is independent of the
+    /// regular slot — registering a Bold face here does not populate
+    /// the regular slot, and registering the same name through
+    /// [`Self::insert`] does not overwrite the Bold slot.
+    pub fn insert_bold_variant<S: Into<String>>(&mut self, name: S, face: FontFace) {
+        let s = name.into();
+        let arc = Arc::new(face);
+        self.bold_normalized
+            .insert(normalize_font_name(&s), Arc::clone(&arc));
+        self.bold_variants.insert(s, arc);
+    }
+
+    /// `Arc`-sharing variant of [`Self::insert_bold_variant`].
+    pub fn insert_bold_variant_arc<S: Into<String>>(
+        &mut self,
+        name: S,
+        face: Arc<FontFace>,
+    ) {
+        let s = name.into();
+        self.bold_normalized
+            .insert(normalize_font_name(&s), Arc::clone(&face));
+        self.bold_variants.insert(s, face);
+    }
+
     /// Number of registered faces.
     #[must_use]
     pub fn len(&self) -> usize {
@@ -224,18 +264,39 @@ impl FontResolver for BufferFontResolver {
         // Fall back to the normalized index so deck-side spellings like
         // `"Apple SD Gothic Neo"` / `"AppleSDGothicNeo"` / mixed-case
         // / Unicode-fullwidth variants all resolve to the same face.
-        self.normalized.get(&normalize_font_name(name)).cloned()
+        if let Some(face) = self.normalized.get(&normalize_font_name(name)).cloned() {
+            return Some(face);
+        }
+        // Last-resort fallback: when only a Bold variant has been
+        // registered for this name (no Regular), use it as the regular
+        // face. Without this, `resolve` would return `None` even though
+        // a face for the family is available — leading the renderer to
+        // emit `<text>` instead of glyph outlines.
+        if let Some(face) = self.bold_variants.get(name).cloned() {
+            return Some(face);
+        }
+        self.bold_normalized
+            .get(&normalize_font_name(name))
+            .cloned()
     }
 }
 
 impl FontVariantResolver for BufferFontResolver {
-    fn resolve_variant(&self, _name: &str, _style: FontStyle) -> Option<Arc<FontFace>> {
-        // Variant slots are not yet maintained on `BufferFontResolver` —
-        // D3 (KDD-10) wires bold / italic variant registration through
-        // this resolver. For now no variant data exists so we return
-        // `None` and let the caller fall back to `resolve` + synthetic
-        // bold / italic.
-        None
+    fn resolve_variant(&self, name: &str, style: FontStyle) -> Option<Arc<FontFace>> {
+        // Italic is plumbed but not yet stored — there is no italic
+        // slot on this resolver. Return `None` for italic-only requests
+        // so callers fall through to synthetic-italic; bold-with-italic
+        // requests fall through to the bold-variant lookup below
+        // (italic is treated as a no-op match for now).
+        if !style.bold {
+            return None;
+        }
+        if let Some(face) = self.bold_variants.get(name).cloned() {
+            return Some(face);
+        }
+        self.bold_normalized
+            .get(&normalize_font_name(name))
+            .cloned()
     }
 }
 
@@ -306,13 +367,17 @@ impl<R: FontResolver> FontResolver for MappedFontResolver<R> {
     }
 }
 
-impl<R: FontResolver> FontVariantResolver for MappedFontResolver<R> {
-    fn resolve_variant(&self, _name: &str, _style: FontStyle) -> Option<Arc<FontFace>> {
-        // Variant lookup walks the registered bold / italic faces; D0
-        // does not yet propagate that data through the mapping layer, so
-        // we return `None` to defer to the regular `resolve` path. D3
-        // (KDD-10 full impl) replaces this stub with a real lookup.
-        None
+impl<R: FontVariantResolver> FontVariantResolver for MappedFontResolver<R> {
+    fn resolve_variant(&self, name: &str, style: FontStyle) -> Option<Arc<FontFace>> {
+        if let Some(face) = self.inner.resolve_variant(name, style) {
+            return Some(face);
+        }
+        // Mapped name (e.g. `Calibri → Carlito`) — try the variant slot
+        // for the mapping target as well so a deck that authored Bold
+        // Calibri renders / measures as Bold Carlito instead of falling
+        // through to synthetic bold.
+        let mapped = get_mapped_font(name, &self.mapping)?;
+        self.inner.resolve_variant(&mapped, style)
     }
 }
 
@@ -353,11 +418,16 @@ impl<R: FontResolver> FontResolver for CjkFallbackResolver<R> {
     }
 }
 
-impl<R: FontResolver> FontVariantResolver for CjkFallbackResolver<R> {
-    fn resolve_variant(&self, _name: &str, _style: FontStyle) -> Option<Arc<FontFace>> {
-        // Same rationale as `MappedFontResolver` — D3 implements true
-        // variant walking. D0 returns `None` so callers fall through to
-        // the synthetic-bold / heuristic measurement path.
+impl<R: FontVariantResolver> FontVariantResolver for CjkFallbackResolver<R> {
+    fn resolve_variant(&self, name: &str, style: FontStyle) -> Option<Arc<FontFace>> {
+        if let Some(face) = self.inner.resolve_variant(name, style) {
+            return Some(face);
+        }
+        for fallback in get_cjk_fallback_fonts(self.platform, name) {
+            if let Some(face) = self.inner.resolve_variant(fallback, style) {
+                return Some(face);
+            }
+        }
         None
     }
 }

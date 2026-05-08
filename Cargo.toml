@@ -11,6 +11,7 @@ members = [
     "crates/slideglance-png",
     "crates/slideglance",
     "crates/slideglance-wasm",
+    "crates/slideglance-measure-wasm",
     "apps/desktop-viewer/src-tauri",
 ]
 # `testing/vrt/snapshot` is a standalone package — kept out of the main

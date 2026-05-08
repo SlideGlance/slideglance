@@ -1,0 +1,58 @@
+{
+  "name": "@slideglance/measure",
+  "version": "0.1.0",
+  "author": "Taehwan Kwag",
+  "description": "Deterministic OpenType text width / line-metrics measurement (WebAssembly).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SlideGlance/slideglance.git"
+  },
+  "type": "module",
+  "files": [
+    "dist/node/**",
+    "dist/bundler/**",
+    "dist/web/**",
+    "README.md",
+    "LICENSE-MIT"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/run-build-wasm.mjs",
+    "build:dev": "node ../../scripts/run-build-wasm.mjs --dev"
+  },
+  "main": "./dist/node/slideglance_measure_wasm.js",
+  "types": "./dist/node/slideglance_measure_wasm.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/bundler/slideglance_measure_wasm.d.ts",
+      "node": {
+        "types": "./dist/node/slideglance_measure_wasm.d.ts",
+        "default": "./dist/node/slideglance_measure_wasm.js"
+      },
+      "browser": {
+        "types": "./dist/bundler/slideglance_measure_wasm.d.ts",
+        "default": "./dist/bundler/slideglance_measure_wasm.js"
+      },
+      "default": "./dist/bundler/slideglance_measure_wasm.js"
+    },
+    "./node": {
+      "types": "./dist/node/slideglance_measure_wasm.d.ts",
+      "default": "./dist/node/slideglance_measure_wasm.js"
+    },
+    "./bundler": {
+      "types": "./dist/bundler/slideglance_measure_wasm.d.ts",
+      "default": "./dist/bundler/slideglance_measure_wasm.js"
+    },
+    "./web": {
+      "types": "./dist/web/slideglance_measure_wasm.d.ts",
+      "default": "./dist/web/slideglance_measure_wasm.js"
+    }
+  },
+  "keywords": [
+    "opentype",
+    "text-measurement",
+    "pptx",
+    "powerpoint",
+    "wasm"
+  ]
+}
