@@ -58,15 +58,6 @@ jobs:
           cp -R apps/landing/dist/. _site/
           mkdir -p _site/playground
           cp -R apps/web-playground/dist/. _site/playground/
-      # `enablement: true` re-enables the Pages site if a repo admin
-      # (or an org-wide policy) silently disabled it. Without this the
-      # `actions/deploy-pages` step fails with a bare 404 ("Ensure
-      # GitHub Pages has been enabled") even though `pages: write` is
-      # granted, because the deploy API requires the Pages site to
-      # exist before it accepts an artifact.
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
