@@ -45,13 +45,30 @@ export interface UseDeckLoaderArgs {
    * produces a fresh PPTX byte buffer) set this so the viewer
    * doesn't snap back to slide 1 / zoom 1 after each edit.
    *
-   * The slide cache is still cleared on every `src` change because
-   * the worker re-parses fresh bytes; cached SVGs from the previous
-   * deck refer to media blob URLs that are revoked here. This means
-   * the currently visible slide always re-renders, but UI state is
-   * preserved.
+   * The slide cache treatment depends on whether
+   * `invalidatedSlides` is also supplied — see that prop.
    */
   incrementalUpdate?: boolean;
+  /**
+   * 1-based indices of slides whose cache entries should be flushed
+   * on the next `src` change. Only consulted when
+   * `incrementalUpdate` is `true`; the default-off path
+   * (full-deck-open) always flushes the entire cache.
+   *
+   *  - `undefined`: no per-slide hint, fall back to flushing the
+   *    entire cache. Safest default — guarantees the visible slide
+   *    matches the new bytes even if the host has not computed a
+   *    diff.
+   *  - `[]`: empty list — host is asserting nothing changed
+   *    visually, keep the cache intact. The worker still re-parses
+   *    so subsequent navigation reflects the new bytes; existing
+   *    cached SVGs (which the host knows are bit-identical to what
+   *    the new parse would produce) survive.
+   *  - `[3, 5, …]`: only invalidate cache entries for the listed
+   *    1-based slide indices. Hosts compute this list by hashing
+   *    each slide's source between edits.
+   */
+  invalidatedSlides?: number[];
 
   setPhase: (phase: string) => void;
   setSlideCount: (next: number) => void;
@@ -76,6 +93,7 @@ export function useDeckLoader(args: UseDeckLoaderArgs): void {
     externalSlideCount,
     bundledFontDefsCss,
     incrementalUpdate,
+    invalidatedSlides,
     setPhase,
     setSlideCount,
     setFontUsage,
@@ -157,12 +175,44 @@ export function useDeckLoader(args: UseDeckLoaderArgs): void {
         }
         setErrorMsg(null);
         setPhase("");
-        setSlideCache((prev) => {
-          for (const c of prev.values()) {
-            for (const u of c.blobUrls) URL.revokeObjectURL(u);
+
+        // Cache invalidation policy:
+        //   - default-off (`!incrementalUpdate`): flush every entry,
+        //     revoking media blob URLs. The host changed decks
+        //     wholesale.
+        //   - on + `invalidatedSlides=[]`: nothing changed visually,
+        //     keep the entire cache.
+        //   - on + `invalidatedSlides=[i, …]`: drop only those
+        //     entries. The active-slide effect in `useSlideCache`
+        //     re-renders the visible slide if it appears in the
+        //     list; navigating to other invalidated slides triggers
+        //     their fetch on demand.
+        //   - on + `invalidatedSlides=undefined`: host did not
+        //     supply a diff. Fall back to flushing all so the
+        //     visible slide is guaranteed fresh.
+        if (incrementalUpdate && invalidatedSlides !== undefined) {
+          if (invalidatedSlides.length > 0) {
+            const dropSet = new Set(invalidatedSlides);
+            setSlideCache((prev) => {
+              const next = new Map(prev);
+              for (const idx of dropSet) {
+                const entry = next.get(idx);
+                if (!entry) continue;
+                for (const u of entry.blobUrls) URL.revokeObjectURL(u);
+                next.delete(idx);
+              }
+              return next;
+            });
           }
-          return new Map();
-        });
+          // empty list: leave cache intact.
+        } else {
+          setSlideCache((prev) => {
+            for (const c of prev.values()) {
+              for (const u of c.blobUrls) URL.revokeObjectURL(u);
+            }
+            return new Map();
+          });
+        }
       } catch (err) {
         if (!cancelled) {
           setErrorMsg(`${(err as Error).message ?? err}`);

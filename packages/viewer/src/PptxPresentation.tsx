@@ -212,13 +212,26 @@ export interface PptxPresentationProps {
    * produces a fresh PPTX byte buffer) set this so the viewer
    * doesn't snap back to slide 1 / zoom 1 after each edit.
    *
-   * The slide cache is still cleared on every `src` change — the
-   * worker re-parses fresh bytes, so cached SVGs (which reference
-   * media blob URLs the loader is about to revoke) are no longer
-   * valid. The currently visible slide therefore always re-renders;
-   * only the navigation / zoom state is preserved.
+   * Cache treatment is gated by `invalidatedSlides`: see that prop.
    */
   incrementalUpdate?: boolean;
+  /**
+   * 1-based indices of slides whose cache entries should be flushed
+   * on the next `src` change. Only consulted when
+   * `incrementalUpdate` is true. Pair this with a host-side
+   * per-slide hash diff to achieve true surgical updates: the host
+   * computes which slides' source actually changed between edits
+   * and forwards that list here, so the viewer keeps cached SVGs
+   * for everything else.
+   *
+   *  - `undefined`: viewer flushes the entire cache (safe default
+   *    when the host has no diff).
+   *  - `[]`: keep the entire cache (host asserts nothing changed
+   *    visually).
+   *  - `[3, 5, …]`: drop only those entries; navigation refetches
+   *    them, the rest stay cached.
+   */
+  invalidatedSlides?: number[];
 }
 
 // `CachedSlide` lives in `presentation/types.ts` so the sub-component
@@ -526,6 +539,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     externalSlideCount,
     bundledFontDefsCss: props.bundledFontDefsCss,
     incrementalUpdate: props.incrementalUpdate,
+    invalidatedSlides: props.invalidatedSlides,
     setPhase,
     setSlideCount,
     setFontUsage,

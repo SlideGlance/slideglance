@@ -255,10 +255,19 @@ export function useSlideCache(args: UseSlideCacheArgs): UseSlideCacheResult {
   }, [noPrefetch, controller, slideCount, allSlidesReady, ensureAllSlidesRendered]);
 
   // Active slide fetch.
+  //
+  // Including `slideCache` in the dependency list lets external
+  // cache invalidation (e.g. the deck-loader's surgical
+  // `invalidatedSlides` path on an in-place edit-cycle update) drive
+  // a refetch of the visible slide without the user having to
+  // navigate. `requestSlide` is a no-op cache hit when the entry is
+  // still present, so additions to the cache (caused by prior calls
+  // to this very effect) don't loop — they short-circuit on the
+  // hot-cache check inside `requestSlide`.
   useEffect(() => {
     if (!controller || slideCount === 0) return;
     void requestSlide(currentSlide);
-  }, [controller, slideCount, currentSlide, requestSlide]);
+  }, [controller, slideCount, currentSlide, requestSlide, slideCache]);
 
   return { slideCache, setSlideCache, requestSlide, ensureAllSlidesRendered };
 }
