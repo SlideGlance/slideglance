@@ -24,16 +24,13 @@
 use std::fmt::Write as _;
 
 use slideglance_font::{CjkPlatform, FontMapping, FontResolver, ScriptFontContext, TextMeasurer};
-use slideglance_model::{
-    Background, Fill, GroupElement, ImageFill, Slide, SlideElement, SlideHeaderFooter, SlideSize,
-};
+use slideglance_model::{Slide, SlideElement, SlideHeaderFooter, SlideSize};
 
 use crate::slide_context::Timestamp;
 
 use crate::chart::render_chart;
 use crate::connector::render_connector;
 use crate::error::RendererError;
-use crate::fill::render_fill_attrs;
 use crate::geometry::fmt::n;
 use crate::id_gen::IdGen;
 use crate::image::render_image;
@@ -42,7 +39,9 @@ use crate::shape::render_shape;
 use crate::slide_context::SlideRenderContext;
 use crate::svg_builder::escape_xml_attr;
 use crate::table::render_table;
-use crate::transform::build_object_name_attr;
+
+mod background;
+mod group;
 
 /// Render one [`Slide`] to a single self-contained SVG document.
 ///
@@ -87,7 +86,8 @@ pub fn render_slide_to_svg(
     let mut defs = String::new();
 
     // Background.
-    let bg_render = render_background(slide.background.as_ref(), width_px, height_px, &mut ids);
+    let bg_render =
+        background::render_background(slide.background.as_ref(), width_px, height_px, &mut ids);
     body.push_str(&bg_render.content);
     defs.push_str(&bg_render.defs);
 
@@ -149,148 +149,6 @@ pub fn render_slide_to_svg(
 // Background
 // ---------------------------------------------------------------------
 
-fn render_background(
-    background: Option<&Background>,
-    width: f64,
-    height: f64,
-    ids: &mut IdGen,
-) -> RenderResult {
-    let Some(bg) = background else {
-        return RenderResult {
-            content: format!(
-                "<rect width=\"{}\" height=\"{}\" fill=\"#FFFFFF\"/>",
-                n(width),
-                n(height)
-            ),
-            defs: String::new(),
-        };
-    };
-    let Some(fill) = &bg.fill else {
-        // Explicit `<a:noFill/>` background — TS treats this the same as
-        // no background block (renders default white).
-        return RenderResult {
-            content: format!(
-                "<rect width=\"{}\" height=\"{}\" fill=\"#FFFFFF\"/>",
-                n(width),
-                n(height)
-            ),
-            defs: String::new(),
-        };
-    };
-
-    if let Fill::Image(img) = fill {
-        return render_background_image(img, width, height, ids);
-    }
-
-    let fill_result = render_fill_attrs(Some(fill), ids);
-    RenderResult {
-        content: format!(
-            "<rect width=\"{}\" height=\"{}\" {}/>",
-            n(width),
-            n(height),
-            fill_result.attrs
-        ),
-        defs: fill_result.defs,
-    }
-}
-
-/// Image background mirrors — independently
-/// honors `srcRect` (crop on the source) and `stretch.fillRect`
-/// (position/scale on the slide).
-fn render_background_image(
-    bg: &ImageFill,
-    width: f64,
-    height: f64,
-    ids: &mut IdGen,
-) -> RenderResult {
-    let has_src_rect = bg.src_rect.is_some();
-    let has_stretch_inset = bg
-        .stretch
-        .is_some_and(|s| s.left != 0.0 || s.top != 0.0 || s.right != 0.0 || s.bottom != 0.0);
-
-    if !has_src_rect && !has_stretch_inset {
-        return RenderResult {
-            content: format!(
-                "<image href=\"data:{};base64,{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\"/>",
-                bg.mime_type,
-                bg.image_data,
-                n(width),
-                n(height)
-            ),
-            defs: String::new(),
-        };
-    }
-
-    let s = bg.stretch.unwrap_or_default();
-    let fl = s.left;
-    let ft = s.top;
-    let fr = s.right;
-    let fb = s.bottom;
-    let draw_x = width * fl;
-    let draw_y = height * ft;
-    let draw_w = width * (1.0 - fl - fr);
-    let draw_h = height * (1.0 - ft - fb);
-
-    if let Some(src) = bg.src_rect {
-        let sl = src.left;
-        let st = src.top;
-        let sr = src.right;
-        let sb = src.bottom;
-        let visible_x = 1.0 - sl - sr;
-        let visible_y = 1.0 - st - sb;
-        if visible_x <= 0.0 || visible_y <= 0.0 {
-            // Degenerate crop — match TS by emitting only a white
-            // rectangle for the visible draw area.
-            return RenderResult {
-                content: format!(
-                    "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"#FFFFFF\"/>",
-                    n(draw_x),
-                    n(draw_y),
-                    n(draw_w),
-                    n(draw_h)
-                ),
-                defs: String::new(),
-            };
-        }
-        let scaled_w = draw_w / visible_x;
-        let scaled_h = draw_h / visible_y;
-        let img_x = draw_x - sl * scaled_w;
-        let img_y = draw_y - st * scaled_h;
-        let clip_id = ids.next_id("bg-crop");
-        let defs = format!(
-            "<clipPath id=\"{clip_id}\"><rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/></clipPath>",
-            n(draw_x),
-            n(draw_y),
-            n(draw_w),
-            n(draw_h),
-        );
-        let content = format!(
-            "<image clip-path=\"url(#{clip_id})\" href=\"data:{};base64,{}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\"/>",
-            bg.mime_type,
-            bg.image_data,
-            n(img_x),
-            n(img_y),
-            n(scaled_w),
-            n(scaled_h),
-        );
-        return RenderResult { content, defs };
-    }
-
-    // No srcRect, only fillRect inset — emit positioned image.
-    RenderResult {
-        content: format!(
-            "<image href=\"data:{};base64,{}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" preserveAspectRatio=\"none\"/>",
-            bg.mime_type,
-            bg.image_data,
-            n(draw_x),
-            n(draw_y),
-            n(draw_w),
-            n(draw_h),
-        ),
-        defs: String::new(),
-    }
-}
-
 // ---------------------------------------------------------------------
 // Element dispatch
 // ---------------------------------------------------------------------
@@ -300,7 +158,7 @@ fn render_background_image(
 /// `Ok(None)` when the element has no visual contribution (matching the
 /// TS `default` branch return of `null`).
 #[allow(clippy::too_many_arguments)]
-fn render_element(
+pub(super) fn render_element(
     element: &SlideElement,
     ids: &mut IdGen,
     slide: &SlideRenderContext,
@@ -329,7 +187,7 @@ fn render_element(
             font_size_correction,
         )?,
         SlideElement::Connector(conn) => render_connector(conn, ids, font_size_correction),
-        SlideElement::Group(group) => render_group(
+        SlideElement::Group(group) => group::render_group(
             group,
             ids,
             slide,
@@ -401,129 +259,6 @@ fn render_element(
     Ok(Some(result))
 }
 
-#[allow(clippy::too_many_arguments)]
-fn render_group(
-    group: &GroupElement,
-    ids: &mut IdGen,
-    slide: &SlideRenderContext,
-    script_fonts: &ScriptFontContext,
-    measurer: &dyn TextMeasurer,
-    mapping: &FontMapping,
-    cjk_platform: CjkPlatform,
-    font_resolver: Option<&dyn FontResolver>,
-    // Cumulative correction inherited from outer groups; this group
-    // multiplies it by `1 / sqrt(scale_x * scale_y)` and forwards the
-    // result to its children. See note below for the rationale.
-    parent_font_size_correction: f64,
-) -> Result<RenderResult, RendererError> {
-    let x = group.transform.offset_x.to_pixels();
-    let y = group.transform.offset_y.to_pixels();
-    let w = group.transform.extent_width.to_pixels();
-    let h = group.transform.extent_height.to_pixels();
-    let ch_w = group.child_transform.extent_width.to_pixels();
-    let ch_h = group.child_transform.extent_height.to_pixels();
-    let ch_x = group.child_transform.offset_x.to_pixels();
-    let ch_y = group.child_transform.offset_y.to_pixels();
-
-    let scale_x = if ch_w == 0.0 { 1.0 } else { w / ch_w };
-    let scale_y = if ch_h == 0.0 { 1.0 } else { h / ch_h };
-
-    // Group transform text-size compensation — intentional divergence
-    // from the spec's `renderGroup` (svg-renderer.ts).
-    //
-    // This group's SVG `<g transform="scale(scale_x, scale_y)">` will
-    // expand every descendant's coordinate space, including the
-    // `font-size` attribute on `<text>` nodes (font-size is a length in
-    // user space and SVG scales lengths). PowerPoint, in contrast,
-    // treats font point sizes as ABSOLUTE — they do not scale with a
-    // group's chExt → ext ratio. PowerPoint's own native rendering of
-    // the Slidesgo "Blue and Green Business Infographic" template (and
-    // the macOS Quick Look renderer + the deck's embedded
-    // `docProps/thumbnail.jpeg`) all show the 21pt subtitle at 21pt,
-    // even though the enclosing group has a ~3.7× scale.
-    //
-    // To match that behaviour without rewriting every layout function
-    // to track absolute vs. local-coordinate sizing, we compose a
-    // running counter-scale (`font_size_correction`) and pass it to
-    // text rendering. Each text body multiplies its `font_scale` by
-    // this value before emitting `font-size`, so the final visual size
-    // equals `font_pt × correction × group_scale = font_pt`.
-    //
-    // For non-uniform group scales (`scale_x != scale_y`) we use the
-    // geometric mean. The residual anisotropy still stretches glyphs
-    // along one axis — accepted as a known limitation, documented in
-    // .plans/00-rust-migration/plan.md.
-    let scale_uniform = if scale_x > 0.0 && scale_y > 0.0 {
-        (scale_x * scale_y).sqrt()
-    } else {
-        1.0
-    };
-    let child_font_size_correction = if scale_uniform == 0.0 {
-        parent_font_size_correction
-    } else {
-        parent_font_size_correction / scale_uniform
-    };
-
-    let mut transform_parts: Vec<String> = Vec::new();
-    transform_parts.push(format!("translate({}, {})", n(x), n(y)));
-
-    if group.transform.rotation != 0.0 {
-        transform_parts.push(format!(
-            "rotate({}, {}, {})",
-            n(group.transform.rotation),
-            n(w / 2.0),
-            n(h / 2.0)
-        ));
-    }
-
-    if group.transform.flip_h || group.transform.flip_v {
-        let sx: i32 = if group.transform.flip_h { -1 } else { 1 };
-        let sy: i32 = if group.transform.flip_v { -1 } else { 1 };
-        let tx = if group.transform.flip_h { w } else { 0.0 };
-        let ty = if group.transform.flip_v { h } else { 0.0 };
-        transform_parts.push(format!("translate({}, {})", n(tx), n(ty)));
-        transform_parts.push(format!("scale({sx}, {sy})"));
-    }
-
-    transform_parts.push(format!("scale({}, {})", n(scale_x), n(scale_y)));
-    transform_parts.push(format!("translate({}, {})", n(-ch_x), n(-ch_y)));
-
-    let mut content = String::new();
-    let mut defs = String::new();
-    let sp_id_attr = crate::svg_builder::build_sp_id_attr(group.sp_id);
-    let _ = write!(
-        content,
-        "<g{} transform=\"{}\"{}>",
-        sp_id_attr,
-        transform_parts.join(" "),
-        build_object_name_attr(group.object_name.as_deref())
-    );
-
-    for child in &group.children {
-        if element_hidden(child) {
-            continue;
-        }
-        let child_result = render_element(
-            child,
-            ids,
-            slide,
-            script_fonts,
-            measurer,
-            mapping,
-            cjk_platform,
-            font_resolver,
-            child_font_size_correction,
-        )?;
-        if let Some(r) = child_result {
-            content.push_str(&r.content);
-            defs.push_str(&r.defs);
-        }
-    }
-
-    content.push_str("</g>");
-    Ok(RenderResult { content, defs })
-}
-
 // ---------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------
@@ -552,7 +287,7 @@ fn should_skip_for_header_footer(element: &SlideElement, hf: Option<&SlideHeader
     false
 }
 
-fn element_hidden(element: &SlideElement) -> bool {
+pub(super) fn element_hidden(element: &SlideElement) -> bool {
     match element {
         SlideElement::Shape(s) => s.hidden,
         SlideElement::Connector(c) => c.hidden,
@@ -588,9 +323,9 @@ mod tests {
     use slideglance_color::{ResolvedColor, Rgb};
     use slideglance_font::{FontMapping, HeuristicTextMeasurer, ScriptFontContext};
     use slideglance_model::{
-        ConnectorElement, Geometry, GroupElement, Hyperlink, ImageFill, ImageRect, NoFill,
-        PresetGeometry, ShapeElement, Slide, SlideElement, SlideHeaderFooter, SlideSize, SolidFill,
-        Transform,
+        Background, ConnectorElement, Fill, Geometry, GroupElement, Hyperlink, ImageFill,
+        ImageRect, NoFill, PresetGeometry, ShapeElement, Slide, SlideElement, SlideHeaderFooter,
+        SlideSize, SolidFill, Transform,
     };
     use slideglance_utils::Emu;
     use std::collections::BTreeMap;
