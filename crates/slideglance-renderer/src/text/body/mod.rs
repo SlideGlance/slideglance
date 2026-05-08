@@ -17,10 +17,7 @@ use slideglance_font::{
     wrap_paragraph_with_chain, CjkPlatform, FontMapping, FontResolver, ScriptFontContext,
     TextMeasurer,
 };
-use slideglance_model::{
-    BodyProperties, BulletType, Paragraph, ParagraphProperties, TextBody, TextRun,
-    TextVerticalType, Transform, WrapMode,
-};
+use slideglance_model::{BodyProperties, TextBody, TextVerticalType, Transform, WrapMode};
 use slideglance_utils::Emu;
 
 use std::fmt::Write as _;
@@ -29,16 +26,21 @@ use crate::geometry::fmt::n;
 use crate::slide_context::SlideRenderContext;
 use crate::svg_builder::escape_xml_text;
 
-use super::auto_num::format_auto_num;
 use super::layout::{
     compute_dy, compute_line_natural_height, effective_line_height_pt, get_alignment_info,
     get_default_ascender_ratio, get_default_font_size, get_default_line_height_ratio,
-    get_line_spacing, get_paragraph_font_size, has_visible_bullet, resolve_spacing_px_opt,
-    DEFAULT_LINE_SPACING, PX_PER_PT,
+    get_line_spacing, get_paragraph_font_size, resolve_spacing_px_opt, DEFAULT_LINE_SPACING,
+    PX_PER_PT,
 };
-use super::segment::{highlight_filter_id, render_segment};
+use super::segment::render_segment;
 use super::style::build_bullet_style_attrs;
-use crate::color::color_hex;
+
+mod helpers;
+
+use helpers::{
+    build_highlight_filter_defs, get_line_font_size_segments, inject_default_text_color,
+    is_vertical, resolve_bullet_text, substitute_field_runs,
+};
 
 /// Render a `<p:txBody>` to an SVG `<text>` (or rotated `<g>` wrapper for
 /// vertical text). Empty bodies produce an empty string, matching the TS
@@ -594,62 +596,6 @@ pub fn render_text_body(
     }
 }
 
-/// Walk every run of `body` and build the SVG `<defs>` block holding
-/// one `<filter>` per distinct highlight color. Returns "" when no run
-/// has a highlight set (the common case).
-fn build_highlight_filter_defs(body: &TextBody) -> String {
-    use std::collections::BTreeSet;
-    let mut hexes: BTreeSet<String> = BTreeSet::new();
-    for para in &body.paragraphs {
-        for run in &para.runs {
-            if let Some(h) = &run.properties.highlight {
-                let hex = color_hex(h);
-                hexes.insert(hex.trim_start_matches('#').to_lowercase());
-            }
-        }
-    }
-    if hexes.is_empty() {
-        return String::new();
-    }
-    let mut out = String::from("<defs>");
-    for hex in &hexes {
-        let id = highlight_filter_id(hex);
-        // x/y/width/height: expand a few percent past the tspan's ink
-        // box so the highlight doesn't clip glyph descenders or italic
-        // overhangs. `feFlood` paints the filter region with the
-        // highlight color, then `feMerge` stacks the original glyphs
-        // on top so the text remains legible.
-        let _ = write!(
-            out,
-            "<filter id=\"{id}\" x=\"-2%\" y=\"-15%\" width=\"104%\" height=\"130%\">\
-             <feFlood flood-color=\"#{hex}\"/>\
-             <feMerge><feMergeNode/><feMergeNode in=\"SourceGraphic\"/></feMerge>\
-             </filter>"
-        );
-    }
-    out.push_str("</defs>");
-    out
-}
-
-/// Push the body's `default_text_color` (resolved from the parent
-/// shape's `<p:style>/<a:fontRef>`) into every run that has no explicit
-/// `<a:solidFill>`. `PowerPoint` cascades the color this way; without
-/// the inject every "default-color" run hits the SVG `<text>` default
-/// (black) and a white-on-blue layout badge becomes black-on-blue.
-fn inject_default_text_color(mut body: TextBody) -> TextBody {
-    let Some(default_color) = body.default_text_color else {
-        return body;
-    };
-    for para in &mut body.paragraphs {
-        for run in &mut para.runs {
-            if run.properties.color.is_none() {
-                run.properties.color = Some(default_color);
-            }
-        }
-    }
-    body
-}
-
 /// Pixel-space layout box for a text body.
 ///
 /// `width` / `height` are the text frame's outer dimensions (already
@@ -697,90 +643,6 @@ pub(crate) fn resolve_text_dimensions(bp: &BodyProperties, w: f64, h: f64) -> Di
         margin_top: to_px(bp.margin_top),
         margin_bottom: to_px(bp.margin_bottom),
     }
-}
-
-fn is_vertical(vert: TextVerticalType) -> bool {
-    matches!(
-        vert,
-        TextVerticalType::Vert
-            | TextVerticalType::EaVert
-            | TextVerticalType::WordArtVert
-            | TextVerticalType::MongolianVert
-    )
-}
-
-fn substitute_field_runs(body: &TextBody, slide: &SlideRenderContext) -> TextBody {
-    let needs_clone = body
-        .paragraphs
-        .iter()
-        .any(|p| p.runs.iter().any(|r| r.field_type.is_some()));
-    if !needs_clone {
-        return body.clone();
-    }
-    TextBody {
-        default_text_color: body.default_text_color,
-        paragraphs: body
-            .paragraphs
-            .iter()
-            .map(|p| Paragraph {
-                runs: p
-                    .runs
-                    .iter()
-                    .map(|r| {
-                        if let Some(field_type) = &r.field_type {
-                            if let Some(value) =
-                                crate::slide_context::format_field(field_type, slide)
-                            {
-                                return TextRun {
-                                    text: value,
-                                    properties: r.properties.clone(),
-                                    field_type: r.field_type.clone(),
-                                };
-                            }
-                        }
-                        r.clone()
-                    })
-                    .collect(),
-                properties: p.properties.clone(),
-                end_para_run_properties: p.end_para_run_properties.clone(),
-            })
-            .collect(),
-        body_properties: body.body_properties.clone(),
-    }
-}
-
-fn resolve_bullet_text(
-    props: &ParagraphProperties,
-    counters: &mut std::collections::HashMap<(slideglance_model::AutoNumScheme, u8), u32>,
-) -> Option<String> {
-    let bullet = props.bullet.as_ref()?;
-    if !has_visible_bullet(props) {
-        return None;
-    }
-    match bullet {
-        BulletType::None => None,
-        BulletType::Char { char } => Some(char.clone()),
-        BulletType::AutoNum { scheme, start_at } => {
-            let key = (*scheme, props.level);
-            let current = counters.get(&key).copied().unwrap_or(0);
-            let next_val = current + 1;
-            counters.insert(key, next_val);
-            let index = start_at + next_val - 1;
-            Some(format_auto_num(*scheme, index))
-        }
-    }
-}
-
-fn get_line_font_size_segments(
-    line: &slideglance_font::WrappedLine,
-    default_font_size: f64,
-) -> f64 {
-    for seg in &line.segments {
-        if let Some(size) = seg.properties.font_size {
-            return size.raw();
-        }
-    }
-    default_font_size
 }
 
 pub(crate) fn estimate_total_height(

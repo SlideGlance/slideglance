@@ -9,15 +9,21 @@
 
 use slideglance_color::ResolvedColor;
 use slideglance_model::{
-    ArrowEndpoint, ArrowSize, ArrowType, DashStyle, Fill, GradientFill, GradientType, LineCap,
-    LineJoin, Outline, OutlineFill, PatternFill,
+    ArrowSize, ArrowType, DashStyle, Fill, LineCap, LineJoin, Outline, OutlineFill,
 };
-use std::f64::consts::PI;
 use std::fmt::Write as _;
 
 use crate::color::{alpha_str, color_hex};
 use crate::geometry::fmt::n;
 use crate::id_gen::IdGen;
+
+mod gradient;
+mod marker;
+mod pattern;
+
+use gradient::render_gradient_defs;
+use marker::build_marker_def;
+use pattern::render_pattern_fill;
 
 /// The "attrs / defs" pair every fill renderer returns.
 ///
@@ -271,71 +277,9 @@ fn solid_attrs(color: &ResolvedColor) -> FillAttrs {
     }
 }
 
-struct GradientRef {
+pub(super) struct GradientRef {
     reference: String,
     defs: String,
-}
-
-fn render_gradient_defs(fill: &GradientFill, ids: &mut IdGen) -> GradientRef {
-    let id = ids.next_id("grad");
-    // SVG <stop offset> values must be monotonically non-decreasing —
-    // out-of-order offsets are clamped to the running max, silently
-    // collapsing later stops onto earlier offsets. PowerPoint's
-    // gradient stop list is not always sorted (slide 11's down-arrow
-    // gradient lists pos=23000, then 65000, then 0 — the 0% stop is
-    // clamped to 65% in resvg, which made the arrow's tip render as
-    // a transparent rectangle behind the right-side box). Sort by
-    // position before emitting so SVG renderers honour every stop.
-    let mut sorted: Vec<&slideglance_model::GradientStop> = fill.stops.iter().collect();
-    sorted.sort_by(|a, b| {
-        a.position
-            .partial_cmp(&b.position)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-    let mut stops = String::new();
-    for s in &sorted {
-        let opacity = if s.color.alpha < 1.0 {
-            format!(" stop-opacity=\"{}\"", alpha_str(s.color.alpha))
-        } else {
-            String::new()
-        };
-        let _ = write!(
-            stops,
-            "<stop offset=\"{}%\" stop-color=\"{}\"{opacity}/>",
-            n(s.position * 100.0),
-            color_hex(&s.color)
-        );
-    }
-    let defs = if matches!(fill.gradient_type, GradientType::Radial) {
-        let cx = fill.center_x.unwrap_or(0.5) * 100.0;
-        let cy = fill.center_y.unwrap_or(0.5) * 100.0;
-        let dx = cx.max(100.0 - cx);
-        let dy = cy.max(100.0 - cy);
-        let r = (dx * dx + dy * dy).sqrt();
-        format!(
-            "<radialGradient id=\"{id}\" cx=\"{}%\" cy=\"{}%\" r=\"{}%\">{stops}</radialGradient>",
-            n(cx),
-            n(cy),
-            n(r)
-        )
-    } else {
-        let rad = (fill.angle * PI) / 180.0;
-        let x1 = 50.0 - rad.cos() * 50.0;
-        let y1 = 50.0 - rad.sin() * 50.0;
-        let x2 = 50.0 + rad.cos() * 50.0;
-        let y2 = 50.0 + rad.sin() * 50.0;
-        format!(
-            "<linearGradient id=\"{id}\" x1=\"{}%\" y1=\"{}%\" x2=\"{}%\" y2=\"{}%\">{stops}</linearGradient>",
-            n(x1),
-            n(y1),
-            n(x2),
-            n(y2)
-        )
-    };
-    GradientRef {
-        reference: format!("url(#{id})"),
-        defs,
-    }
 }
 
 fn dash_array(style: DashStyle, w: f64) -> Option<String> {
@@ -377,139 +321,14 @@ fn line_join_str(join: LineJoin) -> &'static str {
 
 // --- Pattern fill ---
 
-fn render_pattern_fill(fill: &PatternFill, ids: &mut IdGen) -> FillAttrs {
-    let fg = color_hex(&fill.foreground_color);
-    let bg = color_hex(&fill.background_color);
-    let fg_alpha_attr = if fill.foreground_color.alpha < 1.0 {
-        format!(" opacity=\"{}\"", alpha_str(fill.foreground_color.alpha))
-    } else {
-        String::new()
-    };
-
-    let Some(content) = pattern_content(&fill.preset, &fg, &fg_alpha_attr) else {
-        // No SVG body for this preset -> treat like a solid fill of the
-        // foreground color, mirroring the TS fallback.
-        let mut attrs = format!("fill=\"{fg}\"");
-        if fill.foreground_color.alpha < 1.0 {
-            let _ = write!(
-                attrs,
-                " fill-opacity=\"{}\"",
-                alpha_str(fill.foreground_color.alpha)
-            );
-        }
-        return FillAttrs {
-            attrs,
-            defs: String::new(),
-        };
-    };
-
-    let id = ids.next_id("patt");
-    let bg_alpha = if fill.background_color.alpha < 1.0 {
-        format!(
-            " fill-opacity=\"{}\"",
-            alpha_str(fill.background_color.alpha)
-        )
-    } else {
-        String::new()
-    };
-    let defs = format!(
-        "<pattern id=\"{id}\" patternUnits=\"userSpaceOnUse\" width=\"{size}\" height=\"{size}\"><rect width=\"{size}\" height=\"{size}\" fill=\"{bg}\"{bg_alpha}/>{body}</pattern>",
-        size = content.size,
-        body = content.svg
-    );
-    FillAttrs {
-        attrs: format!("fill=\"url(#{id})\""),
-        defs,
-    }
-}
-
-struct PatternContent {
+pub(super) struct PatternContent {
     svg: String,
     size: u32,
 }
 
-fn pattern_content(preset: &str, fg: &str, fg_alpha: &str) -> Option<PatternContent> {
-    const S: u32 = 8;
-    const SW: u32 = 1;
-    let line = |x1: i32, y1: i32, x2: i32, y2: i32| {
-        format!(
-            "<line x1=\"{x1}\" y1=\"{y1}\" x2=\"{x2}\" y2=\"{y2}\" stroke=\"{fg}\" stroke-width=\"{SW}\"{fg_alpha}/>"
-        )
-    };
-    match preset {
-        "ltHorz" | "horz" => Some(PatternContent { svg: line(0, 4, 8, 4), size: S }),
-        "ltVert" | "vert" => Some(PatternContent { svg: line(4, 0, 4, 8), size: S }),
-        "ltDnDiag" | "dnDiag" => Some(PatternContent { svg: line(0, 0, 8, 8), size: S }),
-        "ltUpDiag" | "upDiag" => Some(PatternContent { svg: line(0, 8, 8, 0), size: S }),
-        "dkHorz" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 2, 8, 2), line(0, 6, 8, 6)),
-            size: S,
-        }),
-        "dkVert" => Some(PatternContent {
-            svg: format!("{}{}", line(2, 0, 2, 8), line(6, 0, 6, 8)),
-            size: S,
-        }),
-        "dkDnDiag" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 0, 8, 8), line(-4, 0, 4, 8)),
-            size: S,
-        }),
-        "dkUpDiag" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 8, 8, 0), line(4, 8, 12, 0)),
-            size: S,
-        }),
-        "cross" | "smGrid" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 4, 8, 4), line(4, 0, 4, 8)),
-            size: S,
-        }),
-        "lgGrid" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 0, 16, 0), line(0, 0, 0, 16)),
-            size: 16,
-        }),
-        "diagCross" => Some(PatternContent {
-            svg: format!("{}{}", line(0, 0, 8, 8), line(0, 8, 8, 0)),
-            size: S,
-        }),
-        "pct5" => Some(PatternContent {
-            svg: format!("<rect x=\"0\" y=\"0\" width=\"1\" height=\"1\" fill=\"{fg}\"{fg_alpha}/>"),
-            size: S,
-        }),
-        "pct10" => Some(PatternContent {
-            svg: format!(
-                "<rect x=\"0\" y=\"0\" width=\"1\" height=\"1\" fill=\"{fg}\"{fg_alpha}/><rect x=\"4\" y=\"4\" width=\"1\" height=\"1\" fill=\"{fg}\"{fg_alpha}/>"
-            ),
-            size: S,
-        }),
-        "pct20" => Some(PatternContent {
-            svg: format!(
-                "<rect x=\"0\" y=\"0\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/><rect x=\"4\" y=\"4\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/>"
-            ),
-            size: S,
-        }),
-        "pct25" => Some(PatternContent {
-            svg: format!(
-                "<rect x=\"0\" y=\"0\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/><rect x=\"4\" y=\"0\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/><rect x=\"2\" y=\"4\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/><rect x=\"6\" y=\"4\" width=\"2\" height=\"2\" fill=\"{fg}\"{fg_alpha}/>"
-            ),
-            size: S,
-        }),
-        "pct30" | "pct40" | "pct50" | "pct60" | "pct70" | "pct75" | "pct80" | "pct90" => {
-            // Trim "pct" prefix; the remainder is always 2 digits in OOXML.
-            let pct_val: f64 = preset.trim_start_matches("pct").parse().ok()?;
-            let alpha = pct_val / 100.0;
-            Some(PatternContent {
-                svg: format!(
-                    "<rect width=\"{S}\" height=\"{S}\" fill=\"{fg}\" opacity=\"{}\"{fg_alpha}/>",
-                    alpha_str(alpha)
-                ),
-                size: S,
-            })
-        }
-        _ => None,
-    }
-}
-
 // --- Marker (arrow endpoint) ---
 
-const fn arrow_size_px(size: ArrowSize) -> u32 {
+pub(super) const fn arrow_size_px(size: ArrowSize) -> u32 {
     match size {
         ArrowSize::Sm => 5,
         ArrowSize::Med => 8,
@@ -517,90 +336,14 @@ const fn arrow_size_px(size: ArrowSize) -> u32 {
     }
 }
 
-fn build_marker_def(
-    id: &str,
-    end: ArrowEndpoint,
-    color: &str,
-    alpha: f64,
-    is_start: bool,
-) -> Option<String> {
-    let mw = arrow_size_px(end.length);
-    let mh = arrow_size_px(end.width);
-    let alpha_attr = if alpha < 1.0 {
-        format!(" opacity=\"{}\"", alpha_str(alpha))
-    } else {
-        String::new()
-    };
-    let mwf = f64::from(mw);
-    let mhf = f64::from(mh);
-    // SVG `auto` for marker-start aligns the marker's +x with the OUTGOING
-    // tangent (toward the line interior), which is the opposite of a
-    // PowerPoint headEnd arrow (which points AWAY from the line). Use
-    // `auto-start-reverse` for marker-start to flip that 180° so the
-    // arrowhead points outward — and stays correct even when the parent
-    // group applies a `scale(1, -1)` for `flipV=1` connectors. marker-end
-    // keeps `auto` because marker-end already uses the incoming tangent
-    // direction, which matches PowerPoint's tailEnd semantics.
-    let orient = if is_start {
-        "auto-start-reverse"
-    } else {
-        "auto"
-    };
-
-    let (path, fill_attr) = match end.ty {
-        ArrowType::Triangle => (
-            format!("M 0 0 L {mw} {} L 0 {mh} Z", n(mhf / 2.0)),
-            format!("fill=\"{color}\""),
-        ),
-        ArrowType::Stealth => (
-            format!(
-                "M 0 0 L {mw} {} L 0 {mh} L {} {} Z",
-                n(mhf / 2.0),
-                n(mwf * 0.3),
-                n(mhf / 2.0)
-            ),
-            format!("fill=\"{color}\""),
-        ),
-        ArrowType::Diamond => (
-            format!(
-                "M 0 {} L {} 0 L {mw} {} L {} {mh} Z",
-                n(mhf / 2.0),
-                n(mwf / 2.0),
-                n(mhf / 2.0),
-                n(mwf / 2.0)
-            ),
-            format!("fill=\"{color}\""),
-        ),
-        ArrowType::Oval => {
-            return Some(format!(
-                "<marker id=\"{id}\" markerWidth=\"{mw}\" markerHeight=\"{mh}\" refX=\"{}\" refY=\"{}\" orient=\"{orient}\" markerUnits=\"userSpaceOnUse\"><ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{color}\"{alpha_attr}/></marker>",
-                n(mwf / 2.0),
-                n(mhf / 2.0),
-                n(mwf / 2.0),
-                n(mhf / 2.0),
-                n(mwf / 2.0),
-                n(mhf / 2.0)
-            ));
-        }
-        ArrowType::Arrow => (
-            format!("M 0 0 L {mw} {} L 0 {mh}", n(mhf / 2.0)),
-            format!("fill=\"none\" stroke=\"{color}\" stroke-width=\"1\""),
-        ),
-        ArrowType::None => return None,
-    };
-    Some(format!(
-        "<marker id=\"{id}\" markerWidth=\"{mw}\" markerHeight=\"{mh}\" refX=\"{mw}\" refY=\"{}\" orient=\"{orient}\" markerUnits=\"userSpaceOnUse\"><path d=\"{path}\" {fill_attr}{alpha_attr}/></marker>",
-        n(mhf / 2.0)
-    ))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use slideglance_color::Rgb;
     use slideglance_model::{
-        GradientFill, GradientStop, GradientType, ImageFill, ImageFillTile, ImageFlip, NoFill,
-        Outline, OutlineFill, PatternFill, SolidFill,
+        ArrowEndpoint, ArrowSize, ArrowType, DashStyle, GradientFill, GradientStop, GradientType,
+        ImageFill, ImageFillTile, ImageFlip, LineCap, LineJoin, NoFill, Outline, OutlineFill,
+        PatternFill, SolidFill,
     };
     use slideglance_utils::Emu;
 
