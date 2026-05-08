@@ -304,7 +304,17 @@ export const thumbnailButtonStyle: CSSProperties = {
   gap: 8,
   padding: 4,
   background: "transparent",
-  border: "2px solid transparent",
+  // Border longhand split. Using `border: "2px solid transparent"` here
+  // works in isolation but a Chromium quirk in the VS Code webview
+  // serializes the shorthand to `border-width / border-style /
+  // border-image: initial` and drops the `border-color` longhand —
+  // which then falls back to `currentColor` (the parent's
+  // `--pptx-shell-fg`, ~#ececec) and renders as a visible light-grey
+  // 2px stroke around every inactive thumbnail. Setting the three
+  // longhands explicitly avoids the serialization round-trip.
+  borderWidth: 2,
+  borderStyle: "solid",
+  borderColor: "transparent",
   borderRadius: 4,
   cursor: "pointer",
   color: "inherit",
@@ -360,7 +370,14 @@ export const thumbnailTileStyle: CSSProperties = {
   padding: 8,
   width: "100%",
   background: "transparent",
-  border: "2px solid transparent",
+  // Border longhand split — see the comment on `thumbnailButtonStyle`
+  // above. Same Chromium-in-webview quirk: `border` shorthand drops
+  // the color longhand on serialization and the resulting
+  // `border-color: currentColor` paints a light-grey ring around
+  // every inactive grid tile.
+  borderWidth: 2,
+  borderStyle: "solid",
+  borderColor: "transparent",
   borderRadius: 6,
   cursor: "pointer",
   color: "inherit",
