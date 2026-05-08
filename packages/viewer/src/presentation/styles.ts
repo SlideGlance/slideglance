@@ -92,6 +92,23 @@ export const SHELL_GLOBAL_CSS = `
   outline: 0 !important;
   -webkit-tap-highlight-color: transparent;
 }
+/* Some Chromium embeddings (notably the VS Code webview iframe at
+   the time of writing) keep painting the user-agent focus ring even
+   after \`outline: 0 !important\` because the chrome stems from a
+   private \`-internal-focus-ring\` style attached to \`:focus-visible\`,
+   not the regular \`outline\` cascade. Belt-and-braces: explicitly
+   suppress every commonly-emitted focus channel — outline, outline-
+   offset, the legacy \`-webkit-focus-ring-color\`, and any inset
+   box-shadow a downstream theme might add for accessibility. */
+[data-pptx-shell] button:focus,
+[data-pptx-shell] button:focus-visible,
+[data-pptx-shell] [role="radio"]:focus,
+[data-pptx-shell] [role="radio"]:focus-visible {
+  outline: 0 !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-focus-ring-color: transparent;
+}
 [data-pptx-shell] button::-moz-focus-inner,
 [data-pptx-shell] [role="radio"]::-moz-focus-inner {
   border: 0;
