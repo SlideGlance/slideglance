@@ -227,11 +227,7 @@ impl BufferFontResolver {
     }
 
     /// `Arc`-sharing variant of [`Self::insert_bold_variant`].
-    pub fn insert_bold_variant_arc<S: Into<String>>(
-        &mut self,
-        name: S,
-        face: Arc<FontFace>,
-    ) {
+    pub fn insert_bold_variant_arc<S: Into<String>>(&mut self, name: S, face: Arc<FontFace>) {
         let s = name.into();
         self.bold_normalized
             .insert(normalize_font_name(&s), Arc::clone(&face));
