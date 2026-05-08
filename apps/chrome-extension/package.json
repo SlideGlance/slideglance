@@ -1,0 +1,38 @@
+{
+  "name": "@slideglance/chrome-extension",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Taehwan Kwag",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node ../../scripts/run-build-wasm.mjs",
+    "dev": "vite",
+    "prebuild": "node ../../scripts/run-build-wasm.mjs",
+    "build": "node scripts/render-icons.mjs && vite build",
+    "package": "pnpm build && node scripts/package.mjs",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "catalog:",
+    "@slideglance/core": "workspace:*",
+    "@slideglance/viewer": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.25",
+    "@types/chrome": "^0.0.270",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "jsdom": "^25.0.0",
+    "sharp": "^0.33.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-top-level-await": "catalog:",
+    "vite-plugin-wasm": "catalog:",
+    "vitest": "catalog:"
+  }
+}

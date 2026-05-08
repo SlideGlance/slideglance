@@ -1,0 +1,18 @@
+SlideGlance
+Copyright (c) 2026 SimpleCORE Inc.
+
+Licensed under the MIT License (see LICENSE-MIT).
+
+Lead developer: Taehwan Kwag <dev@simplecore.kr>
+
+----------------------------------------------------------------------
+
+This product bundles fonts licensed under the SIL Open Font License
+v1.1 (see LICENSE-OFL-1.1) when one of the `bundled-fonts-*` Cargo
+features is enabled. Per-family copyright statements are recorded in
+crates/slideglance-font/src/bundled_fonts/licenses.rs and surfaced at
+runtime via `slideglance_font::bundled_font_licenses()`.
+
+The SIL OFL applies to the bundled font binaries only; it does not
+extend to the rest of this software, which is governed solely by the
+MIT License above.

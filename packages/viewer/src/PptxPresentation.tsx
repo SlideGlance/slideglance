@@ -1,0 +1,3451 @@
+import {
+  type CSSProperties,
+  type ReactNode,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  extractFontStyleCss,
+  parseAspect,
+  parseFirstFontFamily,
+  prepareSvg,
+  uniquifyIds,
+} from "./svg-utils.js";
+import type {
+  RenderedSlide,
+  SlideController,
+  SlideMeta,
+  SlideSvg,
+  TypefaceUsage,
+} from "./types.js";
+import { Ruler } from "./ui/Ruler.js";
+import { SettingsDialog } from "./ui/SettingsDialog.js";
+import { SectionNav } from "./ui/SectionNav.js";
+import {
+  SelectionOverlay,
+  type RubberBandRect,
+  type SelectionBox,
+} from "./ui/SelectionOverlay.js";
+import { ShortcutsDialog } from "./ui/ShortcutsDialog.js";
+import { FontUsageIndicator } from "./ui/FontUsageIndicator.js";
+import { searchSlides, type SearchHit } from "./ui/search.js";
+import { printDeck } from "./ui/print.js";
+import { exportToPdf } from "./ui/pdf.js";
+import { inlineMediaAsDataUrls } from "./ui/media-inline.js";
+import {
+  applyTheme,
+  detectSystemTheme,
+  subscribeSystemTheme,
+  dark,
+  light,
+  highContrast,
+  type ThemeVars,
+} from "./ui/themes.js";
+import {
+  clampSidebarWidth,
+  loadSettings,
+  saveSettings,
+  SIDEBAR_WIDTH_MAX,
+  SIDEBAR_WIDTH_MIN,
+  subscribeSettings,
+  type ThemeMode,
+  type ViewerSettings,
+} from "./ui/settings.js";
+import { subscribeLocale, t } from "./ui/i18n.js";
+import {
+  SkipBack,
+  SkipForward,
+  CaretLeft,
+  CaretRight,
+  MagnifyingGlass,
+  Printer,
+  FilePdf,
+  Play,
+  GearSix,
+  X,
+  ChatCircleText,
+  SquaresFour,
+  GridFour,
+  Minus,
+  Plus,
+  ArrowsOutSimple,
+  Question,
+} from "@phosphor-icons/react";
+
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 8;
+const RULER_SIZE = 24;
+/** Width of the sidebar resize handle (CSS px). The full body grid
+ * dedicates exactly this much horizontal space to the splitter so the
+ * stage area's width tracks `sidebarWidth + RESIZER_WIDTH`. */
+const SIDEBAR_RESIZER_WIDTH = 6;
+
+// Global CSS injected once per shell mount. Drives scrollbar colors
+// (WebKit pseudo-elements + Firefox `scrollbar-color`) from the theme
+// custom properties already set on the shell root, plus a `color-scheme`
+// hint so the UA picks dark/light affordances (form controls, default
+// scrollbars on macOS overlay scrollbars hover) consistently with the
+// active theme. Scoped to descendants of `[data-pptx-shell]` so we don't
+// leak rules into the host page.
+const SHELL_GLOBAL_CSS = `
+[data-pptx-shell] {
+  color-scheme: var(--slideglance-color-scheme, dark);
+  scrollbar-color: var(--pptx-shell-scrollbar-thumb, #3a3a44) var(--pptx-shell-scrollbar-track, #1a1a1f);
+  scrollbar-width: thin;
+}
+[data-pptx-shell] *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-pptx-shell] *::-webkit-scrollbar-track {
+  background: var(--pptx-shell-scrollbar-track, #1a1a1f);
+}
+[data-pptx-shell] *::-webkit-scrollbar-thumb {
+  background: var(--pptx-shell-scrollbar-thumb, #3a3a44);
+  border-radius: 5px;
+  border: 2px solid var(--pptx-shell-scrollbar-track, #1a1a1f);
+}
+[data-pptx-shell] *::-webkit-scrollbar-thumb:hover {
+  background: var(--pptx-shell-scrollbar-thumb-hover, #4d4d58);
+}
+[data-pptx-shell] *::-webkit-scrollbar-corner {
+  background: var(--pptx-shell-scrollbar-track, #1a1a1f);
+}
+/* Slideshow corner-nav reveal: hovering the bottom-right zone or
+   focusing one of its buttons fades the button group in. Keyboard
+   users get the same affordance via the focus-within branch. */
+[data-pptx-shell] [data-pptx-slideshow-nav]:hover > div,
+[data-pptx-shell] [data-pptx-slideshow-nav]:focus-within > div {
+  opacity: 1 !important;
+}
+[data-pptx-shell] [data-pptx-slideshow-nav] button:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+/* Loading-overlay spinner — used by the centred parse / slide-prepare
+   panel rendered when there's no slide SVG to show yet. Keyframes
+   live here because inline styles cannot carry @keyframes. */
+@keyframes pptx-loading-spin {
+  to { transform: rotate(360deg); }
+}
+[data-pptx-shell] [data-pptx-slideshow-nav] button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Suppress every form of native focus / touch chrome on shell
+   buttons so a click never leaves a persistent ring behind. Keyboard
+   users still get a focus indicator because the affected styles
+   (icon-button / status-icon / radio cell) flip their background or
+   border-color when 'aria-pressed' / 'aria-checked' is true; that
+   semantic-state highlight is what marks the active control, not the
+   browser's default focus ring. '-webkit-tap-highlight-color:
+   transparent' removes the iOS / Android touch flash so the same
+   suppression works on touch devices. */
+[data-pptx-shell] button,
+[data-pptx-shell] [role="radio"] {
+  outline: 0 !important;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-pptx-shell] button::-moz-focus-inner,
+[data-pptx-shell] [role="radio"]::-moz-focus-inner {
+  border: 0;
+}
+/* Sidebar splitter — subtle highlight on hover/active so the
+   drag affordance is discoverable without visually competing with
+   the sidebar's own border at rest. */
+[data-pptx-shell] [role="separator"][aria-orientation="vertical"]:hover {
+  background: var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.18));
+}
+[data-pptx-shell] [role="separator"][aria-orientation="vertical"]:focus-visible {
+  outline: 2px solid var(--pptx-shell-accent, #6aa3ff);
+  outline-offset: -2px;
+}
+`;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/**
+ * Build the tooltip for deck-wide actions (Print / PDF / Slideshow)
+ * so the user can see *why* the button is disabled — empty deck vs.
+ * still-prefetching — instead of just a dead control.
+ */
+function deckGateTitle(base: string, ready: boolean, slideCount: number): string {
+  if (slideCount === 0) return t("output.gateLoadFirst");
+  if (!ready) return t("output.gatePreparing", { current: 0, total: slideCount });
+  return base;
+}
+
+type ThemeName = "dark" | "light" | "high-contrast";
+const THEME_TABLE: Record<ThemeName, ThemeVars> = {
+  dark,
+  light,
+  "high-contrast": highContrast,
+};
+function resolveTheme(mode: ThemeMode): ThemeName {
+  if (mode === "auto") return detectSystemTheme();
+  return mode;
+}
+
+interface SlideMetaResolver {
+  (slide: number): Promise<SlideMeta | null> | SlideMeta | null;
+}
+
+export interface PptxPresentationProps {
+  controller: SlideController | null;
+  name?: string | null;
+  slideCount?: number;
+  src?: Uint8Array | ArrayBuffer | string | null;
+  className?: string;
+  style?: CSSProperties;
+  toolbarStart?: ReactNode;
+  toolbarEnd?: ReactNode;
+  resolveMeta?: SlideMetaResolver;
+  /**
+   * Disable the deck-wide background prefetch.
+   *
+   * The viewer normally walks every slide in the background after the
+   * deck loads so deck-wide actions (Print / PDF / Slideshow / Search)
+   * are instant. On native hosts (Tauri viewer-desktop) every render
+   * is a synchronous IPC roundtrip plus a JSON-string serialization of
+   * the SVG, so prefetching all 100+ slides eagerly stalls the shell
+   * for a long time before the first slide even paints.
+   *
+   * When `noPrefetch` is true:
+   * - Slides are rendered lazily — only when navigated to.
+   * - Print / PDF / Slideshow / Search trigger their own
+   *   `ensureAllSlidesRendered()` on demand (the gate that hides the
+   *   buttons until the prefetch finishes is removed).
+   *
+   * Browser hosts (worker-backed) keep prefetching by default because
+   * the worker is concurrent with the main thread.
+   */
+  noPrefetch?: boolean;
+  /**
+   * Fired exactly once after the first slide's SVG has been appended
+   * to the DOM (the moment a user can see content). Hosts use this to
+   * dismiss their own loading overlays without having to guess at a
+   * delay — a fast deck open shouldn't dwell behind a spinner that
+   * outlasts the actual wait, and a slow first slide shouldn't drop
+   * the spinner while the stage is still blank.
+   *
+   * Re-fires when the deck is replaced (i.e. the host re-keys this
+   * component to remount it for a new file) — internal first-render
+   * tracking is reset on mount.
+   */
+  onReady?: () => void;
+  /**
+   * Optional host-supplied stylesheet whose `@font-face` rules are
+   * loaded into the worker's `FontFaceSet` alongside the deck's
+   * embedded fonts. The chrome-extension passes its bundled Google
+   * Fonts CSS here so decks that name `Anton`, `Alata`, etc. resolve
+   * to the bundled face during canvas measurement (and not just at
+   * paint time via the document-level stylesheet).
+   *
+   * Without this, decks that ship MTX-compressed embedded fonts —
+   * which our renderer drops — would measure with the worker's OS
+   * fallback metrics and produce wider lines than the browser will
+   * paint.
+   */
+  bundledFontDefsCss?: string;
+}
+
+interface CachedSlide {
+  svg: string;
+  preparedSvg: string;
+  blobUrls: string[];
+  meta: SlideMeta;
+}
+
+/**
+ * Top-level presentation shell. React port of the original Lit
+ * `<pptx-presentation>` Web Component, mirroring the same chrome:
+ *
+ *     ┌───────────────────────────────────────────────┐
+ *     │ ribbon (filename / nav / search / print / …)  │
+ *     ├──────────┬────────────────────────────────────┤
+ *     │ thumb    │ stage (slide rendering with ruler) │
+ *     │ + sects  │                                    │
+ *     │          ├────────────────────────────────────┤
+ *     │          │ notes (collapsible)                │
+ *     ├──────────┴────────────────────────────────────┤
+ *     │ status bar (slide / view modes / zoom slider) │
+ *     └───────────────────────────────────────────────┘
+ */
+export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
+  const {
+    controller,
+    name,
+    slideCount: externalSlideCount,
+    src,
+    className,
+    style,
+    toolbarStart,
+    toolbarEnd,
+    resolveMeta,
+    noPrefetch = false,
+    onReady,
+  } = props;
+  // One-shot guard for `onReady` — the SVG mount effect re-runs on
+  // every layout / sidebar / notes / view-mode change, but the host
+  // wants the callback fired exactly once per deck. Re-mounting the
+  // component (host re-keys on file swap) zeroes the ref naturally.
+  const onReadyFiredRef = useRef<boolean>(false);
+
+  // ---- Settings + theme + locale -------------------------------------------
+  const [settings, setSettings] = useState<ViewerSettings>(() => loadSettings());
+  const [theme, setTheme] = useState<ThemeName>(() => resolveTheme(loadSettings().themeMode));
+  const [, setLocaleTick] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeSettings((next) => {
+      setSettings(next);
+      setTheme(resolveTheme(next.themeMode));
+      // Mirror persisted width updates from another surface (Settings
+      // dialog, second viewer instance) into local drag state. Drags
+      // write to local state directly, so this is a no-op for the
+      // event the drag itself emitted.
+      setSidebarWidth((prev) =>
+        prev === next.sidebarWidth ? prev : next.sidebarWidth,
+      );
+    });
+    return unsub;
+  }, []);
+  useEffect(() => {
+    if (settings.themeMode !== "auto") return;
+    const unsub = subscribeSystemTheme(() => setTheme(detectSystemTheme()));
+    return unsub;
+  }, [settings.themeMode]);
+  useEffect(() => {
+    const vars = THEME_TABLE[theme];
+    if (rootRef.current) applyTheme(rootRef.current, vars);
+    // Also propagate to <html> so chrome outside the shell (host page
+    // body, fixed-position overlays / native scrollbar gutters in
+    // Tauri / Electron windows) picks up the same theme variables.
+    if (typeof document !== "undefined" && document.documentElement) {
+      applyTheme(document.documentElement, vars);
+    }
+  }, [theme]);
+  useEffect(() => {
+    const unsub = subscribeLocale(() => setLocaleTick((n) => n + 1));
+    return unsub;
+  }, []);
+
+  // ---- Slide state ---------------------------------------------------------
+  const [slideCount, setSlideCount] = useState<number>(externalSlideCount ?? 0);
+  // Per-typeface fallback report from controller.open(). Empty until a
+  // deck is loaded; reset on every reopen so the status-bar indicator
+  // reflects the current deck.
+  const [fontUsage, setFontUsage] = useState<TypefaceUsage[]>([]);
+  // Bare CSS body of the deck's `@font-face` declarations
+  // (`<p:embeddedFontLst>` faces from PPTX), produced by
+  // `slideglance-wasm`'s `fontDefs()` and stripped of its SVG `<defs>`
+  // wrapper. Mounted into a deck-scoped `<style>` element in
+  // `document.head` (see effect below) so that browser-side SVG
+  // rendering can resolve embedded family names like "Noto Sans Bold"
+  // — without this mount they would only live in the worker's
+  // FontFaceSet (which is invisible to the document) and the SVG would
+  // silently fall through the chain to a system font.
+  const [fontDefsCss, setFontDefsCss] = useState<string>("");
+  const [currentSlide, setCurrentSlide] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(1);
+  const [panX, setPanX] = useState<number>(0);
+  const [panY, setPanY] = useState<number>(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [phase, setPhase] = useState<string>("");
+  // Long-running export pipelines (Print / PDF) post structured progress
+  // here so the host can show a centred overlay instead of relying on
+  // the easy-to-miss status bar at the bottom of the shell. `null`
+  // means the deck is idle.
+  const [progress, setProgress] = useState<{
+    title: string;
+    step: string;
+    current?: number;
+    total?: number;
+  } | null>(null);
+  const [stageSize, setStageSize] = useState<{ w: number; h: number }>({
+    w: 0,
+    h: 0,
+  });
+  const [viewMode, setViewMode] = useState<"normal" | "grid">("normal");
+  const [notesOpen, setNotesOpen] = useState<boolean>(false);
+  // Sidebar width is user-resizable via the splitter handle and
+  // persisted across sessions (clamped server-side in `loadSettings`).
+  // Local state tracks the live value during a drag for low-latency
+  // updates; the persisted copy in `settings.sidebarWidth` is rewritten
+  // on pointer-up to avoid spamming localStorage from a 60Hz drag loop.
+  const [sidebarWidth, setSidebarWidth] = useState<number>(
+    () => loadSettings().sidebarWidth,
+  );
+  const sidebarResizeStartRef = useRef<{ pointerId: number; startX: number; startWidth: number } | null>(null);
+  const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
+  const [slideshow, setSlideshow] = useState<boolean>(false);
+  // `allSlidesReady` gates the deck-wide actions (Print / PDF /
+  // Slideshow). When the background prefetch (or a manual
+  // `ensureAllSlidesRendered`) finishes, the gate opens so those
+  // actions stop showing partial output. Mirrors the historic Lit
+  // shell's `allSlidesReady` flag.
+  const [allSlidesReady, setAllSlidesReady] = useState<boolean>(false);
+  // Selection model — set of `data-sp-id` strings for shapes selected
+  // on the active slide, plus a live rubber-band rect (viewport coords)
+  // when the user is dragging on empty stage. Both are derived data the
+  // SelectionOverlay turns into stage-relative px boxes via `bboxMap`.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Status-bar selection-font popover. Toggled by clicking the
+  // "폰트: …" / "Font: …" label so users with multi-typeface
+  // selections can see the full list instead of a "+N more" summary
+  // they can't drill into.
+  const [selectionFontsOpen, setSelectionFontsOpen] = useState<boolean>(false);
+  const selectionFontsRef = useRef<HTMLDivElement | null>(null);
+  const [rubberBand, setRubberBand] =
+    useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  // Viewport bbox cache, keyed by sp-id. Built once per slide mount
+  // (or when the SVG host re-renders) so hit-testing during pan/zoom
+  // doesn't have to call getBBox/getCTM per shape per frame.
+  const bboxMapRef = useRef<Map<string, { x: number; y: number; w: number; h: number }>>(
+    new Map(),
+  );
+  // Pointer-down snapshot used by the selection state machine. Stored
+  // as a ref so re-renders during a drag don't reset it.
+  const pointerDownAtRef = useRef<{
+    x: number;
+    y: number;
+    target: HTMLElement | null;
+  } | null>(null);
+  const [textEditId, setTextEditId] = useState<string | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState<boolean>(false);
+  const panStartRef = useRef<{
+    x: number;
+    y: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const [slideCache, setSlideCache] = useState<Map<number, CachedSlide>>(
+    () => new Map(),
+  );
+
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const slideRef = useRef<HTMLDivElement | null>(null);
+  // The slideshow overlay mounts its own `<main>` and slide
+  // container. Sharing a single `stageRef` / `slideRef` between
+  // them caused a use-after-free when slideshow exits: React calls
+  // the slideshow ref-callback with `null`, which clears the slot,
+  // but the persistent normal `<main>`'s ref-callback never re-runs
+  // because that element didn't remount. Result: stale `stageSize`
+  // from the fullscreen viewport leaking into the post-exit render
+  // → scrollbars + visibly larger slide. Two separate refs keep the
+  // mode-specific pointers independent.
+  const slideshowStageRef = useRef<HTMLDivElement | null>(null);
+  const slideshowSlideRef = useRef<HTMLDivElement | null>(null);
+  // Ref-handle for Cmd/Ctrl+P. Captured before the keyboard handler
+  // is registered so we don't have to thread `handlePrint` through
+  // the effect's dependency array (which would re-bind the listener
+  // on every render).
+  const handlePrintRef = useRef<(() => Promise<void>) | null>(null);
+  const pendingRef = useRef<Map<number, Promise<CachedSlide | null>>>(new Map());
+  // Monotonic deck-epoch counter. Incremented on every deck swap
+  // (`externalSlideCount` / `name` change). Each `requestSlide` task
+  // captures the epoch when it starts; if the epoch advances while
+  // the IPC roundtrip is in flight, the stale resolution is dropped
+  // before it stamps the new deck's cache. Without this, a deck swap
+  // triggered while slide N is mid-render leaves the *old* SVG in
+  // the new deck's `slideCache.get(N)` — which is exactly the
+  // "previous deck's thumbnail" symptom.
+  const deckEpochRef = useRef(0);
+
+  // Sync external slideCount + flush slide cache on deck swap.
+  //
+  // Triggered by either `slideCount` *or* `name` changing — relying
+  // only on `slideCount` lets a new deck with the same length re-use
+  // the previous deck's cached SVG (and thus stale thumbnails).
+  // `name` is the host-supplied display label; for native and worker
+  // hosts that's always the file basename, so a new file = new name
+  // = cache flush. The cache cleanup also revokes any lingering blob
+  // URLs from earlier renders for safety, even though the current
+  // pipeline inlines media as data URLs.
+  useEffect(() => {
+    if (typeof externalSlideCount !== "number") return;
+    deckEpochRef.current += 1; // invalidate every in-flight task
+    setSlideCount(externalSlideCount);
+    setCurrentSlide(1);
+    setAllSlidesReady(false);
+    setSelectedIds(new Set());
+    setTextEditId(null);
+    setRubberBand(null);
+    pendingRef.current.clear();
+    setSlideCache((prev) => {
+      for (const c of prev.values()) {
+        for (const u of c.blobUrls) URL.revokeObjectURL(u);
+      }
+      return new Map();
+    });
+  }, [externalSlideCount, name]);
+
+  // Stage sizing.
+  //
+  // Re-attached whenever `slideshow` flips because we mount two
+  // different `<main>` elements (normal vs slideshow overlay) and
+  // both share the same `stageRef`. Without re-binding the
+  // ResizeObserver to the *active* element, the observer keeps
+  // watching whichever main mounted first — which is `display: none`
+  // in the inactive mode and reports size 0, collapsing `fit` and
+  // hiding the slide.
+  useEffect(() => {
+    // Pick the active stage based on the current mode. In slideshow
+    // mode the overlay's `<main>` is the truth; in normal mode the
+    // gridded body's `<main>` is.
+    const stage = slideshow ? slideshowStageRef.current : stageRef.current;
+    if (!stage) return;
+    const seed = stage.getBoundingClientRect();
+    if (seed.width > 0 && seed.height > 0) {
+      setStageSize({ w: seed.width, h: seed.height });
+    } else if (slideshow) {
+      // Fullscreen transition often hasn't laid out yet on the same
+      // tick — fall back to viewport so the first frame still gets
+      // a non-zero `fit`.
+      setStageSize({ w: window.innerWidth, h: window.innerHeight });
+    }
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const r = entry.contentRect;
+      setStageSize({ w: Math.max(0, r.width), h: Math.max(0, r.height) });
+    });
+    observer.observe(stage);
+    // Window resize matters only in slideshow (fullscreen) — the
+    // wrapping body handles resize for the windowed case.
+    const onWinResize = (): void => {
+      const cur = slideshow ? slideshowStageRef.current : stageRef.current;
+      if (!cur) return;
+      const r = cur.getBoundingClientRect();
+      setStageSize({ w: Math.max(0, r.width), h: Math.max(0, r.height) });
+    };
+    if (slideshow) window.addEventListener("resize", onWinResize);
+    return () => {
+      observer.disconnect();
+      if (slideshow) window.removeEventListener("resize", onWinResize);
+    };
+  }, [slideshow]);
+
+  // Optional auto-open from `src` (browser path).
+  useEffect(() => {
+    if (!controller || src == null || externalSlideCount != null) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        setPhase("loading");
+        let bytes: Uint8Array;
+        if (typeof src === "string") {
+          const res = await fetch(src);
+          if (!res.ok) throw new Error(`fetch ${src} → ${res.status}`);
+          bytes = new Uint8Array(await res.arrayBuffer());
+        } else if (src instanceof Uint8Array) {
+          bytes = src;
+        } else {
+          bytes = new Uint8Array(src);
+        }
+        const meta = await controller.open(bytes, {
+          extraFontDefsCss: props.bundledFontDefsCss,
+        });
+        if (cancelled) return;
+        setSlideCount(meta.slideCount);
+        setFontUsage(meta.fontUsage ?? []);
+        setFontDefsCss(extractFontStyleCss(meta.fontDefs ?? ""));
+        // Register MTX-decoded TTF buffers on `document.fonts` via
+        // the FontFace API. Worker already decoded the bytes and
+        // pre-filtered them through `validateCmap` (the OTS cmap
+        // checks Chromium prints uncatchable C++-level warnings
+        // for); the bytes that reach us here are expected to load
+        // cleanly. Non-OTS failure modes (e.g. CORS / detachment
+        // races) DO surface as catchable promise rejections, which
+        // we silence below since the metric-match fallback chain
+        // and bundled Google Fonts carry the visible paint.
+        if (typeof document !== "undefined" && document.fonts) {
+          for (const d of meta.decodedFonts ?? []) {
+            try {
+              const face = new FontFace(d.family, d.bytes.buffer as ArrayBuffer, {
+                weight: d.weight,
+                style: d.style,
+              });
+              face
+                .load()
+                .then((loaded) => {
+                  document.fonts.add(loaded);
+                })
+                .catch(() => {
+                  // OTS rejection or other browser-side font decode
+                  // failure — silently skip. The deck still renders
+                  // via the Phase 2 bundled Google Fonts fallback or
+                  // the metric-match catalog substitute.
+                });
+            } catch {
+              // FontFace constructor itself only throws for invalid
+              // descriptor strings — also silenced.
+            }
+          }
+        }
+        setCurrentSlide(1);
+        setZoom(1);
+        setPanX(0);
+        setPanY(0);
+        setErrorMsg(null);
+        setPhase("");
+        setSlideCache((prev) => {
+          for (const c of prev.values()) {
+            for (const u of c.blobUrls) URL.revokeObjectURL(u);
+          }
+          return new Map();
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setErrorMsg(`${(err as Error).message ?? err}`);
+          setPhase("");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [controller, src, externalSlideCount]);
+
+  // Mount the deck's embedded `@font-face` declarations into a
+  // document-scoped `<style>` so the browser's font matcher can
+  // resolve family names like "Noto Sans Bold" referenced by SVG
+  // `<text>` runs. The declarations come from PPTX
+  // `<p:embeddedFontLst>` faces extracted by the WASM core
+  // (`fontDefs()`), already de-obfuscated and base64-encoded. Without
+  // this mount the embedded fonts would only live in the worker's
+  // FontFaceSet (worker-local, invisible to `document`), and the SVG
+  // would silently fall back to a system sans-serif — which on most
+  // hosts is wider than the authored face and overflows text frames
+  // into adjacent layout regions.
+  //
+  // The `<style>` element is identified by a single id so re-mounting
+  // the component (or swapping decks) replaces the rules atomically;
+  // empty CSS removes the element entirely. We tag with
+  // `data-pptx-rs-fonts` so co-located shells can detect / clean up
+  // orphan blocks.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const id = "pptx-rs-deck-fonts";
+    const existing = document.getElementById(id) as HTMLStyleElement | null;
+    if (fontDefsCss.length === 0) {
+      if (existing) existing.remove();
+      return;
+    }
+    const styleEl: HTMLStyleElement =
+      existing ?? document.createElement("style");
+    if (!existing) {
+      styleEl.id = id;
+      styleEl.dataset.pptxRsFonts = "true";
+      document.head.appendChild(styleEl);
+    }
+    if (styleEl.textContent !== fontDefsCss) {
+      styleEl.textContent = fontDefsCss;
+    }
+
+    // Eager-load every embedded face. CSS `@font-face` URLs are
+    // *lazily* fetched — the browser only decodes the font payload
+    // when a text node first references that family. While slide 1
+    // is on stage, embedded faces used only by later slides (e.g.
+    // "Lato Bold" used by slide 4) stay un-decoded; the
+    // `FontUsageIndicator` then sees `document.fonts.check('12px
+    // "Lato Bold"')` return `false` and walks past it to the OS
+    // Latin fallback (`Helvetica Neue`), reporting a substitute that
+    // disappears the moment the user switches to grid view (which
+    // forces every slide to render and the missing faces to load).
+    //
+    // Calling `document.fonts.load(...)` for each declared family
+    // forces the load to start *now*, so the indicator's initial
+    // state is the same as its post-render-everything state and
+    // doesn't mislead the user into thinking a substitution is in
+    // effect when one isn't. Errors are swallowed — a partial load
+    // (e.g. one variant of one face fails to decode) shouldn't
+    // block the rest of the deck from showing the right state.
+    if (document.fonts) {
+      const families = new Set<string>();
+      const matches = fontDefsCss.matchAll(
+        /font-family\s*:\s*['"]([^'"]+)['"]/gi,
+      );
+      for (const match of matches) {
+        families.add(match[1]);
+      }
+      for (const family of families) {
+        const escaped = family.replace(/"/g, '\\"');
+        document.fonts.load(`12px "${escaped}"`).catch(() => {
+          // Ignore — single-face decode failure is non-fatal.
+        });
+      }
+    }
+
+    return () => {
+      // Component-unmount cleanup: remove the deck-scoped `<style>` so
+      // we don't leak base64 font payloads when the host tears down
+      // the viewer (e.g. SPA route change, modal close).
+      styleEl.remove();
+    };
+  }, [fontDefsCss]);
+
+  const requestSlide = useCallback(
+    async (slide: number): Promise<CachedSlide | null> => {
+      if (!controller || slide < 1) return null;
+      // Snapshot the current deck epoch so we can detect a deck swap
+      // that lands while this task is in flight. Any IPC roundtrip
+      // older than the current epoch is dropped before it stamps the
+      // new deck's cache.
+      const myEpoch = deckEpochRef.current;
+      let cached: CachedSlide | undefined;
+      setSlideCache((prev) => {
+        cached = prev.get(slide);
+        return prev;
+      });
+      if (cached) return cached;
+      const inflight = pendingRef.current.get(slide);
+      if (inflight) return inflight;
+      const task = (async () => {
+        try {
+          const rendered: RenderedSlide = await controller.renderSlide(slide);
+          if (myEpoch !== deckEpochRef.current) return null; // stale
+          // Inline media as `data:` URLs rather than `blob:` URLs.
+          //
+          // `blob:` URLs are document-scoped and revoked on page
+          // teardown — they also race catastrophically with React 18
+          // StrictMode and Vite HMR (the component double-mounts;
+          // first-mount cleanup revokes URLs the second mount has
+          // already stamped into cache, surfacing as
+          // `net::ERR_FILE_NOT_FOUND` on every grid-view toggle).
+          // `data:` URLs are self-contained, never revoke, and copy
+          // intact when the SVG is exported to print / PDF. The
+          // base64 overhead is acceptable: identical media hashed to
+          // the same key only encodes once per slide and the worker
+          // already deduplicates across the deck.
+          const result =
+            rendered.media && rendered.media.size > 0
+              ? {
+                  svg: inlineMediaAsDataUrls(rendered.svg, rendered.media),
+                  blobUrls: [] as string[],
+                }
+              : { svg: rendered.svg, blobUrls: [] as string[] };
+          const inlineMeta: SlideMeta = {
+            notes: rendered.notes,
+            layout_name: rendered.layoutName,
+            section_name: rendered.sectionName,
+          };
+          let mergedMeta = inlineMeta;
+          if (resolveMeta) {
+            try {
+              const extra = await resolveMeta(slide);
+              if (extra) mergedMeta = { ...inlineMeta, ...extra };
+            } catch {
+              /* fall through */
+            }
+          }
+          if (myEpoch !== deckEpochRef.current) return null; // stale post-meta
+          const entry: CachedSlide = {
+            svg: result.svg,
+            preparedSvg: prepareSvg(result.svg),
+            blobUrls: result.blobUrls,
+            meta: mergedMeta,
+          };
+          setSlideCache((prev) => {
+            // Final defensive check inside the setState — if a deck
+            // swap happened between the prior epoch read and this
+            // commit, leave the (already-flushed) cache alone.
+            if (myEpoch !== deckEpochRef.current) return prev;
+            const existing = prev.get(slide);
+            if (existing) {
+              for (const u of entry.blobUrls) URL.revokeObjectURL(u);
+              return prev;
+            }
+            const next = new Map(prev);
+            next.set(slide, entry);
+            return next;
+          });
+          return entry;
+        } catch (err) {
+          setErrorMsg(`${(err as Error).message ?? err}`);
+          return null;
+        } finally {
+          pendingRef.current.delete(slide);
+        }
+      })();
+      pendingRef.current.set(slide, task);
+      return task;
+    },
+    [controller, resolveMeta],
+  );
+
+  const ensureAllSlidesRendered = useCallback(
+    async (
+      silent = false,
+      onProgress?: (current: number, total: number) => void,
+    ): Promise<SlideSvg[]> => {
+      if (!controller || slideCount === 0) return [];
+      const out: SlideSvg[] = [];
+      for (let n = 1; n <= slideCount; n += 1) {
+        if (!silent) {
+          setPhase(t("phase.preparingSlideOf", { current: n, total: slideCount }));
+        }
+        onProgress?.(n, slideCount);
+        const cached = await requestSlide(n);
+        if (!cached) continue;
+        out.push({
+          slide_number: n,
+          svg: cached.svg,
+          notes: cached.meta.notes ?? undefined,
+          layout_name: cached.meta.layout_name ?? undefined,
+          section_name: cached.meta.section_name ?? undefined,
+        });
+      }
+      if (!silent) setPhase("");
+      if (out.length === slideCount) setAllSlidesReady(true);
+      return out;
+    },
+    [controller, slideCount, requestSlide],
+  );
+
+  // Background prefetch — once a deck is loaded, walk every slide in
+  // the background so deck-wide actions (Print / PDF / Slideshow /
+  // Search) become available without an interactive stall. Failures
+  // here are swallowed: prefetch is a UX accelerator, not a
+  // correctness requirement. Cancellation is handled implicitly by
+  // letting `slideCount` change reset the cache and start a new pass.
+  useEffect(() => {
+    if (noPrefetch) return; // host opted out — see prop docs
+    if (!controller || slideCount === 0) return;
+    if (allSlidesReady) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await ensureAllSlidesRendered(true);
+      } catch {
+        /* ignore background prefetch errors */
+      }
+      if (cancelled) return;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [noPrefetch, controller, slideCount, allSlidesReady, ensureAllSlidesRendered]);
+
+  // Active slide fetch.
+  useEffect(() => {
+    if (!controller || slideCount === 0) return;
+    void requestSlide(currentSlide);
+  }, [controller, slideCount, currentSlide, requestSlide]);
+
+  // Cache cleanup intentionally left unmanaged on unmount.
+  //
+  // Earlier this effect revoked every cached blob URL when the
+  // component tore down. That is correct in production but races
+  // catastrophically with React 18 StrictMode (development) and HMR:
+  // both double-mount the component, so the *first* mount's cleanup
+  // revokes the URLs that the *second* mount has already stamped
+  // into its slideCache. The second-mount thumbnails then load the
+  // stale URLs from `cached.preparedSvg` and fail with
+  // `net::ERR_FILE_NOT_FOUND` — exactly the symptom users see when
+  // the grid view paints with random tiles missing.
+  //
+  // We rely on the browser's natural blob lifetime: blob URLs become
+  // unreachable when the document is torn down (window close,
+  // navigation), at which point the GC reclaims their backing bytes.
+  // The brief window between component unmount and document teardown
+  // leaks a few MB of media that the browser will collect anyway —
+  // a fair trade for never showing broken thumbnails in dev.
+
+  const activeSlide = slideCache.get(currentSlide);
+  const slideSvg = activeSlide?.preparedSvg ?? "";
+  const slideMeta = activeSlide?.meta ?? null;
+
+  // Mount SVG.
+  //
+  // Re-runs whenever any layout-affecting state changes (sidebar /
+  // notes toggle, view mode, ruler, stage size) so the host is
+  // self-healing: if React reconciliation, a parent's display
+  // toggle, or a wrapper unmount ever clears the slide host's
+  // children, this effect re-injects the SVG immediately.
+  //
+  // The early-out check on `firstElementChild === <svg>` guarantees
+  // the effect is a cheap no-op on most renders — full re-parse only
+  // when the slide actually changed.
+  useEffect(() => {
+    // Mount the SVG into whichever slide host is currently visible.
+    // Slideshow mode uses its own overlay-mounted div with a separate
+    // ref so the slide doesn't get torn out when fullscreen flips.
+    const host = slideshow ? slideshowSlideRef.current : slideRef.current;
+    if (!host) return;
+    if (!slideSvg) {
+      while (host.firstChild) host.removeChild(host.firstChild);
+      return;
+    }
+    const existing = host.firstElementChild;
+    if (
+      existing &&
+      existing.tagName.toLowerCase() === "svg" &&
+      host.dataset.slideSvgKey === slideSvg
+    ) {
+      return; // already mounted, no work
+    }
+    while (host.firstChild) host.removeChild(host.firstChild);
+    try {
+      // Rewrite every `id="…"` / `url(#…)` reference to a mount-unique
+      // namespace so the main-stage SVG can never collide with the
+      // sibling SVGs the thumbnail strip mounts simultaneously.
+      const namespaced = uniquifyIds(slideSvg, `stage-s${currentSlide}`);
+      const doc = new DOMParser().parseFromString(namespaced, "image/svg+xml");
+      const root = doc.documentElement;
+      if (!root) return;
+      const errNode = root.querySelector("parsererror");
+      if (errNode) {
+        setErrorMsg(errNode.textContent ?? "svg parse error");
+        return;
+      }
+      host.appendChild(document.importNode(root, true));
+      host.dataset.slideSvgKey = slideSvg;
+      // First successful mount of this deck — fire `onReady` once so
+      // host-level loading overlays can dismiss right when the user
+      // can actually see content. Subsequent slide changes re-enter
+      // this branch but the ref guard short-circuits.
+      if (!onReadyFiredRef.current) {
+        onReadyFiredRef.current = true;
+        try {
+          onReady?.();
+        } catch {
+          // Host-supplied callback errors must never derail the SVG
+          // mount path — the slide is already in the DOM at this
+          // point and a thrown onReady would leak through to the
+          // try/catch below and surface as a parser error to the user.
+        }
+      }
+      // Rebuild bbox map for hit-testing. We use `getBoundingClientRect()`
+      // (the browser-truth painted bounds) and project back into SVG
+      // user space via the inverse of `getScreenCTM()` so the stored
+      // rect always matches what the user actually sees.
+      //
+      // Why not `getBBox()` + `getCTM()`?
+      //   `<g>.getBBox()` is unreliable for groups whose children are
+      //   `<text>` runs whose width depends on font substitution: with
+      //   web-font fallback in flight the geometric bbox can clip the
+      //   visible glyph row, leaving the selection rectangle drawn too
+      //   small / shifted relative to the glyph the user can see (a
+      //   common artefact on table cells whose `<g>` wraps text laid
+      //   out at the original metric-match width).
+      //   `getBoundingClientRect()` reflects the rendered geometry
+      //   after font load and after every transform on the chain, so
+      //   it's the authoritative source for "where the shape is on
+      //   screen" — converting through `inverseScreenCTM` then gives a
+      //   user-space rect that the existing zoom-aware projection step
+      //   in `selectionBoxes` can transform back to screen space.
+      const map = new Map<string, { x: number; y: number; w: number; h: number }>();
+      const svgEl = host.firstElementChild as SVGSVGElement | null;
+      const screenCTM = svgEl?.getScreenCTM?.() ?? null;
+      if (
+        svgEl &&
+        screenCTM &&
+        typeof (svgEl as unknown as { createSVGPoint?: () => unknown })
+          .createSVGPoint === "function"
+      ) {
+        let inverse: DOMMatrix | null = null;
+        try {
+          inverse = screenCTM.inverse();
+        } catch {
+          inverse = null;
+        }
+        if (inverse) {
+          const els = svgEl.querySelectorAll<SVGGraphicsElement>("[data-sp-id]");
+          for (const el of Array.from(els)) {
+            const id = (el as unknown as HTMLElement).dataset.spId;
+            if (!id) continue;
+            const rect = el.getBoundingClientRect();
+            // Skip elements that haven't laid out yet (e.g. inside
+            // `display:none` ancestors or detached subtrees) — their
+            // 0×0 rect would otherwise project to a 0-area selection
+            // box anchored at the SVG origin.
+            if (rect.width === 0 && rect.height === 0) continue;
+            const p = svgEl.createSVGPoint();
+            const corners = [
+              [rect.left, rect.top],
+              [rect.right, rect.top],
+              [rect.left, rect.bottom],
+              [rect.right, rect.bottom],
+            ].map(([x, y]) => {
+              p.x = x;
+              p.y = y;
+              return p.matrixTransform(inverse!);
+            });
+            const xs = corners.map((c) => c.x);
+            const ys = corners.map((c) => c.y);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+            map.set(id, { x: minX, y: minY, w: maxX - minX, h: maxY - minY });
+          }
+        }
+      }
+      bboxMapRef.current = map;
+    } catch (err) {
+      setErrorMsg(`${(err as Error).message ?? err}`);
+    }
+  }, [slideSvg, currentSlide, sidebarWidth, notesOpen, viewMode, slideshow, stageSize.w, stageSize.h]);
+
+  // Clear selection when navigating away (sp-ids are slide-scoped).
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setTextEditId(null);
+    setRubberBand(null);
+  }, [currentSlide]);
+
+  // Keyboard shortcuts.
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent): void => {
+      const mod = ev.metaKey || ev.ctrlKey;
+      if (mod && ev.key === "f") {
+        ev.preventDefault();
+        setSearchOpen((o) => !o);
+        return;
+      }
+      // Cmd/Ctrl+P → Print. Honour the same readiness gate as the
+      // toolbar button so the user never gets a partial deck in
+      // their print preview.
+      if (mod && ev.key === "p") {
+        ev.preventDefault();
+        if (slideCount > 0 && allSlidesReady) void handlePrintRef.current?.();
+        return;
+      }
+      if (ev.key === "Escape") {
+        if (slideshow) {
+          setSlideshow(false);
+          if (document.fullscreenElement) void document.exitFullscreen();
+          ev.preventDefault();
+          return;
+        }
+        if (searchOpen) {
+          setSearchOpen(false);
+          ev.preventDefault();
+          return;
+        }
+        // Esc clears selection / exits text-edit mode (PowerPoint
+        // convention — same single keystroke deselects everything).
+        setSelectedIds(new Set());
+        setTextEditId(null);
+        setRubberBand(null);
+      }
+      // Cmd/Ctrl + A → select every shape with a known bbox on the
+      // active slide.  Defer to the input field if the user is editing
+      // a text shape — text-edit owns the keyboard.
+      if (mod && ev.key.toLowerCase() === "a" && !textEditId) {
+        ev.preventDefault();
+        setSelectedIds(new Set(bboxMapRef.current.keys()));
+        return;
+      }
+      // Cmd/Ctrl+C — copy selected shapes' text content.
+      if (mod && ev.key.toLowerCase() === "c" && selectedIds.size > 0
+          && !textEditId) {
+        const host = slideRef.current;
+        if (host) {
+          const parts: string[] = [];
+          for (const id of selectedIds) {
+            const el = host.querySelector(`[data-sp-id="${CSS.escape(id)}"]`);
+            const txt = el?.textContent?.trim();
+            if (txt) parts.push(txt);
+          }
+          if (parts.length > 0 && navigator.clipboard) {
+            ev.preventDefault();
+            void navigator.clipboard.writeText(parts.join("\n\n"));
+          }
+        }
+        return;
+      }
+      // Space → engage pan mode. Don't preventDefault on the space
+      // itself (it's not a default-bound key in this context) — just
+      // flip the flag so pointer handlers know to pan instead of
+      // select.
+      if (ev.key === " " && !ev.repeat && !textEditId) {
+        setSpaceHeld(true);
+      }
+      // `?` → toggle shortcuts help dialog. Honour both the literal
+      // `?` (US layout) and Shift+/ (most layouts) without colliding
+      // with text-edit input.
+      if (ev.key === "?" && !textEditId) {
+        ev.preventDefault();
+        setShortcutsOpen((o) => !o);
+        return;
+      }
+      if (ev.key === "ArrowRight" || ev.key === "PageDown") {
+        setCurrentSlide((s) => Math.min(slideCount, s + 1));
+        ev.preventDefault();
+      } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") {
+        setCurrentSlide((s) => Math.max(1, s - 1));
+        ev.preventDefault();
+      } else if (ev.key === "Home") {
+        setCurrentSlide(1);
+        ev.preventDefault();
+      } else if (ev.key === "End") {
+        setCurrentSlide(slideCount);
+        ev.preventDefault();
+      } else if (mod && (ev.key === "=" || ev.key === "+")) {
+        setZoom((z) => clamp(z * 1.25, ZOOM_MIN, ZOOM_MAX));
+        ev.preventDefault();
+      } else if (mod && ev.key === "-") {
+        setZoom((z) => clamp(z * 0.8, ZOOM_MIN, ZOOM_MAX));
+        ev.preventDefault();
+      } else if (mod && ev.key === "0") {
+        setZoom(1);
+        setPanX(0);
+        setPanY(0);
+        ev.preventDefault();
+      }
+    };
+    const onKeyUp = (ev: KeyboardEvent): void => {
+      if (ev.key === " ") setSpaceHeld(false);
+    };
+    const onBlur = (): void => setSpaceHeld(false);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [slideCount, searchOpen, slideshow, selectedIds, textEditId]);
+
+  // Pinch / Cmd-wheel zoom + plain-wheel slide navigation.
+  //
+  // Browsers deliver three flavours of wheel through the same event:
+  //   1. Plain scroll (mouse wheel, two-finger trackpad scroll) —
+  //      `ctrlKey: false`, large `deltaY` (often > 50 per notch).
+  //   2. Trackpad pinch — synthesised as `wheel` with `ctrlKey: true`
+  //      and small `deltaY` (~1-10 per frame) at high frequency.
+  //   3. Cmd-wheel — explicit modifier, large `deltaY`.
+  //
+  // (2) and (3) are zoom intents; (1) drives slide navigation when
+  // the stage scroll has reached its top / bottom edge — a
+  // PowerPoint-style "scroll past the edge to flip pages" gesture.
+  // While the slide is taller than the stage (zoomed in) the wheel
+  // scrolls within it as usual; the navigation only kicks in once
+  // the user has hit the boundary. To stop trackpad inertia from
+  // skipping multiple slides per gesture, the boundary requires a
+  // configurable extra travel (`BOUNDARY_THRESHOLD`) before the
+  // jump fires, plus a brief post-jump cooldown so the tail end of
+  // an inertial gesture can't immediately advance again.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    // Tuned conservatively — historic Lit shell used a fixed 1.1/0.9
+    // step which felt jumpy on trackpads. A base of ~0.0035 gives
+    // the same perceived speed for a Cmd-wheel "click" (~100 deltaY)
+    // while making pinch feel proportional.
+    const SENSITIVITY = 0.0035;
+    // How much wheel travel past the slide edge is required before
+    // we commit to the next/previous slide. Sized so a single mouse-
+    // wheel "click" (~100 px deltaY) doesn't immediately flip the
+    // page — the user has to push deliberately past the boundary.
+    const BOUNDARY_THRESHOLD = 240;
+    // Window after a slide change during which subsequent wheel
+    // events are swallowed. Covers macOS trackpad inertia tails
+    // (~250 ms typical) so the residual deltas don't keep firing
+    // page jumps after the user lifted their fingers.
+    const COOLDOWN_MS = 350;
+    // Inactivity reset — if the user pauses scrolling at the
+    // boundary without committing, the accumulator decays so the
+    // next gesture starts from zero. Otherwise idle decks could
+    // accumulate drift across unrelated wheel events.
+    const RESET_AFTER_MS = 250;
+
+    let pendingZoomDelta = 0;
+    let raf = 0;
+    let boundaryDelta = 0;
+    let lastWheelAt = 0;
+    let cooldownUntil = 0;
+
+    const flushZoom = (): void => {
+      raf = 0;
+      if (pendingZoomDelta === 0) return;
+      // exp(-d * k): negative delta (zoom-in) → factor > 1.
+      const factor = Math.exp(-pendingZoomDelta * SENSITIVITY);
+      pendingZoomDelta = 0;
+      setZoom((z) => clamp(z * factor, ZOOM_MIN, ZOOM_MAX));
+    };
+
+    const onWheel = (ev: WheelEvent): void => {
+      // DOM_DELTA_LINE / PAGE → multiply to a px-equivalent so the
+      // sensitivity / threshold constants work the same regardless
+      // of input device. Most trackpads ship pixel deltas already.
+      let dy = ev.deltaY;
+      if (ev.deltaMode === 1) dy *= 16; // line → px
+      else if (ev.deltaMode === 2) dy *= stage.clientHeight; // page
+
+      // ctrlKey covers both real Ctrl-wheel AND the synthetic pinch
+      // event the browser fires as ctrlKey=true.
+      const isZoomIntent = ev.ctrlKey || ev.metaKey;
+      if (isZoomIntent) {
+        ev.preventDefault();
+        pendingZoomDelta += dy;
+        if (raf === 0) raf = requestAnimationFrame(flushZoom);
+        return;
+      }
+
+      // Slideshow / grid view manage their own navigation; only the
+      // normal slide stage opts into wheel-driven page flipping.
+      if (slideshow) return;
+      if (viewMode !== "normal") return;
+      if (slideCount <= 0) return;
+
+      const now = performance.now();
+      if (now < cooldownUntil) {
+        // Inertia tail after a recent slide change — block native
+        // scroll too so the new slide stays put while the gesture
+        // dies down.
+        ev.preventDefault();
+        return;
+      }
+      if (now - lastWheelAt > RESET_AFTER_MS) {
+        boundaryDelta = 0;
+      }
+      lastWheelAt = now;
+
+      // Treat sub-pixel rounding as still-at-edge.
+      const atBottom = stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 1;
+      const atTop = stage.scrollTop <= 0;
+
+      if (dy > 0) {
+        if (!atBottom) {
+          boundaryDelta = 0;
+          return; // native scroll handles it
+        }
+        ev.preventDefault();
+        boundaryDelta = Math.max(0, boundaryDelta) + dy;
+        if (boundaryDelta >= BOUNDARY_THRESHOLD) {
+          boundaryDelta = 0;
+          cooldownUntil = now + COOLDOWN_MS;
+          setCurrentSlide((s) => Math.min(slideCount, s + 1));
+        }
+      } else if (dy < 0) {
+        if (!atTop) {
+          boundaryDelta = 0;
+          return;
+        }
+        ev.preventDefault();
+        boundaryDelta = Math.min(0, boundaryDelta) + dy;
+        if (boundaryDelta <= -BOUNDARY_THRESHOLD) {
+          boundaryDelta = 0;
+          cooldownUntil = now + COOLDOWN_MS;
+          setCurrentSlide((s) => Math.max(1, s - 1));
+        }
+      }
+    };
+
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      stage.removeEventListener("wheel", onWheel);
+      if (raf !== 0) cancelAnimationFrame(raf);
+    };
+    // Re-bind on slideshow / viewMode / slideCount changes so the
+    // handler closes over the current values instead of stale state.
+  }, [slideshow, viewMode, slideCount]);
+
+  // Fullscreen change handling for slideshow exit.
+  useEffect(() => {
+    const onFs = (): void => {
+      if (!document.fullscreenElement && slideshow) setSlideshow(false);
+    };
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, [slideshow]);
+
+  // ---- Selection state machine --------------------------------------------
+  // Pointer-down: capture target's `[data-sp-id]` ancestor (or null).
+  // - Space-held → start panning, capture pointer for off-stage drag.
+  // - Otherwise → record snapshot for the click vs drag distinction in
+  //   pointerup (≥3px movement = drag).
+  const onStagePointerDown = useCallback(
+    (ev: React.PointerEvent<HTMLElement>): void => {
+      if (ev.button !== 0) return;
+      if (textEditId) return; // text-edit owns the pointer
+      if (spaceHeld) {
+        try {
+          (ev.target as Element).setPointerCapture(ev.pointerId);
+        } catch {
+          /* not capturable */
+        }
+        panStartRef.current = {
+          x: ev.clientX,
+          y: ev.clientY,
+          panX,
+          panY,
+        };
+        return;
+      }
+      const target = (ev.target as Element | null)?.closest(
+        "[data-sp-id]",
+      ) as HTMLElement | null;
+      pointerDownAtRef.current = { x: ev.clientX, y: ev.clientY, target };
+      if (!target) setRubberBand(null);
+    },
+    [spaceHeld, textEditId, panX, panY],
+  );
+
+  const onStagePointerMove = useCallback(
+    (ev: React.PointerEvent<HTMLElement>): void => {
+      if (panStartRef.current) {
+        setPanX(panStartRef.current.panX + (ev.clientX - panStartRef.current.x));
+        setPanY(panStartRef.current.panY + (ev.clientY - panStartRef.current.y));
+        return;
+      }
+      const downAt = pointerDownAtRef.current;
+      if (!downAt) return;
+      const dx = ev.clientX - downAt.x;
+      const dy = ev.clientY - downAt.y;
+      if (Math.hypot(dx, dy) < 3) return;
+      if (!downAt.target) {
+        setRubberBand({
+          x0: downAt.x,
+          y0: downAt.y,
+          x1: ev.clientX,
+          y1: ev.clientY,
+        });
+      }
+    },
+    [],
+  );
+
+  const onStagePointerUp = useCallback(
+    (ev: React.PointerEvent<HTMLElement>): void => {
+      if (panStartRef.current) {
+        try {
+          (ev.target as Element).releasePointerCapture(ev.pointerId);
+        } catch {
+          /* nothing captured */
+        }
+        panStartRef.current = null;
+        return;
+      }
+      const downAt = pointerDownAtRef.current;
+      if (!downAt) return;
+      const moved =
+        Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) >= 3;
+      if (downAt.target && !moved) {
+        const id = downAt.target.dataset.spId;
+        if (id) {
+          if (ev.shiftKey || ev.metaKey || ev.ctrlKey) {
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              if (next.has(id)) next.delete(id);
+              else next.add(id);
+              return next;
+            });
+          } else {
+            setSelectedIds(new Set([id]));
+          }
+        }
+      } else if (!downAt.target && !moved) {
+        setSelectedIds(new Set());
+      } else if (!downAt.target && moved && rubberBand) {
+        // Rubber-band hit-test: project every cached bbox into screen
+        // coords via the live `getScreenCTM()` and AABB-intersect with
+        // the band. Coords throughout are viewport (pointer client).
+        const svgEl =
+          slideRef.current?.firstElementChild as SVGSVGElement | null;
+        const ctm = svgEl?.getScreenCTM?.() ?? null;
+        if (svgEl && ctm) {
+          const hits = new Set<string>();
+          const left = Math.min(rubberBand.x0, rubberBand.x1);
+          const right = Math.max(rubberBand.x0, rubberBand.x1);
+          const top = Math.min(rubberBand.y0, rubberBand.y1);
+          const bottom = Math.max(rubberBand.y0, rubberBand.y1);
+          const p = svgEl.createSVGPoint();
+          for (const [id, b] of bboxMapRef.current) {
+            const corners = [
+              [b.x, b.y],
+              [b.x + b.w, b.y],
+              [b.x, b.y + b.h],
+              [b.x + b.w, b.y + b.h],
+            ].map(([x, y]) => {
+              p.x = x;
+              p.y = y;
+              return p.matrixTransform(ctm);
+            });
+            const xs = corners.map((c) => c.x);
+            const ys = corners.map((c) => c.y);
+            const rl = Math.min(...xs);
+            const rr = Math.max(...xs);
+            const rt = Math.min(...ys);
+            const rb = Math.max(...ys);
+            if (rr >= left && rl <= right && rb >= top && rt <= bottom) {
+              hits.add(id);
+            }
+          }
+          setSelectedIds(hits);
+        }
+      }
+      pointerDownAtRef.current = null;
+      setRubberBand(null);
+    },
+    [rubberBand],
+  );
+
+  const onStageDoubleClick = useCallback(
+    (ev: React.MouseEvent<HTMLElement>): void => {
+      const target = (ev.target as Element | null)?.closest(
+        "[data-sp-id]",
+      ) as HTMLElement | null;
+      if (!target) return;
+      // Only enter text-edit mode for shapes that actually contain text.
+      if (!target.querySelector("text")) return;
+      const id = target.dataset.spId;
+      if (id) setTextEditId(id);
+    },
+    [],
+  );
+
+  // Project each selected shape's stored user-space bbox into the
+  // overlay's stage-relative pixel space. Re-runs whenever selection,
+  // pan, zoom, or stage size changes (the live screen CTM moves).
+  const selectionBoxes: SelectionBox[] = useMemo(() => {
+    if (selectedIds.size === 0) return [];
+    const stage = stageRef.current;
+    const svgEl = slideRef.current?.firstElementChild as SVGSVGElement | null;
+    if (!stage || !svgEl) return [];
+    const ctm = svgEl.getScreenCTM?.();
+    if (!ctm) return [];
+    const stageRect = stage.getBoundingClientRect();
+    const scrollLeft = stage.scrollLeft;
+    const scrollTop = stage.scrollTop;
+    const out: SelectionBox[] = [];
+    const p = svgEl.createSVGPoint();
+    for (const id of selectedIds) {
+      const b = bboxMapRef.current.get(id);
+      if (!b) continue;
+      const corners = [
+        [b.x, b.y],
+        [b.x + b.w, b.y],
+        [b.x, b.y + b.h],
+        [b.x + b.w, b.y + b.h],
+      ].map(([x, y]) => {
+        p.x = x;
+        p.y = y;
+        return p.matrixTransform(ctm);
+      });
+      const xs = corners.map((c) => c.x);
+      const ys = corners.map((c) => c.y);
+      out.push({
+        id,
+        x: Math.min(...xs) - stageRect.left + scrollLeft,
+        y: Math.min(...ys) - stageRect.top + scrollTop,
+        w: Math.max(...xs) - Math.min(...xs),
+        h: Math.max(...ys) - Math.min(...ys),
+      });
+    }
+    return out;
+    // panX/panY/zoom changes move the slide → CTM changes → re-project.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, panX, panY, zoom, stageSize.w, stageSize.h, slideSvg]);
+
+  // Authored font(s) of the currently selected shape(s) — read straight
+  // off the rendered SVG's `<tspan font-family="...">` chain. We display
+  // the FIRST family in the chain (the authored typeface) in the status
+  // bar so users can identify what font a shape uses without opening
+  // the font-usage popover. Multiple fonts within one shape (run-level
+  // overrides) collapse to a deduplicated list; multi-shape selection
+  // unions them. Empty when nothing is selected, or when none of the
+  // selected shapes contain text.
+  const selectionFonts: string[] = useMemo(() => {
+    if (selectedIds.size === 0) return [];
+    const svgEl = slideRef.current?.firstElementChild as SVGSVGElement | null;
+    if (!svgEl) return [];
+    const fonts = new Set<string>();
+    for (const id of selectedIds) {
+      // Selector is safe: sp-ids are renderer-emitted decimal integers,
+      // so no CSS escaping is required and no untrusted strings are
+      // interpolated into the selector.
+      const host = svgEl.querySelector<SVGGElement>(`g[data-sp-id="${id}"]`);
+      if (!host) continue;
+      // `<tspan>` carries the most specific styling (run-level), but the
+      // outer `<text>` may declare the font for an unstyled run, so
+      // probe both.
+      const nodes = host.querySelectorAll<SVGElement>("tspan, text");
+      for (const node of nodes) {
+        const family = node.getAttribute("font-family");
+        if (!family) continue;
+        const first = parseFirstFontFamily(family);
+        if (first) fonts.add(first);
+      }
+    }
+    return Array.from(fonts);
+    // selectedIds drives the dependency; slideSvg re-runs the effect
+    // after a slide swap so refs from the prior slide aren't reused.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, slideSvg]);
+
+  // Auto-close the selection-font popover whenever the underlying
+  // font list goes empty (selection cleared) or the user clicks
+  // outside the trigger / popover. Mirrors `FontUsageIndicator`'s
+  // outside-click pattern so the status-bar UX stays consistent.
+  useEffect(() => {
+    if (selectionFonts.length === 0 && selectionFontsOpen) {
+      setSelectionFontsOpen(false);
+    }
+  }, [selectionFonts, selectionFontsOpen]);
+  useEffect(() => {
+    if (!selectionFontsOpen) return;
+    function onDocClick(ev: MouseEvent) {
+      const root = selectionFontsRef.current;
+      if (root && !root.contains(ev.target as Node)) {
+        setSelectionFontsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [selectionFontsOpen]);
+
+  const rubberBandRect: RubberBandRect | null = useMemo(() => {
+    if (!rubberBand) return null;
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const r = stage.getBoundingClientRect();
+    const left = Math.min(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
+    const top = Math.min(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
+    const right = Math.max(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
+    const bottom = Math.max(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }, [rubberBand]);
+
+  // ---- Layout math ---------------------------------------------------------
+  const aspect = useMemo(() => parseAspect(slideSvg) ?? 16 / 9, [slideSvg]);
+  const fit = useMemo(() => {
+    if (stageSize.w <= 0 || stageSize.h <= 0) return 0;
+    return Math.min(stageSize.w, stageSize.h * aspect);
+  }, [aspect, stageSize.w, stageSize.h]);
+  const slideW = fit * zoom;
+  const slideH = fit > 0 ? (fit / aspect) * zoom : 0;
+  const canvasW = Math.max(slideW, stageSize.w);
+  const canvasH = Math.max(slideH, stageSize.h);
+  const zoomPct = Math.round(zoom * 100);
+
+  const reset = useCallback(() => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+  }, []);
+  const setZoomFromPct = useCallback((pct: number) => {
+    setZoom(clamp(pct / 100, ZOOM_MIN, ZOOM_MAX));
+  }, []);
+
+  // ---- Search --------------------------------------------------------------
+  const runSearch = useCallback(
+    async (q: string): Promise<void> => {
+      if (!q.trim()) {
+        setSearchHits([]);
+        return;
+      }
+      const slides = await ensureAllSlidesRendered();
+      setSearchHits(searchSlides(slides, q));
+    },
+    [ensureAllSlidesRendered],
+  );
+
+  // ---- Print / PDF ---------------------------------------------------------
+  const handlePrint = useCallback(async () => {
+    const printTitle = t("progress.titlePrint");
+    setProgress({ title: printTitle, step: t("phase.preparingPrint") });
+    try {
+      const slides = await ensureAllSlidesRendered(false, (current, total) => {
+        setProgress({
+          title: printTitle,
+          step: t("phase.preparingSlideOf", { current, total }),
+          current,
+          total,
+        });
+      });
+      if (slides.length === 0) {
+        setErrorMsg(t("status.nothingToPrint"));
+        return;
+      }
+      const inlined = slides.map((s) => ({
+        ...s,
+        svg: inlineMediaAsDataUrls(s.svg, new Map()),
+      }));
+      await printDeck(inlined, {
+        title: name ?? t("dialog.title"),
+        onProgress: ({ phase: p, current, total }) => {
+          setProgress({
+            title: printTitle,
+            step:
+              p === "open-dialog"
+                ? t("phase.openingPrintDialog")
+                : t("phase.layingOutPrintOf", { current: current + 1, total }),
+            current: p === "open-dialog" ? total : current + 1,
+            total,
+          });
+        },
+      });
+    } catch (err) {
+      setErrorMsg((err as Error).message ?? String(err));
+    } finally {
+      // Leave the overlay up briefly so the "Opening print dialog…"
+      // step is visible — the native print dialog itself can take a
+      // moment to surface and a too-fast dismiss feels jarring.
+      setTimeout(() => setProgress(null), 400);
+    }
+  }, [ensureAllSlidesRendered, name]);
+  useEffect(() => {
+    handlePrintRef.current = handlePrint;
+  }, [handlePrint]);
+
+  const handleExportPdf = useCallback(async () => {
+    const pdfTitle = t("progress.titlePdf");
+    setProgress({ title: pdfTitle, step: t("phase.preparingPdf") });
+    setPhase(t("phase.preparingPdf"));
+    try {
+      const slides = await ensureAllSlidesRendered(false, (current, total) => {
+        setProgress({
+          title: pdfTitle,
+          step: t("phase.preparingSlideOf", { current, total }),
+          current,
+          total,
+        });
+      });
+      if (slides.length === 0) {
+        setErrorMsg(t("status.nothingToExport"));
+        return;
+      }
+      const inlined = slides.map((s) => ({
+        ...s,
+        svg: inlineMediaAsDataUrls(s.svg, new Map()),
+      }));
+      const bytes = await exportToPdf({
+        slides: inlined,
+        onProgress: ({ phase: p, current, total }) => {
+          if (p === "rasterize") {
+            setPhase(t("phase.renderingPdf", { current: current + 1, total }));
+            setProgress({
+              title: pdfTitle,
+              step: t("phase.renderingPdf", { current: current + 1, total }),
+              current: current + 1,
+              total,
+            });
+          } else {
+            setPhase(t("phase.encodingPdf"));
+            setProgress({
+              title: pdfTitle,
+              step: t("phase.encodingPdf"),
+              current: total,
+              total,
+            });
+          }
+        },
+      });
+      setProgress({ title: pdfTitle, step: t("phase.savingPdf") });
+      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const baseName = (name ?? "presentation").replace(/\.[^.]+$/, "");
+      a.download = `${baseName}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setPhase(t("status.exported", { count: slides.length }));
+    } catch (err) {
+      setErrorMsg(t("status.pdfFailed", { reason: (err as Error).message ?? String(err) }));
+    } finally {
+      setTimeout(() => setPhase(""), 2000);
+      setTimeout(() => setProgress(null), 400);
+    }
+  }, [ensureAllSlidesRendered, name]);
+
+  const handleSlideshow = useCallback(async () => {
+    setSlideshow(true);
+    setCurrentSlide(1);
+    try {
+      await rootRef.current?.requestFullscreen();
+    } catch {
+      /* host disallowed fullscreen — soft slideshow */
+    }
+  }, []);
+
+  // Section nav data.
+  const sectionSlides: SlideSvg[] = useMemo(() => {
+    return Array.from(slideCache.entries())
+      .map(([n, c]) => ({
+        slide_number: n,
+        svg: c.svg,
+        notes: c.meta.notes ?? undefined,
+        layout_name: c.meta.layout_name ?? undefined,
+        section_name: c.meta.section_name ?? undefined,
+      }))
+      .sort((a, b) => a.slide_number - b.slide_number);
+  }, [slideCache]);
+  const hasSections = sectionSlides.some((s) => !!s.section_name);
+
+  // Ruler geometry — derived from the actual slide DOM rect rather
+  // than from the JS layout math, so the tick at `0` always lines up
+  // with the slide centre regardless of zoom, pan, sidebar resize,
+  // or scrolled stage. Mirrors the historic Lit shell, which tracked
+  // `slideRect()` via a ResizeObserver on the viewer-wrap.
+  // Gate ruler rendering on an actually-loaded slide so the placeholder
+  // 16:9 fallback dimensions (`slideW` derived from a default aspect) don't
+  // leak ticks into the empty-state UI before the user opens a deck.
+  const rulerOn =
+    settings.showRuler && !slideshow && viewMode === "normal" && !!slideSvg;
+  const intrinsicViewBox = useMemo(() => {
+    const m = slideSvg.match(/viewBox=["']([^"']+)["']/);
+    if (!m) return { w: 0, h: 0 };
+    const parts = m[1].split(/\s+/).map(Number);
+    if (parts.length < 4) return { w: 0, h: 0 };
+    return { w: parts[2], h: parts[3] };
+  }, [slideSvg]);
+  const intrinsic = {
+    px: intrinsicViewBox.w,
+    cm: (intrinsicViewBox.w * 2.54) / 96,
+  };
+  const intrinsicY = {
+    px: intrinsicViewBox.h,
+    cm: (intrinsicViewBox.h * 2.54) / 96,
+  };
+
+  // Live slide rect, recomputed whenever zoom/pan/stageSize/aspect
+  // changes — useState so a render bump propagates to the Ruler.
+  const [rulerRect, setRulerRect] = useState<{
+    originX: number;
+    originY: number;
+    extentX: number;
+    extentY: number;
+  }>({ originX: 0, originY: 0, extentX: 0, extentY: 0 });
+  useEffect(() => {
+    if (!rulerOn) return;
+    const stage = stageRef.current;
+    const slide = slideRef.current;
+    if (!stage || !slide) return;
+    const measure = (): void => {
+      const stageRect = stage.getBoundingClientRect();
+      const slideR = slide.getBoundingClientRect();
+      if (slideR.width <= 0 || slideR.height <= 0) return;
+      setRulerRect((prev) => {
+        const next = {
+          originX: slideR.left - stageRect.left,
+          originY: slideR.top - stageRect.top,
+          extentX: slideR.width,
+          extentY: slideR.height,
+        };
+        if (
+          Math.abs(prev.originX - next.originX) < 0.5 &&
+          Math.abs(prev.originY - next.originY) < 0.5 &&
+          Math.abs(prev.extentX - next.extentX) < 0.5 &&
+          Math.abs(prev.extentY - next.extentY) < 0.5
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(stage);
+    ro.observe(slide);
+    const onScroll = (): void => measure();
+    stage.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      ro.disconnect();
+      stage.removeEventListener("scroll", onScroll);
+    };
+  }, [rulerOn, slideW, slideH, panX, panY, stageSize.w, stageSize.h]);
+
+  return (
+    <div
+      ref={rootRef}
+      data-pptx-shell=""
+      className={className}
+      style={{ ...rootStyle, ...style }}
+    >
+      <style>{SHELL_GLOBAL_CSS}</style>
+      {/* ---- Ribbon ---- */}
+      <header style={ribbonStyle}>
+        {toolbarStart}
+        <span style={filenameStyle} title={name ?? ""}>
+          {name ?? t("viewer.noFile")}
+        </span>
+        <div style={spacerStyle} />
+        <button
+          style={iconButtonStyle}
+          onClick={() => setCurrentSlide(1)}
+          disabled={slideCount === 0 || currentSlide <= 1}
+          title={t("nav.firstSlide")}
+          aria-label={t("nav.firstSlide")}
+        >
+          <SkipBack size={16} weight="fill" />
+        </button>
+        <button
+          style={iconButtonStyle}
+          onClick={() => setCurrentSlide((s) => Math.max(1, s - 1))}
+          disabled={currentSlide <= 1}
+          title={t("nav.previousSlide")}
+          aria-label={t("nav.previousSlide")}
+        >
+          <CaretLeft size={16} weight="bold" />
+        </button>
+        <span style={counterStyle}>
+          {slideCount === 0 ? "—" : `${currentSlide} / ${slideCount}`}
+        </span>
+        <button
+          style={iconButtonStyle}
+          onClick={() => setCurrentSlide((s) => Math.min(slideCount, s + 1))}
+          disabled={currentSlide >= slideCount}
+          title={t("nav.nextSlide")}
+          aria-label={t("nav.nextSlide")}
+        >
+          <CaretRight size={16} weight="bold" />
+        </button>
+        <button
+          style={iconButtonStyle}
+          onClick={() => setCurrentSlide(slideCount)}
+          disabled={slideCount === 0 || currentSlide >= slideCount}
+          title={t("nav.lastSlide")}
+          aria-label={t("nav.lastSlide")}
+        >
+          <SkipForward size={16} weight="fill" />
+        </button>
+        <span style={dividerStyle} />
+        <button
+          style={searchOpen ? activeIconStyle : iconButtonStyle}
+          onClick={() => setSearchOpen((o) => !o)}
+          title={t("search.title")}
+          aria-label={t("search.title")}
+          aria-pressed={searchOpen}
+        >
+          <MagnifyingGlass size={16} weight="bold" />
+        </button>
+        <span style={dividerStyle} />
+        {/* Deck-wide actions. The "ready" gate is bypassed when the
+            host disables prefetching (`noPrefetch`) — the click handler
+            then triggers `ensureAllSlidesRendered()` itself, surfacing a
+            `phase.preparingSlideOf` message in the status bar. */}
+        <button
+          style={
+            !noPrefetch && !allSlidesReady && slideCount > 0
+              ? disabledTextButtonStyle
+              : textButtonStyle
+          }
+          onClick={() => void handlePrint()}
+          title={
+            noPrefetch
+              ? t("output.printTitle")
+              : deckGateTitle(t("output.printTitle"), allSlidesReady, slideCount)
+          }
+          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
+        >
+          <Printer size={16} weight="regular" /> {t("output.print")}
+        </button>
+        <button
+          style={
+            !noPrefetch && !allSlidesReady && slideCount > 0
+              ? disabledTextButtonStyle
+              : textButtonStyle
+          }
+          onClick={() => void handleExportPdf()}
+          title={
+            noPrefetch
+              ? t("output.pdfTitle")
+              : deckGateTitle(t("output.pdfTitle"), allSlidesReady, slideCount)
+          }
+          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
+        >
+          <FilePdf size={16} weight="regular" /> {t("output.pdf")}
+        </button>
+        <button
+          style={
+            !noPrefetch && !allSlidesReady && slideCount > 0
+              ? disabledTextButtonStyle
+              : textButtonStyle
+          }
+          onClick={() => void handleSlideshow()}
+          title={
+            noPrefetch
+              ? t("output.slideshowTitle")
+              : deckGateTitle(
+                  t("output.slideshowTitle"),
+                  allSlidesReady,
+                  slideCount,
+                )
+          }
+          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
+        >
+          <Play size={16} weight="fill" /> {t("output.slideshow")}
+        </button>
+        <span style={dividerStyle} />
+        <button
+          style={shortcutsOpen ? activeIconStyle : iconButtonStyle}
+          onClick={() => setShortcutsOpen((o) => !o)}
+          title={t("shortcuts.openTitle")}
+          aria-label={t("shortcuts.openTitle")}
+          aria-haspopup="dialog"
+          aria-expanded={shortcutsOpen}
+        >
+          <Question size={16} weight="regular" />
+        </button>
+        <button
+          style={iconButtonStyle}
+          onClick={() => setSettingsOpen(true)}
+          title={t("settings.openTitle")}
+          aria-label={t("settings.openTitle")}
+          aria-haspopup="dialog"
+          aria-expanded={settingsOpen}
+        >
+          <GearSix size={16} weight="regular" />
+        </button>
+        {toolbarEnd}
+      </header>
+
+      {/* ---- Body: sidebar + resizer + stage area ----
+        Sidebar width is user-resizable; the splitter `<div>` sits on
+        the column boundary. All three grid items keep their identity
+        across renders so the imperatively-mounted slide SVG and
+        thumbnail DOM cache survive layout changes. */}
+      <div
+        style={{
+          ...bodyStyle,
+          gridTemplateColumns: `${sidebarWidth}px ${SIDEBAR_RESIZER_WIDTH}px minmax(0, 1fr)`,
+          display: slideshow ? "none" : "grid",
+        }}
+      >
+        <aside
+          key="sidebar"
+          style={{
+            ...sidebarStyle,
+            gridTemplateRows: hasSections ? "auto 1fr" : "1fr",
+          }}
+        >
+          {hasSections && (
+            <SectionNav
+              slides={sectionSlides}
+              currentSlide={currentSlide}
+              onJump={(n) => setCurrentSlide(n)}
+            />
+          )}
+          <ThumbnailSidebar
+            slideCount={slideCount}
+            currentSlide={currentSlide}
+            onSelect={setCurrentSlide}
+            getThumbnail={requestSlide}
+            aspectFallback={aspect}
+            deckKey={name ?? ""}
+          />
+        </aside>
+
+        {/* Splitter — drag horizontally to resize the sidebar.
+            `setPointerCapture` keeps the grip even when a fast drag
+            leaves the 6 px hit-zone. ARIA marks this as a vertical
+            separator with min/max/now so assistive tech announces the
+            current width. */}
+        <div
+          key="sidebar-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("status.resizeSidebar")}
+          aria-valuemin={SIDEBAR_WIDTH_MIN}
+          aria-valuemax={SIDEBAR_WIDTH_MAX}
+          aria-valuenow={sidebarWidth}
+          tabIndex={0}
+          style={sidebarResizerStyle}
+          onPointerDown={(ev) => {
+            ev.preventDefault();
+            sidebarResizeStartRef.current = {
+              pointerId: ev.pointerId,
+              startX: ev.clientX,
+              startWidth: sidebarWidth,
+            };
+            ev.currentTarget.setPointerCapture(ev.pointerId);
+          }}
+          onPointerMove={(ev) => {
+            const start = sidebarResizeStartRef.current;
+            if (!start || start.pointerId !== ev.pointerId) return;
+            const next = clampSidebarWidth(start.startWidth + (ev.clientX - start.startX));
+            setSidebarWidth(next);
+          }}
+          onPointerUp={(ev) => {
+            const start = sidebarResizeStartRef.current;
+            if (!start || start.pointerId !== ev.pointerId) return;
+            sidebarResizeStartRef.current = null;
+            try {
+              ev.currentTarget.releasePointerCapture(ev.pointerId);
+            } catch {
+              /* capture may already be released by the platform */
+            }
+            // Persist only on release — a 60 Hz drag would otherwise
+            // hammer localStorage and re-notify every settings
+            // subscriber for each frame.
+            saveSettings({ sidebarWidth: clampSidebarWidth(sidebarWidth) });
+          }}
+          onPointerCancel={() => {
+            sidebarResizeStartRef.current = null;
+          }}
+          onKeyDown={(ev) => {
+            // Keyboard a11y: ←/→ nudge by 10 px, Home/End jump to
+            // bounds. Persist on each step.
+            const STEP = 10;
+            let next: number | null = null;
+            if (ev.key === "ArrowLeft") next = sidebarWidth - STEP;
+            else if (ev.key === "ArrowRight") next = sidebarWidth + STEP;
+            else if (ev.key === "Home") next = SIDEBAR_WIDTH_MIN;
+            else if (ev.key === "End") next = SIDEBAR_WIDTH_MAX;
+            if (next == null) return;
+            ev.preventDefault();
+            const clamped = clampSidebarWidth(next);
+            setSidebarWidth(clamped);
+            saveSettings({ sidebarWidth: clamped });
+          }}
+        />
+
+        <div
+          key="stage-area"
+          style={{
+            ...stageAreaStyle,
+            gridTemplateRows: notesOpen
+              ? "minmax(0, 1fr) auto"
+              : "minmax(0, 1fr)",
+          }}
+        >
+          <div
+            style={{
+              ...stageWrapStyle,
+              padding: rulerOn ? `${RULER_SIZE}px 0 0 ${RULER_SIZE}px` : 0,
+            }}
+          >
+            {rulerOn && (
+              <>
+                <div style={rulerCornerStyle} />
+                <Ruler
+                  orientation="horizontal"
+                  unit={settings.rulerUnit}
+                  slideOriginPx={rulerRect.originX}
+                  slideExtentPx={rulerRect.extentX || slideW}
+                  slideExtentCm={intrinsic.cm}
+                  slideIntrinsicPx={intrinsic.px}
+                  style={rulerHStyle}
+                />
+                <Ruler
+                  orientation="vertical"
+                  unit={settings.rulerUnit}
+                  slideOriginPx={rulerRect.originY}
+                  slideExtentPx={rulerRect.extentY || slideH}
+                  slideExtentCm={intrinsicY.cm}
+                  slideIntrinsicPx={intrinsicY.px}
+                  style={rulerVStyle}
+                />
+              </>
+            )}
+            <main
+              ref={stageRef}
+              style={{
+                ...stageStyle,
+                cursor: spaceHeld
+                  ? panStartRef.current
+                    ? "grabbing"
+                    : "grab"
+                  : undefined,
+              }}
+              onPointerDown={onStagePointerDown}
+              onPointerMove={onStagePointerMove}
+              onPointerUp={onStagePointerUp}
+              onPointerCancel={onStagePointerUp}
+              onDoubleClick={onStageDoubleClick}
+            >
+              {viewMode === "normal" ? (
+                <>
+                  {/*
+                    Slide canvas is always mounted so the parsed SVG
+                    survives layout changes (sidebar toggle, zoom, …).
+                    If we conditionally unmount the host, the
+                    DOMParser-injected `<svg>` is lost; the
+                    `[slideSvg]` effect doesn't refire because the
+                    state didn't change, so the re-mounted host stays
+                    blank until the next slide load.
+                   */}
+                  <div
+                    style={{
+                      width: canvasW,
+                      height: canvasH,
+                      position: "relative",
+                      visibility: slideSvg ? "visible" : "hidden",
+                    }}
+                  >
+                    <div
+                      ref={slideRef}
+                      style={{
+                        width: slideW,
+                        height: slideH,
+                        position: "absolute",
+                        left: "50%",
+                        top: "50%",
+                        transform: `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px))`,
+                        background: "white",
+                        boxShadow: "0 4px 12px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.45))",
+                      }}
+                    />
+                    <SelectionOverlay
+                      boxes={selectionBoxes}
+                      rubberBand={rubberBandRect}
+                    />
+                  </div>
+                  {!slideSvg &&
+                    (errorMsg ? (
+                      <div style={overlayStyle}>{errorMsg}</div>
+                    ) : phase ? (
+                      // `phase` is set while we're parsing the deck or
+                      // preparing the next slide — surface a prominent
+                      // centred loading panel with a spinner so the
+                      // user doesn't have to scan the bottom-left
+                      // status bar to know something is happening.
+                      <div style={loadingOverlayStyle} role="status">
+                        <div style={loadingSpinnerStyle} aria-hidden="true" />
+                        <div style={loadingTextStyle}>
+                          {t("viewer.loading")}
+                        </div>
+                      </div>
+                    ) : slideCount === 0 ? (
+                      <div style={overlayStyle}>{t("viewer.empty")}</div>
+                    ) : (
+                      <div style={loadingOverlayStyle} role="status">
+                        <div style={loadingSpinnerStyle} aria-hidden="true" />
+                        <div style={loadingTextStyle}>
+                          {t("viewer.loading")}
+                        </div>
+                      </div>
+                    ))}
+                </>
+              ) : (
+                <GridView
+                  slideCount={slideCount}
+                  currentSlide={currentSlide}
+                  cache={slideCache}
+                  aspect={aspect}
+                  onSelect={(n) => {
+                    setCurrentSlide(n);
+                    setViewMode("normal");
+                  }}
+                  getThumbnail={requestSlide}
+                  deckKey={name ?? ""}
+                />
+              )}
+            </main>
+          </div>
+          {notesOpen && (
+            <NotesPanel currentSlide={currentSlide} meta={slideMeta} />
+          )}
+        </div>
+
+        {/* Search drawer (overlay panel anchored to body). */}
+        {searchOpen && (
+          <div style={searchDrawerStyle}>
+            <header style={searchHeaderStyle}>
+              <span>{t("search.title")}</span>
+              <button
+                style={iconButtonStyle}
+                onClick={() => setSearchOpen(false)}
+                title={t("common.close")}
+                aria-label={t("common.close")}
+              >
+                <X size={14} weight="bold" />
+              </button>
+            </header>
+            <input
+              type="search"
+              placeholder={t("search.placeholder")}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                void runSearch(e.target.value);
+              }}
+              style={searchInputStyle}
+              autoFocus
+            />
+            {searchHits.length === 0 ? (
+              <div style={searchEmptyStyle}>
+                {searchQuery ? t("search.noMatches") : t("search.typeToSearch")}
+              </div>
+            ) : (
+              <ul style={searchListStyle}>
+                {searchHits.map((hit) => (
+                  <li
+                    key={`${hit.slide_number}-${hit.excerpt}`}
+                    style={searchItemStyle}
+                    onClick={() => {
+                      setCurrentSlide(hit.slide_number);
+                      setSearchOpen(false);
+                    }}
+                  >
+                    <span style={searchHitNumStyle}>#{hit.slide_number}</span>
+                    <span>{hit.excerpt.replace(/\[\/?match\]/g, "")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ---- Slideshow overlay ---- */}
+      {slideshow && (
+        <div style={slideshowStyle}>
+          <main
+            ref={slideshowStageRef}
+            style={{ ...stageStyle, background: "#000", cursor: "pointer" }}
+            onClick={(ev) => {
+              // Plain left-click anywhere on the stage advances one
+              // slide — PowerPoint Slide Show convention. Auto-exit
+              // on the last slide so the user lands back on the
+              // editing surface naturally. Right-click / modified
+              // clicks are ignored so context menus and accessibility
+              // tooling still work.
+              if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+                return;
+              }
+              if (currentSlide >= slideCount) {
+                setSlideshow(false);
+                if (document.fullscreenElement) {
+                  void document.exitFullscreen();
+                }
+              } else {
+                setCurrentSlide((s) => Math.min(slideCount, s + 1));
+              }
+            }}
+          >
+            {fit > 0 && slideSvg && (
+              <div
+                style={{
+                  width: canvasW,
+                  height: canvasH,
+                  position: "relative",
+                }}
+              >
+                <div
+                  ref={slideshowSlideRef}
+                  style={{
+                    width: slideW,
+                    height: slideH,
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: `translate(-50%, -50%)`,
+                    background: "white",
+                  }}
+                />
+              </div>
+            )}
+          </main>
+          {/* Corner navigation pad — bottom-right hover zone reveals
+              prev / next / exit buttons. Sits above the click-to-
+              advance handler with `stopPropagation` so button clicks
+              never double-trigger the stage advance. */}
+          <div
+            data-pptx-slideshow-nav=""
+            style={slideshowNavZoneStyle}
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <div style={slideshowNavGroupStyle}>
+              <button
+                style={slideshowNavButtonStyle}
+                onClick={() =>
+                  setCurrentSlide((s) => Math.max(1, s - 1))
+                }
+                disabled={currentSlide <= 1}
+                title={t("nav.previousSlide")}
+                aria-label={t("nav.previousSlide")}
+              >
+                <CaretLeft size={20} weight="bold" />
+              </button>
+              <button
+                style={slideshowNavButtonStyle}
+                onClick={() =>
+                  setCurrentSlide((s) => Math.min(slideCount, s + 1))
+                }
+                disabled={currentSlide >= slideCount}
+                title={t("nav.nextSlide")}
+                aria-label={t("nav.nextSlide")}
+              >
+                <CaretRight size={20} weight="bold" />
+              </button>
+              <button
+                style={slideshowNavButtonStyle}
+                onClick={() => {
+                  setSlideshow(false);
+                  if (document.fullscreenElement) {
+                    void document.exitFullscreen();
+                  }
+                }}
+                title={t("common.close")}
+                aria-label={t("common.close")}
+              >
+                <X size={18} weight="bold" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Status bar ---- */}
+      {!slideshow && (
+        <footer style={statusBarStyle}>
+          <span style={phaseStyle}>
+            {phase || (errorMsg ? `⚠ ${errorMsg}` : t("common.ready"))}
+          </span>
+          <div style={spacerStyle} />
+          {slideMeta?.section_name ? (
+            <span style={metaStyle}>{slideMeta.section_name}</span>
+          ) : null}
+          <span style={metaStyle}>
+            {slideCount === 0
+              ? t("status.slideEmpty")
+              : t("status.slideOf", {
+                  current: currentSlide,
+                  total: slideCount,
+                })}
+          </span>
+          {selectionFonts.length > 0 ? (
+            <>
+              <span style={statusSepStyle} />
+              <div
+                ref={selectionFontsRef}
+                style={selectionFontsContainerStyle}
+              >
+                <button
+                  type="button"
+                  style={
+                    selectionFontsOpen
+                      ? selectionFontsButtonActiveStyle
+                      : selectionFontsButtonStyle
+                  }
+                  title={t("status.selectionFontTitle", {
+                    fonts: selectionFonts.join(", "),
+                  })}
+                  aria-haspopup="dialog"
+                  aria-expanded={selectionFontsOpen}
+                  onClick={() => setSelectionFontsOpen((o) => !o)}
+                >
+                  {t("status.selectionFontLabel")}{" "}
+                  {selectionFonts.length === 1
+                    ? selectionFonts[0]
+                    : t("status.selectionFontMultiple", {
+                        first: selectionFonts[0],
+                        extra: selectionFonts.length - 1,
+                      })}
+                </button>
+                {selectionFontsOpen ? (
+                  <div
+                    style={selectionFontsPopoverStyle}
+                    role="dialog"
+                    aria-label={t("status.selectionFontTitle", {
+                      fonts: selectionFonts.join(", "),
+                    })}
+                  >
+                    <ul style={selectionFontsListStyle}>
+                      {selectionFonts.map((family) => (
+                        <li
+                          key={family}
+                          style={selectionFontsListItemStyle}
+                        >
+                          {family}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+          <span style={statusSepStyle} />
+          <FontUsageIndicator
+            fontUsage={fontUsage}
+            buttonStyle={statusIconStyle}
+            buttonActiveStyle={activeIconSmStyle}
+          />
+          <button
+            style={notesOpen ? activeIconSmStyle : statusIconStyle}
+            onClick={() => setNotesOpen((o) => !o)}
+            title={t("status.toggleNotes")}
+            aria-label={t("status.toggleNotes")}
+            aria-pressed={notesOpen}
+          >
+            <ChatCircleText size={14} weight={notesOpen ? "fill" : "regular"} />
+          </button>
+          <span style={statusSepStyle} />
+          <button
+            style={viewMode === "normal" ? activeIconSmStyle : statusIconStyle}
+            onClick={() => setViewMode("normal")}
+            title={t("status.normalView")}
+            aria-label={t("status.normalView")}
+            aria-pressed={viewMode === "normal"}
+          >
+            <SquaresFour size={14} weight={viewMode === "normal" ? "fill" : "regular"} />
+          </button>
+          <button
+            style={viewMode === "grid" ? activeIconSmStyle : statusIconStyle}
+            onClick={() => setViewMode("grid")}
+            title={t("status.gridView")}
+            aria-label={t("status.gridView")}
+            aria-pressed={viewMode === "grid"}
+          >
+            <GridFour size={14} weight={viewMode === "grid" ? "fill" : "regular"} />
+          </button>
+          <span style={statusSepStyle} />
+          <button
+            style={statusIconStyle}
+            onClick={() => setZoom((z) => clamp(z * 0.8, ZOOM_MIN, ZOOM_MAX))}
+            title={t("status.zoomOut")}
+            aria-label={t("status.zoomOut")}
+          >
+            <Minus size={14} weight="bold" />
+          </button>
+          <input
+            type="range"
+            min={Math.round(ZOOM_MIN * 100)}
+            max={400}
+            step={1}
+            value={Math.min(zoomPct, 400)}
+            onChange={(e) => setZoomFromPct(parseFloat(e.target.value))}
+            style={zoomSliderStyle}
+            title={t("status.zoom")}
+            aria-label={t("status.zoom")}
+          />
+          <button
+            style={statusIconStyle}
+            onClick={() => setZoom((z) => clamp(z * 1.25, ZOOM_MIN, ZOOM_MAX))}
+            title={t("status.zoomIn")}
+            aria-label={t("status.zoomIn")}
+          >
+            <Plus size={14} weight="bold" />
+          </button>
+          <span
+            style={zoomPctStyle}
+            onClick={reset}
+            title={t("status.zoomReset")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") reset();
+            }}
+          >
+            {zoomPct}%
+          </span>
+          <button
+            style={statusIconStyle}
+            onClick={reset}
+            title={t("status.fitWindow")}
+            aria-label={t("status.fitWindow")}
+          >
+            <ArrowsOutSimple size={14} weight="bold" />
+          </button>
+        </footer>
+      )}
+
+      {/* ---- Settings dialog ---- */}
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onSettingsChange={(next) => setSettings(next)}
+      />
+
+      {/* ---- Shortcuts help dialog (?) ---- */}
+      <ShortcutsDialog
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
+
+      {/* ---- Long-running export progress overlay ----
+          The status bar at the bottom is too easy to miss on a 100+
+          slide deck where Print / PDF can take many seconds before
+          the OS print dialog or download fires. A centred modal
+          surface confirms the click was received and gives a live
+          counter so users don't suspect the click was lost. */}
+      {progress && (
+        <div
+          style={progressHostStyle}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div style={progressBackdropStyle} />
+          <div style={progressPanelStyle}>
+            <div style={progressTitleStyle}>{progress.title}</div>
+            <div style={progressStepStyle}>{progress.step}</div>
+            <div style={progressBarTrackStyle}>
+              <div
+                style={{
+                  ...progressBarFillStyle,
+                  ...(progress.total && progress.total > 0
+                    ? {
+                        width: `${Math.min(100, ((progress.current ?? 0) / progress.total) * 100)}%`,
+                      }
+                    : progressBarIndeterminateStyle),
+                }}
+              />
+            </div>
+            {progress.total != null && progress.total > 0 ? (
+              <div style={progressCounterStyle}>
+                {(progress.current ?? 0)} / {progress.total}
+              </div>
+            ) : (
+              <div style={progressCounterStyle}>&nbsp;</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =========================================================================
+// Subcomponents
+// =========================================================================
+
+interface ThumbnailSidebarProps {
+  slideCount: number;
+  currentSlide: number;
+  onSelect: (slide: number) => void;
+  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
+  aspectFallback: number;
+  /**
+   * Per-deck identifier — included in each `<Thumbnail>`'s React key
+   * so a deck swap forces every thumbnail to unmount + remount with
+   * fresh internal state. Without this, Thumbnail's `useEffect` deps
+   * (`[visible, slide, getThumbnail, aspectFallback]`) don't change
+   * across decks (`slide` is still 1, `getThumbnail` is the same
+   * stable callback), the cached `svg` state from the previous deck
+   * sticks, and the panel keeps showing stale tiles even after
+   * `slideCache` itself is flushed.
+   */
+  deckKey: string;
+}
+
+const ThumbnailSidebar = memo(function ThumbnailSidebar(
+  props: ThumbnailSidebarProps,
+): JSX.Element {
+  const { slideCount, currentSlide, onSelect, getThumbnail, aspectFallback, deckKey } = props;
+  return (
+    <div style={thumbStripStyle}>
+      {Array.from({ length: slideCount }, (_, i) => {
+        const n = i + 1;
+        return (
+          <Thumbnail
+            key={`${deckKey}::${n}`}
+            slide={n}
+            active={n === currentSlide}
+            onClick={() => onSelect(n)}
+            getThumbnail={getThumbnail}
+            aspectFallback={aspectFallback}
+            layout="tile"
+          />
+        );
+      })}
+      {slideCount === 0 && (
+        <div style={sidebarEmptyStyle}>{t("viewer.empty")}</div>
+      )}
+    </div>
+  );
+});
+
+interface ThumbnailProps {
+  slide: number;
+  active: boolean;
+  onClick: () => void;
+  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
+  aspectFallback: number;
+  /**
+   * `"row"` — sidebar style: slide number on the left, frame on the
+   * right (vertical strip). `"tile"` — slide-sorter style: frame on
+   * top, caption underneath, all tiles share a uniform footprint via
+   * the `aspectFallback` (deck aspect), so the grid stays aligned
+   * even when individual slides parse at slightly different aspects.
+   */
+  layout?: "row" | "tile";
+}
+
+function Thumbnail(props: ThumbnailProps): JSX.Element {
+  const {
+    slide,
+    active,
+    onClick,
+    getThumbnail,
+    aspectFallback,
+    layout = "row",
+  } = props;
+  const [svg, setSvg] = useState<string | null>(null);
+  const [aspect, setAspect] = useState<number>(aspectFallback);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  // `visible` gates the slide fetch so a 132-slide deck doesn't fan
+  // out to 132 IPC calls when the sidebar mounts. We watch the button
+  // with `IntersectionObserver` and only request the slide once it
+  // crosses into the viewport (or its sidebar's scroll container).
+  // Once true, the flag stays true — there's no benefit to unloading
+  // a slide we already paid to render.
+  const [visible, setVisible] = useState<boolean>(active);
+
+  useEffect(() => {
+    if (active) setVisible(true);
+  }, [active]);
+
+  useEffect(() => {
+    if (visible) return;
+    const el = buttonRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setVisible(true); // SSR / older browsers — fall back to eager
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            obs.disconnect();
+            return;
+          }
+        }
+      },
+      // Generous rootMargin so the slide is already rendered by the
+      // time the user scrolls the sidebar into it — no perceptible
+      // pop-in.
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    void (async () => {
+      const cached = await getThumbnail(slide);
+      if (cancelled || !cached) return;
+      setAspect(parseAspect(cached.svg) ?? aspectFallback);
+      setSvg(cached.preparedSvg);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, slide, getThumbnail, aspectFallback]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    while (host.firstChild) host.removeChild(host.firstChild);
+    if (!svg) return;
+    try {
+      // Per-thumbnail unique ID namespace — see svg-utils.uniquifyIds
+      // for why this is required (multiple SVGs share document ID
+      // namespace, leading to clipPath / gradient cross-references).
+      const namespaced = uniquifyIds(svg, `${layout}-s${slide}`);
+      const doc = new DOMParser().parseFromString(namespaced, "image/svg+xml");
+      const root = doc.documentElement;
+      if (!root) return;
+      host.appendChild(document.importNode(root, true));
+    } catch {
+      /* swallow */
+    }
+  }, [svg, slide, layout]);
+
+  const isTile = layout === "tile";
+  const frameAspect = isTile ? aspectFallback : aspect;
+  const buttonStyle = isTile
+    ? active
+      ? thumbnailTileActiveStyle
+      : thumbnailTileStyle
+    : active
+      ? thumbnailButtonActiveStyle
+      : thumbnailButtonStyle;
+  const frameStyle = isTile ? thumbnailTileFrameStyle : thumbnailFrameStyle;
+
+  return (
+    <button
+      ref={buttonRef}
+      style={buttonStyle}
+      onClick={onClick}
+      title={t("viewer.slideTitle", { number: slide })}
+      aria-label={t("viewer.slideTitle", { number: slide })}
+    >
+      {!isTile && <span style={thumbnailIndexStyle}>{slide}</span>}
+      <div style={{ ...frameStyle, aspectRatio: `${frameAspect}` }}>
+        {svg ? (
+          <div ref={hostRef} style={thumbnailInnerStyle} />
+        ) : (
+          <div style={thumbnailPlaceholderStyle}>…</div>
+        )}
+      </div>
+      {isTile && <span style={thumbnailCaptionStyle}>{slide}</span>}
+    </button>
+  );
+}
+
+interface NotesPanelProps {
+  currentSlide: number;
+  meta: SlideMeta | null;
+}
+function NotesPanel(props: NotesPanelProps): JSX.Element {
+  const { currentSlide, meta } = props;
+  const heading = meta?.section_name
+    ? t("notes.headingWithSection", {
+        current: currentSlide,
+        section: meta.section_name,
+      })
+    : t("notes.heading", { current: currentSlide });
+  return (
+    <div style={notesPanelStyle}>
+      <h4 style={notesHeadingStyle}>{heading}</h4>
+      {meta?.layout_name ? (
+        <div style={notesMetaStyle}>
+          {t("notes.layoutLabel", { value: meta.layout_name })}
+        </div>
+      ) : null}
+      {meta?.section_name ? (
+        <div style={notesMetaStyle}>
+          {t("notes.sectionLabel", { value: meta.section_name })}
+        </div>
+      ) : null}
+      {meta?.notes ? (
+        <div style={notesBodyStyle}>{meta.notes}</div>
+      ) : (
+        <em style={notesEmptyStyle}>{t("notes.empty")}</em>
+      )}
+    </div>
+  );
+}
+
+interface GridViewProps {
+  slideCount: number;
+  currentSlide: number;
+  cache: Map<number, CachedSlide>;
+  aspect: number;
+  onSelect: (slide: number) => void;
+  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
+  /** See `ThumbnailSidebarProps.deckKey` for the rationale. */
+  deckKey: string;
+}
+function GridView(props: GridViewProps): JSX.Element {
+  if (props.slideCount === 0) return <div style={overlayStyle}>{t("viewer.empty")}</div>;
+  return (
+    <div style={gridViewStyle}>
+      {Array.from({ length: props.slideCount }, (_, i) => {
+        const n = i + 1;
+        return (
+          <Thumbnail
+            key={`${props.deckKey}::${n}`}
+            slide={n}
+            active={n === props.currentSlide}
+            onClick={() => props.onSelect(n)}
+            getThumbnail={props.getThumbnail}
+            aspectFallback={props.aspect}
+            layout="tile"
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// =========================================================================
+// Styles
+// =========================================================================
+
+const rootStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateRows: "auto minmax(0, 1fr) auto",
+  width: "100%",
+  height: "100%",
+  background: "var(--pptx-shell-bg, #2b2b2f)",
+  color: "var(--pptx-shell-fg, #ececec)",
+  font: "13px system-ui, -apple-system, sans-serif",
+  overflow: "hidden",
+  position: "relative",
+};
+
+const ribbonStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "8px 12px",
+  background: "var(--pptx-shell-ribbon-bg, #1f1f23)",
+  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
+  flexWrap: "wrap",
+};
+
+const filenameStyle: CSSProperties = {
+  fontWeight: 600,
+  maxWidth: 240,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  marginLeft: 8,
+};
+
+const spacerStyle: CSSProperties = { flex: "1 1 auto" };
+
+const dividerStyle: CSSProperties = {
+  width: 1,
+  alignSelf: "stretch",
+  background: "var(--pptx-shell-border, #2a2a30)",
+  margin: "0 2px",
+};
+
+const counterStyle: CSSProperties = {
+  minWidth: 70,
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const baseButtonStyle: CSSProperties = {
+  background: "transparent",
+  color: "inherit",
+  border: "1px solid var(--pptx-shell-border, #2a2a30)",
+  borderRadius: 4,
+  padding: "4px 10px",
+  font: "inherit",
+  cursor: "pointer",
+  minHeight: 28,
+};
+
+const iconButtonStyle: CSSProperties = {
+  ...baseButtonStyle,
+  padding: "4px 8px",
+  minWidth: 28,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 4,
+};
+
+const activeIconStyle: CSSProperties = {
+  ...iconButtonStyle,
+  background: "var(--pptx-shell-active, #3a3a44)",
+  // See `activeIconSmStyle`: active toolbar buttons signal state via
+  // background only; the accent border was producing a perceived
+  // "white outline" on dark themes and is dropped here for parity.
+};
+
+const textButtonStyle: CSSProperties = {
+  ...baseButtonStyle,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+};
+
+const disabledTextButtonStyle: CSSProperties = {
+  ...textButtonStyle,
+  opacity: 0.45,
+  cursor: "not-allowed",
+};
+
+const bodyStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateRows: "minmax(0, 1fr)",
+  minHeight: 0,
+  minWidth: 0,
+  overflow: "hidden",
+  position: "relative",
+};
+
+const sidebarStyle: CSSProperties = {
+  display: "grid",
+  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
+  background: "var(--pptx-shell-sidebar-bg, #15151a)",
+  overflow: "hidden",
+  minHeight: 0,
+};
+
+// Splitter handle between the sidebar and the stage area. Painted as a
+// transparent strip so the sidebar's own right border is the only
+// visible separator at rest; on hover/active the accent colour fades
+// in to advertise the drag affordance.
+const sidebarResizerStyle: CSSProperties = {
+  cursor: "col-resize",
+  background: "transparent",
+  // A thin strip is hard to grab with the mouse; the underlying grid
+  // column is `SIDEBAR_RESIZER_WIDTH` wide so this `<div>` already
+  // fills it. `touch-action: none` blocks the browser's pan gesture
+  // from stealing pointer events during a drag on touch devices.
+  touchAction: "none",
+  userSelect: "none",
+};
+
+const thumbStripStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  padding: 10,
+  overflowY: "auto",
+};
+
+const sidebarEmptyStyle: CSSProperties = {
+  textAlign: "center",
+  color: "var(--pptx-shell-status, #666)",
+  fontSize: 12,
+  padding: "24px 8px",
+  fontStyle: "italic",
+};
+
+const thumbnailButtonStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: 4,
+  background: "transparent",
+  border: "2px solid transparent",
+  borderRadius: 4,
+  cursor: "pointer",
+  color: "inherit",
+  font: "inherit",
+  textAlign: "left",
+};
+
+const thumbnailButtonActiveStyle: CSSProperties = {
+  ...thumbnailButtonStyle,
+  borderColor: "var(--pptx-shell-accent, #6aa3ff)",
+  background: "var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.12))",
+};
+
+const thumbnailIndexStyle: CSSProperties = {
+  width: 24,
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+  fontSize: 12,
+  color: "var(--pptx-shell-status, #888)",
+};
+
+const thumbnailFrameStyle: CSSProperties = {
+  flex: "1 1 auto",
+  background: "white",
+  borderRadius: 3,
+  overflow: "hidden",
+  boxShadow: "0 1px 3px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.4))",
+};
+
+const thumbnailInnerStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+};
+
+const thumbnailPlaceholderStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  display: "grid",
+  placeItems: "center",
+  color: "var(--pptx-shell-status, #aaa)",
+  fontSize: 14,
+  background: "var(--pptx-thumb-tile, #1a1a1f)",
+};
+
+// ---- Tile variant (grid / slide-sorter) ----------------------------------
+// Frame stacks above caption; tile stretches to fill its grid cell so
+// columns line up at a fixed cell width. Frame uses width: 100% +
+// aspect-ratio so every tile reserves the same on-screen footprint.
+
+const thumbnailTileStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "stretch",
+  gap: 8,
+  padding: 8,
+  width: "100%",
+  background: "transparent",
+  border: "2px solid transparent",
+  borderRadius: 6,
+  cursor: "pointer",
+  color: "inherit",
+  font: "inherit",
+  textAlign: "center",
+  boxSizing: "border-box",
+};
+
+const thumbnailTileActiveStyle: CSSProperties = {
+  ...thumbnailTileStyle,
+  borderColor: "var(--pptx-shell-accent, #6aa3ff)",
+  background: "var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.12))",
+};
+
+const thumbnailTileFrameStyle: CSSProperties = {
+  width: "100%",
+  background: "white",
+  borderRadius: 4,
+  overflow: "hidden",
+  boxShadow: "0 2px 6px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.45))",
+  alignSelf: "stretch",
+};
+
+const thumbnailCaptionStyle: CSSProperties = {
+  fontSize: 12,
+  fontVariantNumeric: "tabular-nums",
+  color: "var(--pptx-shell-status, #aaa)",
+  lineHeight: 1.2,
+};
+
+const stageAreaStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateRows: "minmax(0, 1fr)",
+  minHeight: 0,
+  minWidth: 0,
+  overflow: "hidden",
+};
+
+const stageWrapStyle: CSSProperties = {
+  position: "relative",
+  minHeight: 0,
+  minWidth: 0,
+  overflow: "hidden",
+  boxSizing: "border-box",
+};
+
+const stageStyle: CSSProperties = {
+  position: "relative",
+  width: "100%",
+  height: "100%",
+  overflow: "auto",
+  background: "var(--pptx-shell-bg, #2b2b2f)",
+  display: "block",
+};
+
+const overlayStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  display: "grid",
+  placeItems: "center",
+  color: "var(--pptx-shell-status, #888)",
+  fontSize: 14,
+};
+
+// Prominent centred loading panel for the parse / slide-prepare
+// window. Differs from `overlayStyle` (which is used for the
+// "empty" / error states) by stacking a spinner above the label
+// and using a slightly higher-contrast colour so the user can spot
+// it without scanning the status bar at the bottom-left.
+const loadingOverlayStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 16,
+  color: "var(--pptx-shell-fg, #ececec)",
+  fontSize: 15,
+  pointerEvents: "none",
+};
+
+const loadingSpinnerStyle: CSSProperties = {
+  width: 36,
+  height: 36,
+  borderRadius: "50%",
+  border: "3px solid var(--pptx-shell-border, rgba(255, 255, 255, 0.18))",
+  borderTopColor: "var(--pptx-shell-accent, #6aa3ff)",
+  animation: "pptx-loading-spin 0.9s linear infinite",
+};
+
+const loadingTextStyle: CSSProperties = {
+  color: "var(--pptx-shell-fg, #ececec)",
+  fontWeight: 500,
+  letterSpacing: "0.01em",
+};
+
+// Centred export-progress overlay — visually mirrors the existing
+// SettingsDialog modal so users perceive it as a system-level
+// confirmation that the click landed.
+const progressHostStyle: CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1100,
+  font: "13px system-ui, -apple-system, sans-serif",
+  pointerEvents: "auto",
+};
+
+const progressBackdropStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  background: "var(--pptx-shell-dialog-overlay, rgba(0, 0, 0, 0.45))",
+};
+
+const progressPanelStyle: CSSProperties = {
+  position: "relative",
+  width: "min(420px, 86vw)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  padding: "20px 24px",
+  background: "var(--pptx-shell-dialog-bg, #1f1f23)",
+  color: "var(--pptx-shell-dialog-fg, #ececec)",
+  border: "1px solid var(--pptx-shell-border, #2a2a30)",
+  borderRadius: 10,
+  boxShadow: "0 16px 48px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.5))",
+};
+
+const progressTitleStyle: CSSProperties = {
+  fontSize: 15,
+  fontWeight: 600,
+  letterSpacing: 0.1,
+};
+
+const progressStepStyle: CSSProperties = {
+  fontSize: 13,
+  color: "var(--pptx-shell-status, #b8b8c0)",
+  minHeight: 18,
+  fontVariantNumeric: "tabular-nums",
+};
+
+const progressBarTrackStyle: CSSProperties = {
+  position: "relative",
+  width: "100%",
+  height: 6,
+  borderRadius: 3,
+  background: "var(--pptx-shell-track, rgba(255, 255, 255, 0.08))",
+  overflow: "hidden",
+};
+
+const progressBarFillStyle: CSSProperties = {
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: 0,
+  background: "var(--pptx-shell-accent, #6aa3ff)",
+  borderRadius: 3,
+  transition: "width 120ms ease-out",
+};
+
+// Indeterminate fallback when the host hasn't supplied a current/total
+// pair yet — paints a thin sliver so users still see the bar exists.
+// Inline styles can't define keyframes, so we keep it static rather
+// than animated; the live "step" text already conveys motion.
+const progressBarIndeterminateStyle: CSSProperties = {
+  width: "30%",
+  opacity: 0.65,
+};
+
+const progressCounterStyle: CSSProperties = {
+  fontSize: 12,
+  color: "var(--pptx-shell-status, #888)",
+  fontVariantNumeric: "tabular-nums",
+  textAlign: "right",
+};
+
+const rulerCornerStyle: CSSProperties = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: RULER_SIZE,
+  height: RULER_SIZE,
+  background: "var(--pptx-shell-status-bg, #1f1f23)",
+  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
+  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
+  zIndex: 6,
+  pointerEvents: "none",
+};
+
+const rulerHStyle: CSSProperties = {
+  position: "absolute",
+  top: 0,
+  right: 0,
+  left: RULER_SIZE,
+  height: RULER_SIZE,
+  zIndex: 5,
+  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
+};
+
+const rulerVStyle: CSSProperties = {
+  position: "absolute",
+  top: RULER_SIZE,
+  left: 0,
+  bottom: 0,
+  width: RULER_SIZE,
+  zIndex: 5,
+  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
+};
+
+const gridViewStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+  // `gridAutoRows: min-content` forces every row track to size to its
+  // content rather than stretching to fill the container's leftover
+  // height; combined with `alignContent: start`, that anchors a
+  // single-row deck to the top of the stage instead of letting the
+  // single row expand to half-height and centring vertically.
+  gridAutoRows: "min-content",
+  alignContent: "start",
+  alignItems: "start",
+  justifyItems: "stretch",
+  gap: 20,
+  padding: 24,
+  overflow: "auto",
+  width: "100%",
+  height: "100%",
+  boxSizing: "border-box",
+};
+
+const notesPanelStyle: CSSProperties = {
+  padding: "10px 16px",
+  background: "var(--pptx-shell-notes-bg, #1a1a1f)",
+  borderTop: "1px solid var(--pptx-shell-border, #2a2a30)",
+  overflow: "auto",
+  maxHeight: 200,
+  whiteSpace: "pre-wrap",
+};
+
+const notesHeadingStyle: CSSProperties = {
+  margin: "0 0 6px",
+  fontSize: 11,
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "var(--pptx-shell-notes-heading, #888)",
+};
+
+const notesBodyStyle: CSSProperties = {
+  fontSize: 12,
+  color: "var(--pptx-shell-notes-fg, #ddd)",
+};
+const notesEmptyStyle: CSSProperties = {
+  color: "var(--pptx-shell-status, #666)",
+  fontSize: 12,
+};
+
+const notesMetaStyle: CSSProperties = {
+  fontSize: 11,
+  color: "var(--pptx-shell-accent, #6aa3ff)",
+  marginBottom: 4,
+};
+
+const searchDrawerStyle: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  width: 280,
+  maxHeight: "calc(100% - 24px)",
+  background: "var(--pptx-shell-drawer-bg, #1f1f23)",
+  border: "1px solid var(--pptx-shell-border, #2a2a30)",
+  borderRadius: 6,
+  boxShadow: "0 6px 24px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.4))",
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+  zIndex: 10,
+};
+const searchHeaderStyle: CSSProperties = {
+  padding: "8px 10px",
+  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
+  fontSize: 11,
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "var(--pptx-shell-status, #aaa)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+const searchInputStyle: CSSProperties = {
+  margin: 8,
+  padding: "4px 8px",
+  background: "transparent",
+  color: "inherit",
+  border: "1px solid var(--pptx-shell-border, #2a2a30)",
+  borderRadius: 4,
+  font: "inherit",
+};
+const searchEmptyStyle: CSSProperties = {
+  padding: 12,
+  color: "var(--pptx-shell-status, #666)",
+  fontStyle: "italic",
+};
+const searchListStyle: CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  overflowY: "auto",
+};
+const searchItemStyle: CSSProperties = {
+  padding: "8px 10px",
+  cursor: "pointer",
+  borderBottom: "1px solid var(--pptx-shell-border, rgba(255, 255, 255, 0.05))",
+  fontSize: 12,
+};
+const searchHitNumStyle: CSSProperties = {
+  fontVariantNumeric: "tabular-nums",
+  color: "var(--pptx-shell-accent, #6aa3ff)",
+  marginRight: 6,
+};
+
+const slideshowStyle: CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "#000",
+  zIndex: 100,
+};
+
+// Bottom-right hover zone for slideshow nav buttons. The zone itself
+// is invisible (no background) but reserves a 220×100 region for the
+// hover trigger. The buttons inside fade in via the CSS rule in
+// `SHELL_GLOBAL_CSS` (`[data-pptx-slideshow-nav]:hover > div`).
+const slideshowNavZoneStyle: CSSProperties = {
+  position: "absolute",
+  right: 0,
+  bottom: 0,
+  width: 220,
+  height: 100,
+  zIndex: 110,
+  // No background so the zone is invisible until the user hovers in.
+  // `pointer-events: auto` is the default; explicit so a future
+  // change to the parent doesn't inherit `none` and break clicks.
+  pointerEvents: "auto",
+};
+
+const slideshowNavGroupStyle: CSSProperties = {
+  position: "absolute",
+  right: 16,
+  bottom: 16,
+  display: "flex",
+  gap: 6,
+  padding: 6,
+  borderRadius: 8,
+  background: "rgba(20, 20, 24, 0.7)",
+  backdropFilter: "blur(8px)",
+  // Fade controlled by CSS hover rule; keep buttons reachable for
+  // keyboard focus by retaining pointer-events even while invisible.
+  opacity: 0,
+  transition: "opacity 120ms ease-out",
+};
+
+const slideshowNavButtonStyle: CSSProperties = {
+  width: 36,
+  height: 36,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "transparent",
+  color: "#ececec",
+  border: "1px solid rgba(255, 255, 255, 0.18)",
+  borderRadius: 6,
+  cursor: "pointer",
+  padding: 0,
+};
+
+const statusBarStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "4px 12px",
+  fontSize: 11,
+  color: "var(--pptx-shell-status, #888)",
+  background: "var(--pptx-shell-status-bg, #1f1f23)",
+  borderTop: "1px solid var(--pptx-shell-border, #2a2a30)",
+  minHeight: 28,
+};
+
+const phaseStyle: CSSProperties = { fontVariantNumeric: "tabular-nums" };
+const metaStyle: CSSProperties = { fontSize: 11 };
+
+const statusSepStyle: CSSProperties = {
+  width: 1,
+  height: 16,
+  background: "var(--pptx-shell-border, #2a2a30)",
+  margin: "0 4px",
+};
+
+const selectionFontsContainerStyle: CSSProperties = {
+  position: "relative",
+  display: "inline-flex",
+  alignItems: "center",
+};
+
+const selectionFontsButtonStyle: CSSProperties = {
+  background: "transparent",
+  color: "inherit",
+  border: "1px solid transparent",
+  borderRadius: 3,
+  padding: "2px 6px",
+  cursor: "pointer",
+  font: "inherit",
+  fontSize: 11,
+  minHeight: 22,
+  display: "inline-flex",
+  alignItems: "center",
+};
+const selectionFontsButtonActiveStyle: CSSProperties = {
+  ...selectionFontsButtonStyle,
+  background: "var(--pptx-shell-active, #3a3a44)",
+};
+
+const selectionFontsPopoverStyle: CSSProperties = {
+  position: "absolute",
+  // Status bar sits at the bottom of the shell, so the popover
+  // expands upward (mirrors `FontUsageIndicator`).
+  bottom: "calc(100% + 4px)",
+  left: 0,
+  minWidth: 220,
+  maxWidth: 360,
+  maxHeight: 280,
+  overflow: "auto",
+  background: "var(--pptx-shell-bg, #1f1f24)",
+  color: "var(--pptx-shell-fg, #e6e6ea)",
+  border: "1px solid var(--pptx-shell-border, #2c2c34)",
+  borderRadius: 6,
+  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+  zIndex: 1000,
+  fontSize: 12,
+  padding: "4px 0",
+};
+
+const selectionFontsListStyle: CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+};
+
+const selectionFontsListItemStyle: CSSProperties = {
+  padding: "5px 12px",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+const statusIconStyle: CSSProperties = {
+  background: "transparent",
+  color: "inherit",
+  border: "1px solid transparent",
+  borderRadius: 3,
+  padding: "2px 6px",
+  cursor: "pointer",
+  font: "inherit",
+  minHeight: 22,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+const activeIconSmStyle: CSSProperties = {
+  ...statusIconStyle,
+  background: "var(--pptx-shell-active, #3a3a44)",
+  // Active state is signalled by background only — earlier versions
+  // also flipped `borderColor` to the accent, but that 1px line was
+  // perceived as a stray "white outline" against dark themes (the
+  // anti-aliased thin accent stroke desaturates to off-white in JPEG
+  // screenshots and on lower-DPI displays). Background-only matches
+  // PowerPoint's own toolbar convention and avoids the artefact.
+};
+
+const zoomSliderStyle: CSSProperties = {
+  width: 120,
+  margin: "0 6px",
+};
+
+const zoomPctStyle: CSSProperties = {
+  minWidth: 40,
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+  cursor: "pointer",
+  userSelect: "none",
+};

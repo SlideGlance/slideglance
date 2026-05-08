@@ -1,0 +1,55 @@
+[package]
+name = "slideglance-viewer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Tauri 2 desktop shell for the slideglance viewer"
+publish = false
+
+[lints]
+workspace = true
+
+[lib]
+name = "slideglance_viewer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "slideglance-viewer"
+path = "src/main.rs"
+
+[dependencies]
+# `slideglance` exposes the high-level document API. `system-fonts` enables
+# host-system font discovery (via fontdb) so wrap measurement matches
+# what the WebView eventually paints — without it the auto measurer
+# falls back to bundled metric-compatible OSS faces and any host-
+# installed CJK / brand fonts go unmeasured, producing visible text
+# drift vs. the browser viewer where canvas-backed measurement is
+# always available.
+slideglance = { workspace = true, features = ["system-fonts"] }
+# Tauri 2 stable moved the legacy `protocol-asset` and
+# `macos-private-api` cargo features into `tauri.conf.json` (under
+# `app.security.assetProtocol` and `app.macOSPrivateApi` respectively).
+# The custom `pptx://` URI scheme registered in Task D5 uses
+# `Builder::register_uri_scheme_protocol`, which is in default features —
+# no extra flags required.
+tauri = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+# `tokio::sync::oneshot` bridges the dialog plugin's callback into the
+# `async fn open_pptx_dialog` command. Tauri 2 already pulls tokio with
+# `sync` enabled transitively, but we list it here explicitly so a
+# future tauri minor release that prunes its feature set doesn't break
+# this crate silently.
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[build-dependencies]
+tauri-build = { workspace = true }

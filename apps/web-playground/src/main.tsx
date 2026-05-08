@@ -1,0 +1,239 @@
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createRoot } from "react-dom/client";
+import {
+  PptxPresentation,
+  createWorkerController,
+  t,
+  subscribeLocale,
+  type SlideController,
+} from "@slideglance/viewer";
+// Bundle the viewer's worker chunk through THIS app's Vite pipeline
+// so the resulting URL lives next to the playground's own bundle and
+// the playground's `vite-plugin-wasm` can resolve `@slideglance/core`.
+import PptxWorker from "@slideglance/viewer/dist/pptx-worker.js?worker";
+
+interface SampleEntry {
+  label: string;
+  url: string;
+}
+
+// The hosted playground does not bundle sample decks — the public
+// release ships drag-and-drop only. Local development that wants
+// pre-loaded fixtures should drop files into `public/samples/` and
+// extend this list.
+const SAMPLES: SampleEntry[] = [];
+
+function PlaygroundApp(): JSX.Element {
+  const [controller, setController] = useState<SlideController | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  const [src, setSrc] = useState<Uint8Array | null>(null);
+  const [activeSampleUrl, setActiveSampleUrl] = useState<string | null>(null);
+  const [openCount, setOpenCount] = useState<number>(0);
+  const [info, setInfo] = useState<string>(() => t("playground.pickPrompt"));
+  const [, setLocaleTick] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => subscribeLocale(() => setLocaleTick((n) => n + 1)), []);
+
+  // Spawn one worker for the lifetime of the playground. The viewer
+  // re-uses it across every sample load so each switch reuses cached
+  // slide data instead of re-parsing.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const c = await createWorkerController(new PptxWorker());
+      if (cancelled) {
+        c.close();
+        return;
+      }
+      setController(c);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadSample = useCallback(async (entry: SampleEntry) => {
+    setActiveSampleUrl(entry.url);
+    setInfo(t("playground.loadingFile", { name: entry.label }));
+    const t0 = performance.now();
+    try {
+      const res = await fetch(entry.url);
+      if (!res.ok) {
+        setInfo(t("playground.failedHttp", { status: res.status }));
+        return;
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      setName(entry.label);
+      setSrc(buf);
+      setOpenCount((n) => n + 1);
+      const ms = Math.round(performance.now() - t0);
+      setInfo(
+        t("playground.fileInfo", {
+          name: entry.label,
+          bytes: buf.byteLength.toLocaleString(),
+          ms,
+        }),
+      );
+    } catch (err) {
+      setInfo(
+        t("playground.convertFailed", {
+          reason: (err as Error).message ?? String(err),
+        }),
+      );
+    }
+  }, []);
+
+  const onFile = useCallback(async (ev: React.ChangeEvent<HTMLInputElement>) => {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    setActiveSampleUrl(null);
+    setInfo(t("playground.loadingFile", { name: file.name }));
+    const t0 = performance.now();
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setName(file.name);
+      setSrc(buf);
+      setOpenCount((n) => n + 1);
+      const ms = Math.round(performance.now() - t0);
+      setInfo(
+        t("playground.fileInfo", {
+          name: file.name,
+          bytes: buf.byteLength.toLocaleString(),
+          ms,
+        }),
+      );
+    } catch (err) {
+      setInfo(
+        t("playground.convertFailed", {
+          reason: (err as Error).message ?? String(err),
+        }),
+      );
+    }
+  }, []);
+
+  const samplesUi = useMemo(
+    () =>
+      SAMPLES.map((s) => (
+        <button
+          key={s.url}
+          style={
+            activeSampleUrl === s.url
+              ? { ...buttonStyle, ...activeButtonStyle }
+              : buttonStyle
+          }
+          onClick={() => void loadSample(s)}
+        >
+          {s.label}
+        </button>
+      )),
+    [activeSampleUrl, loadSample],
+  );
+
+  return (
+    <div style={appStyle}>
+      <header style={pickerStyle}>
+        <h1 style={titleStyle}>{t("playground.title")}</h1>
+        <span style={separatorStyle} />
+        <label style={labelStyle}>
+          {t("playground.upload")}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pptx"
+            onChange={onFile}
+            style={fileInputStyle}
+          />
+        </label>
+        <span style={separatorStyle} />
+        <span style={labelStyle}>{t("playground.samples")}</span>
+        {samplesUi}
+        <span style={separatorStyle} />
+        <span style={infoStyle}>{info}</span>
+      </header>
+      <PptxPresentation
+        key={`${name ?? ""}::${openCount}`}
+        controller={controller}
+        name={name}
+        src={src}
+      />
+    </div>
+  );
+}
+
+const appStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateRows: "auto minmax(0, 1fr)",
+  width: "100%",
+  height: "100%",
+  background: "var(--pptx-shell-bg, #0e0e10)",
+  color: "var(--pptx-shell-fg, #ececec)",
+  fontFamily: "system-ui, -apple-system, sans-serif",
+  overflow: "hidden",
+};
+
+const pickerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "10px 16px",
+  background: "var(--pptx-shell-ribbon-bg, #1f1f23)",
+  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
+  flexWrap: "wrap",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 600,
+  letterSpacing: "0.05em",
+  color: "var(--pptx-shell-fg, #ddd)",
+};
+
+const separatorStyle: CSSProperties = {
+  width: 1,
+  alignSelf: "stretch",
+  background: "var(--pptx-shell-border, #2a2a30)",
+};
+
+const labelStyle: CSSProperties = {
+  fontSize: 12,
+  color: "var(--pptx-shell-status, #999)",
+};
+
+const buttonStyle: CSSProperties = {
+  background: "var(--pptx-shell-input-bg, #1a1a1f)",
+  color: "var(--pptx-shell-fg, #ececec)",
+  border: "1px solid var(--pptx-shell-border, #2f2f36)",
+  padding: "6px 10px",
+  borderRadius: 4,
+  font: "inherit",
+  fontSize: 12,
+  cursor: "pointer",
+};
+
+const activeButtonStyle: CSSProperties = {
+  borderColor: "var(--pptx-shell-accent, #6aa3ff)",
+  background: "var(--pptx-shell-accent-soft, #25304a)",
+};
+
+const fileInputStyle: CSSProperties = {
+  color: "var(--pptx-shell-fg, #ccc)",
+  fontSize: 12,
+};
+
+const infoStyle: CSSProperties = {
+  fontSize: 11,
+  color: "var(--pptx-shell-status, #888)",
+};
+
+const container = document.getElementById("root");
+if (!container) throw new Error("missing #root");
+createRoot(container).render(<PlaygroundApp />);

@@ -1,0 +1,62 @@
+{
+  "name": "@slideglance/viewer",
+  "version": "0.1.0",
+  "author": "Taehwan Kwag",
+  "description": "React PPTX presentation viewer backed by @slideglance/core.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SlideGlance/slideglance.git"
+  },
+  "type": "module",
+  "main": "./dist/pptx-viewer.js",
+  "module": "./dist/pptx-viewer.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/pptx-viewer.js"
+    },
+    "./worker": {
+      "types": "./dist/pptx-worker.d.ts",
+      "default": "./dist/pptx-worker.js"
+    },
+    "./dist/pptx-worker.js": "./dist/pptx-worker.js"
+  },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
+  "scripts": {
+    "prebuild": "node ../../scripts/run-build-wasm.mjs",
+    "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@slideglance/core": "workspace:*",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "catalog:",
+    "@slideglance/core": "workspace:*",
+    "mtx-decompressor": "^1.1.6"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": [
+    "pptx",
+    "powerpoint",
+    "viewer",
+    "react"
+  ]
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SlideGlance</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: var(--pptx-shell-ribbon-bg, #1f1f23);
+        color: var(--pptx-shell-fg, #ececec);
+      }
+      body {
+        overflow: hidden;
+      }
+
+      /* Loading overlay lives outside the React tree so the indicator
+         can paint in the very next frame after the user picks a file —
+         no PptxPresentation reconcile / commit on the critical path.
+         Toggled via `body[data-pptx-loading="1"]`. */
+      #pptx-loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: var(--pptx-shell-dialog-overlay, rgba(0, 0, 0, 0.45));
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      body[data-pptx-loading="1"] #pptx-loading-overlay {
+        display: flex;
+      }
+      .pptx-loading-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 24px 32px;
+        max-width: min(480px, 80vw);
+        background: var(--pptx-shell-dialog-bg, #1f1f23);
+        color: var(--pptx-shell-dialog-fg, #ececec);
+        border: 1px solid var(--pptx-shell-border, #2a2a30);
+        border-radius: 10px;
+        box-shadow: 0 12px 40px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.5));
+      }
+      .pptx-loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--pptx-shell-accent, #6aa3ff);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: pptx-spin 0.8s linear infinite;
+      }
+      .pptx-loading-text {
+        font-size: 13px;
+        text-align: center;
+        word-break: break-word;
+      }
+      @keyframes pptx-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="pptx-loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+      <div class="pptx-loading-panel">
+        <div class="pptx-loading-spinner" aria-hidden="true"></div>
+        <div class="pptx-loading-text" id="pptx-loading-text"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+dist/
+public/icon-*.png
+node_modules/
+*.log
+slideglance-*.zip

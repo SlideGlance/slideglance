@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideGlance</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <!-- Bundled Google Fonts (~40 popular families) so PPTX decks that
+         embed Google Fonts via MicroType-Express compressed payloads
+         (which our renderer can't decode) still resolve to the
+         authored typeface instead of an OS Helvetica fallback. The
+         file is generated at build time by `scripts/fetch-google-fonts.mjs`
+         and ships as a static asset under `public/assets/`. -->
+    <link rel="stylesheet" href="/assets/google-fonts.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

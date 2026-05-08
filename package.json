@@ -1,0 +1,31 @@
+{
+  "name": "slideglance-workspace",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Taehwan Kwag",
+  "private": true,
+  "description": "slideglance monorepo root — orchestrates the Rust workspace + the JS packages.",
+  "scripts": {
+    "version:sync": "node scripts/sync-versions.mjs",
+    "version:check": "node scripts/sync-versions.mjs --check",
+    "build:wasm": "./scripts/build-wasm.sh",
+    "build:wasm:dev": "PROFILE=dev ./scripts/build-wasm.sh",
+    "build:rust": "cargo build --workspace --release",
+    "build:js": "pnpm -r --filter './packages/*' --filter './apps/*' build",
+    "prebuild": "pnpm run version:sync",
+    "build": "pnpm run build:wasm && pnpm run build:js",
+    "test:rust": "RUST_MIN_STACK=16777216 cargo test --workspace",
+    "test:js": "pnpm -r --filter './packages/*' --filter './apps/*' --if-present test",
+    "test": "pnpm run test:rust && pnpm run test:js",
+    "fmt:check": "cargo fmt --check",
+    "lint:rust": "cargo clippy --workspace --all-targets -- -D warnings",
+    "vrt": "cargo test --release --manifest-path testing/vrt/snapshot/Cargo.toml",
+    "vrt:update": "UPDATE_SNAPSHOTS=1 cargo test --release --manifest-path testing/vrt/snapshot/Cargo.toml",
+    "tauri:dev": "pnpm --filter @slideglance/desktop-viewer tauri:dev",
+    "tauri:build": "pnpm --filter @slideglance/desktop-viewer tauri:build"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}

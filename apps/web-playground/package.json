@@ -1,0 +1,31 @@
+{
+  "name": "@slideglance/web-playground",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Taehwan Kwag",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node ../../scripts/run-build-wasm.mjs",
+    "dev": "vite",
+    "prebuild": "node ../../scripts/run-build-wasm.mjs",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "catalog:",
+    "@slideglance/core": "workspace:*",
+    "@slideglance/viewer": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-top-level-await": "catalog:",
+    "vite-plugin-wasm": "catalog:"
+  }
+}

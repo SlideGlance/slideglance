@@ -1,0 +1,64 @@
+name: Deploy playground to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install binaryen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binaryen
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build wasm-pack targets
+        run: |
+          wasm-pack build crates/slideglance-wasm --target bundler --out-dir ../../packages/core/dist/bundler --out-name slideglance_wasm
+          wasm-pack build crates/slideglance-wasm --target web     --out-dir ../../packages/core/dist/web     --out-name slideglance_wasm
+          wasm-pack build crates/slideglance-wasm --target nodejs  --out-dir ../../packages/core/dist/node    --out-name slideglance_wasm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @slideglance/viewer build
+      # No sample-fixture staging step: the web-playground production
+      # build ships drag-and-drop only (mirrors the chrome-extension
+      # empty state). Bundling samples would require tracking large
+      # `.pptx` binaries in the repo for a use case the empty state
+      # already covers.
+      - run: pnpm --filter @slideglance/web-playground build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web-playground/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
