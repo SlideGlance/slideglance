@@ -203,6 +203,22 @@ export interface PptxPresentationProps {
    * paint.
    */
   bundledFontDefsCss?: string;
+  /**
+   * When `true`, treat every `src` change as an in-place edit-cycle
+   * update of the same logical deck rather than a brand-new deck
+   * open: the current slide index, zoom level, and pan offsets are
+   * preserved across the reload. Hosts that drive a live editing
+   * surface (e.g. the pom VS Code preview, where every keystroke
+   * produces a fresh PPTX byte buffer) set this so the viewer
+   * doesn't snap back to slide 1 / zoom 1 after each edit.
+   *
+   * The slide cache is still cleared on every `src` change — the
+   * worker re-parses fresh bytes, so cached SVGs (which reference
+   * media blob URLs the loader is about to revoke) are no longer
+   * valid. The currently visible slide therefore always re-renders;
+   * only the navigation / zoom state is preserved.
+   */
+  incrementalUpdate?: boolean;
 }
 
 // `CachedSlide` lives in `presentation/types.ts` so the sub-component
@@ -509,6 +525,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     src,
     externalSlideCount,
     bundledFontDefsCss: props.bundledFontDefsCss,
+    incrementalUpdate: props.incrementalUpdate,
     setPhase,
     setSlideCount,
     setFontUsage,

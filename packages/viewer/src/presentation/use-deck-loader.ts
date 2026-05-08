@@ -36,6 +36,22 @@ export interface UseDeckLoaderArgs {
   src?: Uint8Array | ArrayBuffer | string | null;
   externalSlideCount?: number;
   bundledFontDefsCss?: string;
+  /**
+   * When `true`, treat every `src` change as an in-place edit-cycle
+   * update of the same logical deck rather than a brand-new deck
+   * open: the current slide index, zoom level, and pan offsets are
+   * preserved across the reload. Hosts that drive a live editing
+   * surface (e.g. the pom VS Code preview, where every keystroke
+   * produces a fresh PPTX byte buffer) set this so the viewer
+   * doesn't snap back to slide 1 / zoom 1 after each edit.
+   *
+   * The slide cache is still cleared on every `src` change because
+   * the worker re-parses fresh bytes; cached SVGs from the previous
+   * deck refer to media blob URLs that are revoked here. This means
+   * the currently visible slide always re-renders, but UI state is
+   * preserved.
+   */
+  incrementalUpdate?: boolean;
 
   setPhase: (phase: string) => void;
   setSlideCount: (next: number) => void;
@@ -59,6 +75,7 @@ export function useDeckLoader(args: UseDeckLoaderArgs): void {
     src,
     externalSlideCount,
     bundledFontDefsCss,
+    incrementalUpdate,
     setPhase,
     setSlideCount,
     setFontUsage,
@@ -127,10 +144,17 @@ export function useDeckLoader(args: UseDeckLoaderArgs): void {
             }
           }
         }
-        setCurrentSlide(1);
-        setZoom(1);
-        setPanX(0);
-        setPanY(0);
+        // Resetting slide index / zoom / pan is the right default for
+        // a fresh deck open, but a live editing surface (pom VS Code
+        // preview etc.) re-feeds the same deck on every keystroke and
+        // wants the user's scroll position preserved across edits.
+        // `incrementalUpdate` opts those hosts out of the reset.
+        if (!incrementalUpdate) {
+          setCurrentSlide(1);
+          setZoom(1);
+          setPanX(0);
+          setPanY(0);
+        }
         setErrorMsg(null);
         setPhase("");
         setSlideCache((prev) => {
