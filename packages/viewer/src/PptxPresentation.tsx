@@ -11,7 +11,6 @@ import {
 import {
   extractFontStyleCss,
   parseAspect,
-  parseFirstFontFamily,
   prepareSvg,
   uniquifyIds,
 } from "./svg-utils.js";
@@ -25,26 +24,22 @@ import type {
 import { GridView } from "./presentation/GridView.js";
 import { NotesPanel } from "./presentation/NotesPanel.js";
 import { ThumbnailSidebar } from "./presentation/Thumbnail.js";
+import { SlideshowOverlay } from "./presentation/SlideshowOverlay.js";
+import { StatusBar } from "./presentation/StatusBar.js";
+import { Toolbar } from "./presentation/Toolbar.js";
 import { useKeyboardShortcuts } from "./presentation/use-keyboard-shortcuts.js";
 import { usePrintPdfExport } from "./presentation/use-print-pdf-export.js";
 import { useRulerGeometry } from "./presentation/use-ruler-geometry.js";
+import { useSelectionStateMachine } from "./presentation/use-selection-state-machine.js";
 import {
   RULER_SIZE,
   SHELL_GLOBAL_CSS,
-  activeIconSmStyle,
-  activeIconStyle,
   bodyStyle,
-  counterStyle,
-  disabledTextButtonStyle,
-  dividerStyle,
-  filenameStyle,
   iconButtonStyle,
   loadingOverlayStyle,
   loadingSpinnerStyle,
   loadingTextStyle,
-  metaStyle,
   overlayStyle,
-  phaseStyle,
   progressBackdropStyle,
   progressBarFillStyle,
   progressBarIndeterminateStyle,
@@ -54,7 +49,6 @@ import {
   progressPanelStyle,
   progressStepStyle,
   progressTitleStyle,
-  ribbonStyle,
   rootStyle,
   rulerCornerStyle,
   rulerHStyle,
@@ -66,28 +60,11 @@ import {
   searchInputStyle,
   searchItemStyle,
   searchListStyle,
-  selectionFontsButtonActiveStyle,
-  selectionFontsButtonStyle,
-  selectionFontsContainerStyle,
-  selectionFontsListItemStyle,
-  selectionFontsListStyle,
-  selectionFontsPopoverStyle,
   sidebarResizerStyle,
   sidebarStyle,
-  slideshowNavButtonStyle,
-  slideshowNavGroupStyle,
-  slideshowNavZoneStyle,
-  slideshowStyle,
-  spacerStyle,
   stageAreaStyle,
   stageStyle,
   stageWrapStyle,
-  statusBarStyle,
-  statusIconStyle,
-  statusSepStyle,
-  textButtonStyle,
-  zoomPctStyle,
-  zoomSliderStyle,
 } from "./presentation/styles.js";
 import type { CachedSlide } from "./presentation/types.js";
 import { Ruler } from "./ui/Ruler.js";
@@ -95,11 +72,9 @@ import { SettingsDialog } from "./ui/SettingsDialog.js";
 import { SectionNav } from "./ui/SectionNav.js";
 import {
   SelectionOverlay,
-  type RubberBandRect,
-  type SelectionBox,
 } from "./ui/SelectionOverlay.js";
 import { ShortcutsDialog } from "./ui/ShortcutsDialog.js";
-import { FontUsageIndicator } from "./ui/FontUsageIndicator.js";
+// FontUsageIndicator is now mounted inside `presentation/StatusBar.tsx`.
 import { searchSlides, type SearchHit } from "./ui/search.js";
 import { inlineMediaAsDataUrls } from "./ui/media-inline.js";
 // Print + PDF export top-level handlers live in
@@ -124,25 +99,7 @@ import {
   type ViewerSettings,
 } from "./ui/settings.js";
 import { subscribeLocale, t } from "./ui/i18n.js";
-import {
-  SkipBack,
-  SkipForward,
-  CaretLeft,
-  CaretRight,
-  MagnifyingGlass,
-  Printer,
-  FilePdf,
-  Play,
-  GearSix,
-  X,
-  ChatCircleText,
-  SquaresFour,
-  GridFour,
-  Minus,
-  Plus,
-  ArrowsOutSimple,
-  Question,
-} from "@phosphor-icons/react";
+import { X } from "@phosphor-icons/react";
 
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 8;
@@ -1167,261 +1124,43 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   }, [slideshow]);
 
   // ---- Selection state machine --------------------------------------------
-  // Pointer-down: capture target's `[data-sp-id]` ancestor (or null).
-  // - Space-held → start panning, capture pointer for off-stage drag.
-  // - Otherwise → record snapshot for the click vs drag distinction in
-  //   pointerup (≥3px movement = drag).
-  const onStagePointerDown = useCallback(
-    (ev: React.PointerEvent<HTMLElement>): void => {
-      if (ev.button !== 0) return;
-      if (textEditId) return; // text-edit owns the pointer
-      if (spaceHeld) {
-        try {
-          (ev.target as Element).setPointerCapture(ev.pointerId);
-        } catch {
-          /* not capturable */
-        }
-        panStartRef.current = {
-          x: ev.clientX,
-          y: ev.clientY,
-          panX,
-          panY,
-        };
-        return;
-      }
-      const target = (ev.target as Element | null)?.closest(
-        "[data-sp-id]",
-      ) as HTMLElement | null;
-      pointerDownAtRef.current = { x: ev.clientX, y: ev.clientY, target };
-      if (!target) setRubberBand(null);
-    },
-    [spaceHeld, textEditId, panX, panY],
-  );
-
-  const onStagePointerMove = useCallback(
-    (ev: React.PointerEvent<HTMLElement>): void => {
-      if (panStartRef.current) {
-        setPanX(panStartRef.current.panX + (ev.clientX - panStartRef.current.x));
-        setPanY(panStartRef.current.panY + (ev.clientY - panStartRef.current.y));
-        return;
-      }
-      const downAt = pointerDownAtRef.current;
-      if (!downAt) return;
-      const dx = ev.clientX - downAt.x;
-      const dy = ev.clientY - downAt.y;
-      if (Math.hypot(dx, dy) < 3) return;
-      if (!downAt.target) {
-        setRubberBand({
-          x0: downAt.x,
-          y0: downAt.y,
-          x1: ev.clientX,
-          y1: ev.clientY,
-        });
-      }
-    },
-    [],
-  );
-
-  const onStagePointerUp = useCallback(
-    (ev: React.PointerEvent<HTMLElement>): void => {
-      if (panStartRef.current) {
-        try {
-          (ev.target as Element).releasePointerCapture(ev.pointerId);
-        } catch {
-          /* nothing captured */
-        }
-        panStartRef.current = null;
-        return;
-      }
-      const downAt = pointerDownAtRef.current;
-      if (!downAt) return;
-      const moved =
-        Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) >= 3;
-      if (downAt.target && !moved) {
-        const id = downAt.target.dataset.spId;
-        if (id) {
-          if (ev.shiftKey || ev.metaKey || ev.ctrlKey) {
-            setSelectedIds((prev) => {
-              const next = new Set(prev);
-              if (next.has(id)) next.delete(id);
-              else next.add(id);
-              return next;
-            });
-          } else {
-            setSelectedIds(new Set([id]));
-          }
-        }
-      } else if (!downAt.target && !moved) {
-        setSelectedIds(new Set());
-      } else if (!downAt.target && moved && rubberBand) {
-        // Rubber-band hit-test: project every cached bbox into screen
-        // coords via the live `getScreenCTM()` and AABB-intersect with
-        // the band. Coords throughout are viewport (pointer client).
-        const svgEl =
-          slideRef.current?.firstElementChild as SVGSVGElement | null;
-        const ctm = svgEl?.getScreenCTM?.() ?? null;
-        if (svgEl && ctm) {
-          const hits = new Set<string>();
-          const left = Math.min(rubberBand.x0, rubberBand.x1);
-          const right = Math.max(rubberBand.x0, rubberBand.x1);
-          const top = Math.min(rubberBand.y0, rubberBand.y1);
-          const bottom = Math.max(rubberBand.y0, rubberBand.y1);
-          const p = svgEl.createSVGPoint();
-          for (const [id, b] of bboxMapRef.current) {
-            const corners = [
-              [b.x, b.y],
-              [b.x + b.w, b.y],
-              [b.x, b.y + b.h],
-              [b.x + b.w, b.y + b.h],
-            ].map(([x, y]) => {
-              p.x = x;
-              p.y = y;
-              return p.matrixTransform(ctm);
-            });
-            const xs = corners.map((c) => c.x);
-            const ys = corners.map((c) => c.y);
-            const rl = Math.min(...xs);
-            const rr = Math.max(...xs);
-            const rt = Math.min(...ys);
-            const rb = Math.max(...ys);
-            if (rr >= left && rl <= right && rb >= top && rt <= bottom) {
-              hits.add(id);
-            }
-          }
-          setSelectedIds(hits);
-        }
-      }
-      pointerDownAtRef.current = null;
-      setRubberBand(null);
-    },
-    [rubberBand],
-  );
-
-  const onStageDoubleClick = useCallback(
-    (ev: React.MouseEvent<HTMLElement>): void => {
-      const target = (ev.target as Element | null)?.closest(
-        "[data-sp-id]",
-      ) as HTMLElement | null;
-      if (!target) return;
-      // Only enter text-edit mode for shapes that actually contain text.
-      if (!target.querySelector("text")) return;
-      const id = target.dataset.spId;
-      if (id) setTextEditId(id);
-    },
-    [],
-  );
-
-  // Project each selected shape's stored user-space bbox into the
-  // overlay's stage-relative pixel space. Re-runs whenever selection,
-  // pan, zoom, or stage size changes (the live screen CTM moves).
-  const selectionBoxes: SelectionBox[] = useMemo(() => {
-    if (selectedIds.size === 0) return [];
-    const stage = stageRef.current;
-    const svgEl = slideRef.current?.firstElementChild as SVGSVGElement | null;
-    if (!stage || !svgEl) return [];
-    const ctm = svgEl.getScreenCTM?.();
-    if (!ctm) return [];
-    const stageRect = stage.getBoundingClientRect();
-    const scrollLeft = stage.scrollLeft;
-    const scrollTop = stage.scrollTop;
-    const out: SelectionBox[] = [];
-    const p = svgEl.createSVGPoint();
-    for (const id of selectedIds) {
-      const b = bboxMapRef.current.get(id);
-      if (!b) continue;
-      const corners = [
-        [b.x, b.y],
-        [b.x + b.w, b.y],
-        [b.x, b.y + b.h],
-        [b.x + b.w, b.y + b.h],
-      ].map(([x, y]) => {
-        p.x = x;
-        p.y = y;
-        return p.matrixTransform(ctm);
-      });
-      const xs = corners.map((c) => c.x);
-      const ys = corners.map((c) => c.y);
-      out.push({
-        id,
-        x: Math.min(...xs) - stageRect.left + scrollLeft,
-        y: Math.min(...ys) - stageRect.top + scrollTop,
-        w: Math.max(...xs) - Math.min(...xs),
-        h: Math.max(...ys) - Math.min(...ys),
-      });
-    }
-    return out;
-    // panX/panY/zoom changes move the slide → CTM changes → re-project.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds, panX, panY, zoom, stageSize.w, stageSize.h, slideSvg]);
-
-  // Authored font(s) of the currently selected shape(s) — read straight
-  // off the rendered SVG's `<tspan font-family="...">` chain. We display
-  // the FIRST family in the chain (the authored typeface) in the status
-  // bar so users can identify what font a shape uses without opening
-  // the font-usage popover. Multiple fonts within one shape (run-level
-  // overrides) collapse to a deduplicated list; multi-shape selection
-  // unions them. Empty when nothing is selected, or when none of the
-  // selected shapes contain text.
-  const selectionFonts: string[] = useMemo(() => {
-    if (selectedIds.size === 0) return [];
-    const svgEl = slideRef.current?.firstElementChild as SVGSVGElement | null;
-    if (!svgEl) return [];
-    const fonts = new Set<string>();
-    for (const id of selectedIds) {
-      // Selector is safe: sp-ids are renderer-emitted decimal integers,
-      // so no CSS escaping is required and no untrusted strings are
-      // interpolated into the selector.
-      const host = svgEl.querySelector<SVGGElement>(`g[data-sp-id="${id}"]`);
-      if (!host) continue;
-      // `<tspan>` carries the most specific styling (run-level), but the
-      // outer `<text>` may declare the font for an unstyled run, so
-      // probe both.
-      const nodes = host.querySelectorAll<SVGElement>("tspan, text");
-      for (const node of nodes) {
-        const family = node.getAttribute("font-family");
-        if (!family) continue;
-        const first = parseFirstFontFamily(family);
-        if (first) fonts.add(first);
-      }
-    }
-    return Array.from(fonts);
-    // selectedIds drives the dependency; slideSvg re-runs the effect
-    // after a slide swap so refs from the prior slide aren't reused.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds, slideSvg]);
-
-  // Auto-close the selection-font popover whenever the underlying
-  // font list goes empty (selection cleared) or the user clicks
-  // outside the trigger / popover. Mirrors `FontUsageIndicator`'s
-  // outside-click pattern so the status-bar UX stays consistent.
-  useEffect(() => {
-    if (selectionFonts.length === 0 && selectionFontsOpen) {
-      setSelectionFontsOpen(false);
-    }
-  }, [selectionFonts, selectionFontsOpen]);
-  useEffect(() => {
-    if (!selectionFontsOpen) return;
-    function onDocClick(ev: MouseEvent) {
-      const root = selectionFontsRef.current;
-      if (root && !root.contains(ev.target as Node)) {
-        setSelectionFontsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [selectionFontsOpen]);
-
-  const rubberBandRect: RubberBandRect | null = useMemo(() => {
-    if (!rubberBand) return null;
-    const stage = stageRef.current;
-    if (!stage) return null;
-    const r = stage.getBoundingClientRect();
-    const left = Math.min(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
-    const top = Math.min(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
-    const right = Math.max(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
-    const bottom = Math.max(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
-    return { x: left, y: top, w: right - left, h: bottom - top };
-  }, [rubberBand]);
+  // See `presentation/use-selection-state-machine.ts` — owns the
+  // pointer-down/move/up dispatch, rubber-band hit-test, double-click
+  // text-edit entry, selection-bbox projection, authored-font
+  // derivation, and the status-bar font-popover lifecycle.
+  const {
+    onStagePointerDown,
+    onStagePointerMove,
+    onStagePointerUp,
+    onStageDoubleClick,
+    selectionBoxes,
+    selectionFonts,
+    rubberBandRect,
+  } = useSelectionStateMachine({
+    selectedIds,
+    setSelectedIds,
+    rubberBand,
+    setRubberBand,
+    textEditId,
+    setTextEditId,
+    spaceHeld,
+    panX,
+    panY,
+    setPanX,
+    setPanY,
+    zoom,
+    stageW: stageSize.w,
+    stageH: stageSize.h,
+    slideSvg,
+    panStartRef,
+    pointerDownAtRef,
+    bboxMapRef,
+    stageRef,
+    slideRef,
+    selectionFontsOpen,
+    setSelectionFontsOpen,
+    selectionFontsRef,
+  });
 
   // ---- Layout math ---------------------------------------------------------
   const aspect = useMemo(() => parseAspect(slideSvg) ?? 16 / 9, [slideSvg]);
@@ -1525,141 +1264,26 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     >
       <style>{SHELL_GLOBAL_CSS}</style>
       {/* ---- Ribbon ---- */}
-      <header style={ribbonStyle}>
-        {toolbarStart}
-        <span style={filenameStyle} title={name ?? ""}>
-          {name ?? t("viewer.noFile")}
-        </span>
-        <div style={spacerStyle} />
-        <button
-          style={iconButtonStyle}
-          onClick={() => setCurrentSlide(1)}
-          disabled={slideCount === 0 || currentSlide <= 1}
-          title={t("nav.firstSlide")}
-          aria-label={t("nav.firstSlide")}
-        >
-          <SkipBack size={16} weight="fill" />
-        </button>
-        <button
-          style={iconButtonStyle}
-          onClick={() => setCurrentSlide((s) => Math.max(1, s - 1))}
-          disabled={currentSlide <= 1}
-          title={t("nav.previousSlide")}
-          aria-label={t("nav.previousSlide")}
-        >
-          <CaretLeft size={16} weight="bold" />
-        </button>
-        <span style={counterStyle}>
-          {slideCount === 0 ? "—" : `${currentSlide} / ${slideCount}`}
-        </span>
-        <button
-          style={iconButtonStyle}
-          onClick={() => setCurrentSlide((s) => Math.min(slideCount, s + 1))}
-          disabled={currentSlide >= slideCount}
-          title={t("nav.nextSlide")}
-          aria-label={t("nav.nextSlide")}
-        >
-          <CaretRight size={16} weight="bold" />
-        </button>
-        <button
-          style={iconButtonStyle}
-          onClick={() => setCurrentSlide(slideCount)}
-          disabled={slideCount === 0 || currentSlide >= slideCount}
-          title={t("nav.lastSlide")}
-          aria-label={t("nav.lastSlide")}
-        >
-          <SkipForward size={16} weight="fill" />
-        </button>
-        <span style={dividerStyle} />
-        <button
-          style={searchOpen ? activeIconStyle : iconButtonStyle}
-          onClick={() => setSearchOpen((o) => !o)}
-          title={t("search.title")}
-          aria-label={t("search.title")}
-          aria-pressed={searchOpen}
-        >
-          <MagnifyingGlass size={16} weight="bold" />
-        </button>
-        <span style={dividerStyle} />
-        {/* Deck-wide actions. The "ready" gate is bypassed when the
-            host disables prefetching (`noPrefetch`) — the click handler
-            then triggers `ensureAllSlidesRendered()` itself, surfacing a
-            `phase.preparingSlideOf` message in the status bar. */}
-        <button
-          style={
-            !noPrefetch && !allSlidesReady && slideCount > 0
-              ? disabledTextButtonStyle
-              : textButtonStyle
-          }
-          onClick={() => void handlePrint()}
-          title={
-            noPrefetch
-              ? t("output.printTitle")
-              : deckGateTitle(t("output.printTitle"), allSlidesReady, slideCount)
-          }
-          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
-        >
-          <Printer size={16} weight="regular" /> {t("output.print")}
-        </button>
-        <button
-          style={
-            !noPrefetch && !allSlidesReady && slideCount > 0
-              ? disabledTextButtonStyle
-              : textButtonStyle
-          }
-          onClick={() => void handleExportPdf()}
-          title={
-            noPrefetch
-              ? t("output.pdfTitle")
-              : deckGateTitle(t("output.pdfTitle"), allSlidesReady, slideCount)
-          }
-          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
-        >
-          <FilePdf size={16} weight="regular" /> {t("output.pdf")}
-        </button>
-        <button
-          style={
-            !noPrefetch && !allSlidesReady && slideCount > 0
-              ? disabledTextButtonStyle
-              : textButtonStyle
-          }
-          onClick={() => void handleSlideshow()}
-          title={
-            noPrefetch
-              ? t("output.slideshowTitle")
-              : deckGateTitle(
-                  t("output.slideshowTitle"),
-                  allSlidesReady,
-                  slideCount,
-                )
-          }
-          disabled={slideCount === 0 || (!noPrefetch && !allSlidesReady)}
-        >
-          <Play size={16} weight="fill" /> {t("output.slideshow")}
-        </button>
-        <span style={dividerStyle} />
-        <button
-          style={shortcutsOpen ? activeIconStyle : iconButtonStyle}
-          onClick={() => setShortcutsOpen((o) => !o)}
-          title={t("shortcuts.openTitle")}
-          aria-label={t("shortcuts.openTitle")}
-          aria-haspopup="dialog"
-          aria-expanded={shortcutsOpen}
-        >
-          <Question size={16} weight="regular" />
-        </button>
-        <button
-          style={iconButtonStyle}
-          onClick={() => setSettingsOpen(true)}
-          title={t("settings.openTitle")}
-          aria-label={t("settings.openTitle")}
-          aria-haspopup="dialog"
-          aria-expanded={settingsOpen}
-        >
-          <GearSix size={16} weight="regular" />
-        </button>
-        {toolbarEnd}
-      </header>
+      <Toolbar
+        toolbarStart={toolbarStart}
+        toolbarEnd={toolbarEnd}
+        name={name}
+        slideCount={slideCount}
+        currentSlide={currentSlide}
+        setCurrentSlide={setCurrentSlide}
+        searchOpen={searchOpen}
+        setSearchOpen={setSearchOpen}
+        allSlidesReady={allSlidesReady}
+        noPrefetch={noPrefetch}
+        deckGateTitle={deckGateTitle}
+        handlePrint={handlePrint}
+        handleExportPdf={handleExportPdf}
+        handleSlideshow={handleSlideshow}
+        shortcutsOpen={shortcutsOpen}
+        setShortcutsOpen={setShortcutsOpen}
+        settingsOpen={settingsOpen}
+        setSettingsOpen={setSettingsOpen}
+      />
 
       {/* ---- Body: sidebar + resizer + stage area ----
         Sidebar width is user-resizable; the splitter `<div>` sits on
@@ -1949,259 +1573,46 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
         )}
       </div>
 
-      {/* ---- Slideshow overlay ---- */}
-      {slideshow && (
-        <div style={slideshowStyle}>
-          <main
-            ref={slideshowStageRef}
-            style={{ ...stageStyle, background: "#000", cursor: "pointer" }}
-            onClick={(ev) => {
-              // Plain left-click anywhere on the stage advances one
-              // slide — PowerPoint Slide Show convention. Auto-exit
-              // on the last slide so the user lands back on the
-              // editing surface naturally. Right-click / modified
-              // clicks are ignored so context menus and accessibility
-              // tooling still work.
-              if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey) {
-                return;
-              }
-              if (currentSlide >= slideCount) {
-                setSlideshow(false);
-                if (document.fullscreenElement) {
-                  void document.exitFullscreen();
-                }
-              } else {
-                setCurrentSlide((s) => Math.min(slideCount, s + 1));
-              }
-            }}
-          >
-            {fit > 0 && slideSvg && (
-              <div
-                style={{
-                  width: canvasW,
-                  height: canvasH,
-                  position: "relative",
-                }}
-              >
-                <div
-                  ref={slideshowSlideRef}
-                  style={{
-                    width: slideW,
-                    height: slideH,
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: `translate(-50%, -50%)`,
-                    background: "white",
-                  }}
-                />
-              </div>
-            )}
-          </main>
-          {/* Corner navigation pad — bottom-right hover zone reveals
-              prev / next / exit buttons. Sits above the click-to-
-              advance handler with `stopPropagation` so button clicks
-              never double-trigger the stage advance. */}
-          <div
-            data-pptx-slideshow-nav=""
-            style={slideshowNavZoneStyle}
-            onClick={(ev) => ev.stopPropagation()}
-          >
-            <div style={slideshowNavGroupStyle}>
-              <button
-                style={slideshowNavButtonStyle}
-                onClick={() =>
-                  setCurrentSlide((s) => Math.max(1, s - 1))
-                }
-                disabled={currentSlide <= 1}
-                title={t("nav.previousSlide")}
-                aria-label={t("nav.previousSlide")}
-              >
-                <CaretLeft size={20} weight="bold" />
-              </button>
-              <button
-                style={slideshowNavButtonStyle}
-                onClick={() =>
-                  setCurrentSlide((s) => Math.min(slideCount, s + 1))
-                }
-                disabled={currentSlide >= slideCount}
-                title={t("nav.nextSlide")}
-                aria-label={t("nav.nextSlide")}
-              >
-                <CaretRight size={20} weight="bold" />
-              </button>
-              <button
-                style={slideshowNavButtonStyle}
-                onClick={() => {
-                  setSlideshow(false);
-                  if (document.fullscreenElement) {
-                    void document.exitFullscreen();
-                  }
-                }}
-                title={t("common.close")}
-                aria-label={t("common.close")}
-              >
-                <X size={18} weight="bold" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ---- Slideshow overlay (presentation/SlideshowOverlay.tsx) ---- */}
+      <SlideshowOverlay
+        open={slideshow}
+        currentSlide={currentSlide}
+        slideCount={slideCount}
+        setSlideshow={setSlideshow}
+        setCurrentSlide={setCurrentSlide}
+        fit={fit}
+        slideSvg={slideSvg}
+        canvasW={canvasW}
+        canvasH={canvasH}
+        slideW={slideW}
+        slideH={slideH}
+        slideshowStageRef={slideshowStageRef}
+        slideshowSlideRef={slideshowSlideRef}
+      />
 
-      {/* ---- Status bar ---- */}
-      {!slideshow && (
-        <footer style={statusBarStyle}>
-          <span style={phaseStyle}>
-            {phase || (errorMsg ? `⚠ ${errorMsg}` : t("common.ready"))}
-          </span>
-          <div style={spacerStyle} />
-          {slideMeta?.section_name ? (
-            <span style={metaStyle}>{slideMeta.section_name}</span>
-          ) : null}
-          <span style={metaStyle}>
-            {slideCount === 0
-              ? t("status.slideEmpty")
-              : t("status.slideOf", {
-                  current: currentSlide,
-                  total: slideCount,
-                })}
-          </span>
-          {selectionFonts.length > 0 ? (
-            <>
-              <span style={statusSepStyle} />
-              <div
-                ref={selectionFontsRef}
-                style={selectionFontsContainerStyle}
-              >
-                <button
-                  type="button"
-                  style={
-                    selectionFontsOpen
-                      ? selectionFontsButtonActiveStyle
-                      : selectionFontsButtonStyle
-                  }
-                  title={t("status.selectionFontTitle", {
-                    fonts: selectionFonts.join(", "),
-                  })}
-                  aria-haspopup="dialog"
-                  aria-expanded={selectionFontsOpen}
-                  onClick={() => setSelectionFontsOpen((o) => !o)}
-                >
-                  {t("status.selectionFontLabel")}{" "}
-                  {selectionFonts.length === 1
-                    ? selectionFonts[0]
-                    : t("status.selectionFontMultiple", {
-                        first: selectionFonts[0],
-                        extra: selectionFonts.length - 1,
-                      })}
-                </button>
-                {selectionFontsOpen ? (
-                  <div
-                    style={selectionFontsPopoverStyle}
-                    role="dialog"
-                    aria-label={t("status.selectionFontTitle", {
-                      fonts: selectionFonts.join(", "),
-                    })}
-                  >
-                    <ul style={selectionFontsListStyle}>
-                      {selectionFonts.map((family) => (
-                        <li
-                          key={family}
-                          style={selectionFontsListItemStyle}
-                        >
-                          {family}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-            </>
-          ) : null}
-          <span style={statusSepStyle} />
-          <FontUsageIndicator
-            fontUsage={fontUsage}
-            buttonStyle={statusIconStyle}
-            buttonActiveStyle={activeIconSmStyle}
-          />
-          <button
-            style={notesOpen ? activeIconSmStyle : statusIconStyle}
-            onClick={() => setNotesOpen((o) => !o)}
-            title={t("status.toggleNotes")}
-            aria-label={t("status.toggleNotes")}
-            aria-pressed={notesOpen}
-          >
-            <ChatCircleText size={14} weight={notesOpen ? "fill" : "regular"} />
-          </button>
-          <span style={statusSepStyle} />
-          <button
-            style={viewMode === "normal" ? activeIconSmStyle : statusIconStyle}
-            onClick={() => setViewMode("normal")}
-            title={t("status.normalView")}
-            aria-label={t("status.normalView")}
-            aria-pressed={viewMode === "normal"}
-          >
-            <SquaresFour size={14} weight={viewMode === "normal" ? "fill" : "regular"} />
-          </button>
-          <button
-            style={viewMode === "grid" ? activeIconSmStyle : statusIconStyle}
-            onClick={() => setViewMode("grid")}
-            title={t("status.gridView")}
-            aria-label={t("status.gridView")}
-            aria-pressed={viewMode === "grid"}
-          >
-            <GridFour size={14} weight={viewMode === "grid" ? "fill" : "regular"} />
-          </button>
-          <span style={statusSepStyle} />
-          <button
-            style={statusIconStyle}
-            onClick={() => setZoom((z) => clamp(z * 0.8, ZOOM_MIN, ZOOM_MAX))}
-            title={t("status.zoomOut")}
-            aria-label={t("status.zoomOut")}
-          >
-            <Minus size={14} weight="bold" />
-          </button>
-          <input
-            type="range"
-            min={Math.round(ZOOM_MIN * 100)}
-            max={400}
-            step={1}
-            value={Math.min(zoomPct, 400)}
-            onChange={(e) => setZoomFromPct(parseFloat(e.target.value))}
-            style={zoomSliderStyle}
-            title={t("status.zoom")}
-            aria-label={t("status.zoom")}
-          />
-          <button
-            style={statusIconStyle}
-            onClick={() => setZoom((z) => clamp(z * 1.25, ZOOM_MIN, ZOOM_MAX))}
-            title={t("status.zoomIn")}
-            aria-label={t("status.zoomIn")}
-          >
-            <Plus size={14} weight="bold" />
-          </button>
-          <span
-            style={zoomPctStyle}
-            onClick={reset}
-            title={t("status.zoomReset")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") reset();
-            }}
-          >
-            {zoomPct}%
-          </span>
-          <button
-            style={statusIconStyle}
-            onClick={reset}
-            title={t("status.fitWindow")}
-            aria-label={t("status.fitWindow")}
-          >
-            <ArrowsOutSimple size={14} weight="bold" />
-          </button>
-        </footer>
-      )}
+      {/* ---- Status bar (presentation/StatusBar.tsx) ---- */}
+      <StatusBar
+        slideshow={slideshow}
+        phase={phase}
+        errorMsg={errorMsg}
+        slideMeta={slideMeta}
+        slideCount={slideCount}
+        currentSlide={currentSlide}
+        selectionFonts={selectionFonts}
+        selectionFontsOpen={selectionFontsOpen}
+        setSelectionFontsOpen={setSelectionFontsOpen}
+        selectionFontsRef={selectionFontsRef}
+        fontUsage={fontUsage}
+        notesOpen={notesOpen}
+        setNotesOpen={setNotesOpen}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        zoom={zoom}
+        zoomPct={zoomPct}
+        setZoom={setZoom}
+        setZoomFromPct={setZoomFromPct}
+        reset={reset}
+      />
 
       {/* ---- Settings dialog ---- */}
       <SettingsDialog
