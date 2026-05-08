@@ -6,8 +6,11 @@
 //! `surface`, `ofPie` — plus combo charts and the six trendline
 //! flavors (linear / exp / log / poly / power / movingAvg).
 
+mod cartesian;
 mod common;
+mod radial;
 mod render;
+mod specialty;
 mod trendline;
 
 pub use render::{render_chart, ChartRenderResult};

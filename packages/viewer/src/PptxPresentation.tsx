@@ -1,7 +1,6 @@
 import {
   type CSSProperties,
   type ReactNode,
-  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -23,6 +22,71 @@ import type {
   SlideSvg,
   TypefaceUsage,
 } from "./types.js";
+import { GridView } from "./presentation/GridView.js";
+import { NotesPanel } from "./presentation/NotesPanel.js";
+import { ThumbnailSidebar } from "./presentation/Thumbnail.js";
+import {
+  RULER_SIZE,
+  SHELL_GLOBAL_CSS,
+  activeIconSmStyle,
+  activeIconStyle,
+  bodyStyle,
+  counterStyle,
+  disabledTextButtonStyle,
+  dividerStyle,
+  filenameStyle,
+  iconButtonStyle,
+  loadingOverlayStyle,
+  loadingSpinnerStyle,
+  loadingTextStyle,
+  metaStyle,
+  overlayStyle,
+  phaseStyle,
+  progressBackdropStyle,
+  progressBarFillStyle,
+  progressBarIndeterminateStyle,
+  progressBarTrackStyle,
+  progressCounterStyle,
+  progressHostStyle,
+  progressPanelStyle,
+  progressStepStyle,
+  progressTitleStyle,
+  ribbonStyle,
+  rootStyle,
+  rulerCornerStyle,
+  rulerHStyle,
+  rulerVStyle,
+  searchDrawerStyle,
+  searchEmptyStyle,
+  searchHeaderStyle,
+  searchHitNumStyle,
+  searchInputStyle,
+  searchItemStyle,
+  searchListStyle,
+  selectionFontsButtonActiveStyle,
+  selectionFontsButtonStyle,
+  selectionFontsContainerStyle,
+  selectionFontsListItemStyle,
+  selectionFontsListStyle,
+  selectionFontsPopoverStyle,
+  sidebarResizerStyle,
+  sidebarStyle,
+  slideshowNavButtonStyle,
+  slideshowNavGroupStyle,
+  slideshowNavZoneStyle,
+  slideshowStyle,
+  spacerStyle,
+  stageAreaStyle,
+  stageStyle,
+  stageWrapStyle,
+  statusBarStyle,
+  statusIconStyle,
+  statusSepStyle,
+  textButtonStyle,
+  zoomPctStyle,
+  zoomSliderStyle,
+} from "./presentation/styles.js";
+import type { CachedSlide } from "./presentation/types.js";
 import { Ruler } from "./ui/Ruler.js";
 import { SettingsDialog } from "./ui/SettingsDialog.js";
 import { SectionNav } from "./ui/SectionNav.js";
@@ -79,92 +143,20 @@ import {
 
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 8;
-const RULER_SIZE = 24;
 /** Width of the sidebar resize handle (CSS px). The full body grid
  * dedicates exactly this much horizontal space to the splitter so the
  * stage area's width tracks `sidebarWidth + RESIZER_WIDTH`. */
 const SIDEBAR_RESIZER_WIDTH = 6;
-
-// Global CSS injected once per shell mount. Drives scrollbar colors
-// (WebKit pseudo-elements + Firefox `scrollbar-color`) from the theme
-// custom properties already set on the shell root, plus a `color-scheme`
-// hint so the UA picks dark/light affordances (form controls, default
-// scrollbars on macOS overlay scrollbars hover) consistently with the
-// active theme. Scoped to descendants of `[data-pptx-shell]` so we don't
-// leak rules into the host page.
-const SHELL_GLOBAL_CSS = `
-[data-pptx-shell] {
-  color-scheme: var(--slideglance-color-scheme, dark);
-  scrollbar-color: var(--pptx-shell-scrollbar-thumb, #3a3a44) var(--pptx-shell-scrollbar-track, #1a1a1f);
-  scrollbar-width: thin;
-}
-[data-pptx-shell] *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-[data-pptx-shell] *::-webkit-scrollbar-track {
-  background: var(--pptx-shell-scrollbar-track, #1a1a1f);
-}
-[data-pptx-shell] *::-webkit-scrollbar-thumb {
-  background: var(--pptx-shell-scrollbar-thumb, #3a3a44);
-  border-radius: 5px;
-  border: 2px solid var(--pptx-shell-scrollbar-track, #1a1a1f);
-}
-[data-pptx-shell] *::-webkit-scrollbar-thumb:hover {
-  background: var(--pptx-shell-scrollbar-thumb-hover, #4d4d58);
-}
-[data-pptx-shell] *::-webkit-scrollbar-corner {
-  background: var(--pptx-shell-scrollbar-track, #1a1a1f);
-}
-/* Slideshow corner-nav reveal: hovering the bottom-right zone or
-   focusing one of its buttons fades the button group in. Keyboard
-   users get the same affordance via the focus-within branch. */
-[data-pptx-shell] [data-pptx-slideshow-nav]:hover > div,
-[data-pptx-shell] [data-pptx-slideshow-nav]:focus-within > div {
-  opacity: 1 !important;
-}
-[data-pptx-shell] [data-pptx-slideshow-nav] button:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-}
-/* Loading-overlay spinner — used by the centred parse / slide-prepare
-   panel rendered when there's no slide SVG to show yet. Keyframes
-   live here because inline styles cannot carry @keyframes. */
-@keyframes pptx-loading-spin {
-  to { transform: rotate(360deg); }
-}
-[data-pptx-shell] [data-pptx-slideshow-nav] button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-/* Suppress every form of native focus / touch chrome on shell
-   buttons so a click never leaves a persistent ring behind. Keyboard
-   users still get a focus indicator because the affected styles
-   (icon-button / status-icon / radio cell) flip their background or
-   border-color when 'aria-pressed' / 'aria-checked' is true; that
-   semantic-state highlight is what marks the active control, not the
-   browser's default focus ring. '-webkit-tap-highlight-color:
-   transparent' removes the iOS / Android touch flash so the same
-   suppression works on touch devices. */
-[data-pptx-shell] button,
-[data-pptx-shell] [role="radio"] {
-  outline: 0 !important;
-  -webkit-tap-highlight-color: transparent;
-}
-[data-pptx-shell] button::-moz-focus-inner,
-[data-pptx-shell] [role="radio"]::-moz-focus-inner {
-  border: 0;
-}
-/* Sidebar splitter — subtle highlight on hover/active so the
-   drag affordance is discoverable without visually competing with
-   the sidebar's own border at rest. */
-[data-pptx-shell] [role="separator"][aria-orientation="vertical"]:hover {
-  background: var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.18));
-}
-[data-pptx-shell] [role="separator"][aria-orientation="vertical"]:focus-visible {
-  outline: 2px solid var(--pptx-shell-accent, #6aa3ff);
-  outline-offset: -2px;
-}
-`;
+// `RULER_SIZE` and the rest of the shell's CSS-in-JS constants live
+// in `presentation/styles.ts`. The same module also exports
+// `SHELL_GLOBAL_CSS` — the global stylesheet the shell mounts once
+// per render to drive scrollbar theming, slideshow corner-nav fade-
+// in, the loading-overlay spinner keyframes, and reset of native
+// focus / touch chrome on shell buttons.
+//
+// Sub-components (`Thumbnail`, `NotesPanel`, `GridView`) live in
+// `presentation/{Thumbnail,NotesPanel,GridView}.tsx` and import
+// from `presentation/styles.ts` directly.
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -255,12 +247,8 @@ export interface PptxPresentationProps {
   bundledFontDefsCss?: string;
 }
 
-interface CachedSlide {
-  svg: string;
-  preparedSvg: string;
-  blobUrls: string[];
-  meta: SlideMeta;
-}
+// `CachedSlide` lives in `presentation/types.ts` so the sub-component
+// modules can import it without circling back through this file.
 
 /**
  * Top-level presentation shell. React port of the original Lit
@@ -2505,947 +2493,6 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   );
 }
 
-// =========================================================================
-// Subcomponents
-// =========================================================================
+// Subcomponents (`ThumbnailSidebar`, `Thumbnail`, `NotesPanel`,
+// `GridView`) live in `presentation/{Thumbnail,NotesPanel,GridView}.tsx`.
 
-interface ThumbnailSidebarProps {
-  slideCount: number;
-  currentSlide: number;
-  onSelect: (slide: number) => void;
-  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
-  aspectFallback: number;
-  /**
-   * Per-deck identifier — included in each `<Thumbnail>`'s React key
-   * so a deck swap forces every thumbnail to unmount + remount with
-   * fresh internal state. Without this, Thumbnail's `useEffect` deps
-   * (`[visible, slide, getThumbnail, aspectFallback]`) don't change
-   * across decks (`slide` is still 1, `getThumbnail` is the same
-   * stable callback), the cached `svg` state from the previous deck
-   * sticks, and the panel keeps showing stale tiles even after
-   * `slideCache` itself is flushed.
-   */
-  deckKey: string;
-}
-
-const ThumbnailSidebar = memo(function ThumbnailSidebar(
-  props: ThumbnailSidebarProps,
-): JSX.Element {
-  const { slideCount, currentSlide, onSelect, getThumbnail, aspectFallback, deckKey } = props;
-  return (
-    <div style={thumbStripStyle}>
-      {Array.from({ length: slideCount }, (_, i) => {
-        const n = i + 1;
-        return (
-          <Thumbnail
-            key={`${deckKey}::${n}`}
-            slide={n}
-            active={n === currentSlide}
-            onClick={() => onSelect(n)}
-            getThumbnail={getThumbnail}
-            aspectFallback={aspectFallback}
-            layout="tile"
-          />
-        );
-      })}
-      {slideCount === 0 && (
-        <div style={sidebarEmptyStyle}>{t("viewer.empty")}</div>
-      )}
-    </div>
-  );
-});
-
-interface ThumbnailProps {
-  slide: number;
-  active: boolean;
-  onClick: () => void;
-  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
-  aspectFallback: number;
-  /**
-   * `"row"` — sidebar style: slide number on the left, frame on the
-   * right (vertical strip). `"tile"` — slide-sorter style: frame on
-   * top, caption underneath, all tiles share a uniform footprint via
-   * the `aspectFallback` (deck aspect), so the grid stays aligned
-   * even when individual slides parse at slightly different aspects.
-   */
-  layout?: "row" | "tile";
-}
-
-function Thumbnail(props: ThumbnailProps): JSX.Element {
-  const {
-    slide,
-    active,
-    onClick,
-    getThumbnail,
-    aspectFallback,
-    layout = "row",
-  } = props;
-  const [svg, setSvg] = useState<string | null>(null);
-  const [aspect, setAspect] = useState<number>(aspectFallback);
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  // `visible` gates the slide fetch so a 132-slide deck doesn't fan
-  // out to 132 IPC calls when the sidebar mounts. We watch the button
-  // with `IntersectionObserver` and only request the slide once it
-  // crosses into the viewport (or its sidebar's scroll container).
-  // Once true, the flag stays true — there's no benefit to unloading
-  // a slide we already paid to render.
-  const [visible, setVisible] = useState<boolean>(active);
-
-  useEffect(() => {
-    if (active) setVisible(true);
-  }, [active]);
-
-  useEffect(() => {
-    if (visible) return;
-    const el = buttonRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") {
-      setVisible(true); // SSR / older browsers — fall back to eager
-      return;
-    }
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            obs.disconnect();
-            return;
-          }
-        }
-      },
-      // Generous rootMargin so the slide is already rendered by the
-      // time the user scrolls the sidebar into it — no perceptible
-      // pop-in.
-      { rootMargin: "200px" },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [visible]);
-
-  useEffect(() => {
-    if (!visible) return;
-    let cancelled = false;
-    void (async () => {
-      const cached = await getThumbnail(slide);
-      if (cancelled || !cached) return;
-      setAspect(parseAspect(cached.svg) ?? aspectFallback);
-      setSvg(cached.preparedSvg);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [visible, slide, getThumbnail, aspectFallback]);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    while (host.firstChild) host.removeChild(host.firstChild);
-    if (!svg) return;
-    try {
-      // Per-thumbnail unique ID namespace — see svg-utils.uniquifyIds
-      // for why this is required (multiple SVGs share document ID
-      // namespace, leading to clipPath / gradient cross-references).
-      const namespaced = uniquifyIds(svg, `${layout}-s${slide}`);
-      const doc = new DOMParser().parseFromString(namespaced, "image/svg+xml");
-      const root = doc.documentElement;
-      if (!root) return;
-      host.appendChild(document.importNode(root, true));
-    } catch {
-      /* swallow */
-    }
-  }, [svg, slide, layout]);
-
-  const isTile = layout === "tile";
-  const frameAspect = isTile ? aspectFallback : aspect;
-  const buttonStyle = isTile
-    ? active
-      ? thumbnailTileActiveStyle
-      : thumbnailTileStyle
-    : active
-      ? thumbnailButtonActiveStyle
-      : thumbnailButtonStyle;
-  const frameStyle = isTile ? thumbnailTileFrameStyle : thumbnailFrameStyle;
-
-  return (
-    <button
-      ref={buttonRef}
-      style={buttonStyle}
-      onClick={onClick}
-      title={t("viewer.slideTitle", { number: slide })}
-      aria-label={t("viewer.slideTitle", { number: slide })}
-    >
-      {!isTile && <span style={thumbnailIndexStyle}>{slide}</span>}
-      <div style={{ ...frameStyle, aspectRatio: `${frameAspect}` }}>
-        {svg ? (
-          <div ref={hostRef} style={thumbnailInnerStyle} />
-        ) : (
-          <div style={thumbnailPlaceholderStyle}>…</div>
-        )}
-      </div>
-      {isTile && <span style={thumbnailCaptionStyle}>{slide}</span>}
-    </button>
-  );
-}
-
-interface NotesPanelProps {
-  currentSlide: number;
-  meta: SlideMeta | null;
-}
-function NotesPanel(props: NotesPanelProps): JSX.Element {
-  const { currentSlide, meta } = props;
-  const heading = meta?.section_name
-    ? t("notes.headingWithSection", {
-        current: currentSlide,
-        section: meta.section_name,
-      })
-    : t("notes.heading", { current: currentSlide });
-  return (
-    <div style={notesPanelStyle}>
-      <h4 style={notesHeadingStyle}>{heading}</h4>
-      {meta?.layout_name ? (
-        <div style={notesMetaStyle}>
-          {t("notes.layoutLabel", { value: meta.layout_name })}
-        </div>
-      ) : null}
-      {meta?.section_name ? (
-        <div style={notesMetaStyle}>
-          {t("notes.sectionLabel", { value: meta.section_name })}
-        </div>
-      ) : null}
-      {meta?.notes ? (
-        <div style={notesBodyStyle}>{meta.notes}</div>
-      ) : (
-        <em style={notesEmptyStyle}>{t("notes.empty")}</em>
-      )}
-    </div>
-  );
-}
-
-interface GridViewProps {
-  slideCount: number;
-  currentSlide: number;
-  cache: Map<number, CachedSlide>;
-  aspect: number;
-  onSelect: (slide: number) => void;
-  getThumbnail: (slide: number) => Promise<CachedSlide | null>;
-  /** See `ThumbnailSidebarProps.deckKey` for the rationale. */
-  deckKey: string;
-}
-function GridView(props: GridViewProps): JSX.Element {
-  if (props.slideCount === 0) return <div style={overlayStyle}>{t("viewer.empty")}</div>;
-  return (
-    <div style={gridViewStyle}>
-      {Array.from({ length: props.slideCount }, (_, i) => {
-        const n = i + 1;
-        return (
-          <Thumbnail
-            key={`${props.deckKey}::${n}`}
-            slide={n}
-            active={n === props.currentSlide}
-            onClick={() => props.onSelect(n)}
-            getThumbnail={props.getThumbnail}
-            aspectFallback={props.aspect}
-            layout="tile"
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-// =========================================================================
-// Styles
-// =========================================================================
-
-const rootStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateRows: "auto minmax(0, 1fr) auto",
-  width: "100%",
-  height: "100%",
-  background: "var(--pptx-shell-bg, #2b2b2f)",
-  color: "var(--pptx-shell-fg, #ececec)",
-  font: "13px system-ui, -apple-system, sans-serif",
-  overflow: "hidden",
-  position: "relative",
-};
-
-const ribbonStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "8px 12px",
-  background: "var(--pptx-shell-ribbon-bg, #1f1f23)",
-  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
-  flexWrap: "wrap",
-};
-
-const filenameStyle: CSSProperties = {
-  fontWeight: 600,
-  maxWidth: 240,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  marginLeft: 8,
-};
-
-const spacerStyle: CSSProperties = { flex: "1 1 auto" };
-
-const dividerStyle: CSSProperties = {
-  width: 1,
-  alignSelf: "stretch",
-  background: "var(--pptx-shell-border, #2a2a30)",
-  margin: "0 2px",
-};
-
-const counterStyle: CSSProperties = {
-  minWidth: 70,
-  textAlign: "center",
-  fontVariantNumeric: "tabular-nums",
-};
-
-const baseButtonStyle: CSSProperties = {
-  background: "transparent",
-  color: "inherit",
-  border: "1px solid var(--pptx-shell-border, #2a2a30)",
-  borderRadius: 4,
-  padding: "4px 10px",
-  font: "inherit",
-  cursor: "pointer",
-  minHeight: 28,
-};
-
-const iconButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  padding: "4px 8px",
-  minWidth: 28,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 4,
-};
-
-const activeIconStyle: CSSProperties = {
-  ...iconButtonStyle,
-  background: "var(--pptx-shell-active, #3a3a44)",
-  // See `activeIconSmStyle`: active toolbar buttons signal state via
-  // background only; the accent border was producing a perceived
-  // "white outline" on dark themes and is dropped here for parity.
-};
-
-const textButtonStyle: CSSProperties = {
-  ...baseButtonStyle,
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-};
-
-const disabledTextButtonStyle: CSSProperties = {
-  ...textButtonStyle,
-  opacity: 0.45,
-  cursor: "not-allowed",
-};
-
-const bodyStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateRows: "minmax(0, 1fr)",
-  minHeight: 0,
-  minWidth: 0,
-  overflow: "hidden",
-  position: "relative",
-};
-
-const sidebarStyle: CSSProperties = {
-  display: "grid",
-  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
-  background: "var(--pptx-shell-sidebar-bg, #15151a)",
-  overflow: "hidden",
-  minHeight: 0,
-};
-
-// Splitter handle between the sidebar and the stage area. Painted as a
-// transparent strip so the sidebar's own right border is the only
-// visible separator at rest; on hover/active the accent colour fades
-// in to advertise the drag affordance.
-const sidebarResizerStyle: CSSProperties = {
-  cursor: "col-resize",
-  background: "transparent",
-  // A thin strip is hard to grab with the mouse; the underlying grid
-  // column is `SIDEBAR_RESIZER_WIDTH` wide so this `<div>` already
-  // fills it. `touch-action: none` blocks the browser's pan gesture
-  // from stealing pointer events during a drag on touch devices.
-  touchAction: "none",
-  userSelect: "none",
-};
-
-const thumbStripStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-  padding: 10,
-  overflowY: "auto",
-};
-
-const sidebarEmptyStyle: CSSProperties = {
-  textAlign: "center",
-  color: "var(--pptx-shell-status, #666)",
-  fontSize: 12,
-  padding: "24px 8px",
-  fontStyle: "italic",
-};
-
-const thumbnailButtonStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  padding: 4,
-  background: "transparent",
-  border: "2px solid transparent",
-  borderRadius: 4,
-  cursor: "pointer",
-  color: "inherit",
-  font: "inherit",
-  textAlign: "left",
-};
-
-const thumbnailButtonActiveStyle: CSSProperties = {
-  ...thumbnailButtonStyle,
-  borderColor: "var(--pptx-shell-accent, #6aa3ff)",
-  background: "var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.12))",
-};
-
-const thumbnailIndexStyle: CSSProperties = {
-  width: 24,
-  textAlign: "center",
-  fontVariantNumeric: "tabular-nums",
-  fontSize: 12,
-  color: "var(--pptx-shell-status, #888)",
-};
-
-const thumbnailFrameStyle: CSSProperties = {
-  flex: "1 1 auto",
-  background: "white",
-  borderRadius: 3,
-  overflow: "hidden",
-  boxShadow: "0 1px 3px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.4))",
-};
-
-const thumbnailInnerStyle: CSSProperties = {
-  width: "100%",
-  height: "100%",
-};
-
-const thumbnailPlaceholderStyle: CSSProperties = {
-  width: "100%",
-  height: "100%",
-  display: "grid",
-  placeItems: "center",
-  color: "var(--pptx-shell-status, #aaa)",
-  fontSize: 14,
-  background: "var(--pptx-thumb-tile, #1a1a1f)",
-};
-
-// ---- Tile variant (grid / slide-sorter) ----------------------------------
-// Frame stacks above caption; tile stretches to fill its grid cell so
-// columns line up at a fixed cell width. Frame uses width: 100% +
-// aspect-ratio so every tile reserves the same on-screen footprint.
-
-const thumbnailTileStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  gap: 8,
-  padding: 8,
-  width: "100%",
-  background: "transparent",
-  border: "2px solid transparent",
-  borderRadius: 6,
-  cursor: "pointer",
-  color: "inherit",
-  font: "inherit",
-  textAlign: "center",
-  boxSizing: "border-box",
-};
-
-const thumbnailTileActiveStyle: CSSProperties = {
-  ...thumbnailTileStyle,
-  borderColor: "var(--pptx-shell-accent, #6aa3ff)",
-  background: "var(--pptx-shell-accent-soft, rgba(106, 163, 255, 0.12))",
-};
-
-const thumbnailTileFrameStyle: CSSProperties = {
-  width: "100%",
-  background: "white",
-  borderRadius: 4,
-  overflow: "hidden",
-  boxShadow: "0 2px 6px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.45))",
-  alignSelf: "stretch",
-};
-
-const thumbnailCaptionStyle: CSSProperties = {
-  fontSize: 12,
-  fontVariantNumeric: "tabular-nums",
-  color: "var(--pptx-shell-status, #aaa)",
-  lineHeight: 1.2,
-};
-
-const stageAreaStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateRows: "minmax(0, 1fr)",
-  minHeight: 0,
-  minWidth: 0,
-  overflow: "hidden",
-};
-
-const stageWrapStyle: CSSProperties = {
-  position: "relative",
-  minHeight: 0,
-  minWidth: 0,
-  overflow: "hidden",
-  boxSizing: "border-box",
-};
-
-const stageStyle: CSSProperties = {
-  position: "relative",
-  width: "100%",
-  height: "100%",
-  overflow: "auto",
-  background: "var(--pptx-shell-bg, #2b2b2f)",
-  display: "block",
-};
-
-const overlayStyle: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  display: "grid",
-  placeItems: "center",
-  color: "var(--pptx-shell-status, #888)",
-  fontSize: 14,
-};
-
-// Prominent centred loading panel for the parse / slide-prepare
-// window. Differs from `overlayStyle` (which is used for the
-// "empty" / error states) by stacking a spinner above the label
-// and using a slightly higher-contrast colour so the user can spot
-// it without scanning the status bar at the bottom-left.
-const loadingOverlayStyle: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 16,
-  color: "var(--pptx-shell-fg, #ececec)",
-  fontSize: 15,
-  pointerEvents: "none",
-};
-
-const loadingSpinnerStyle: CSSProperties = {
-  width: 36,
-  height: 36,
-  borderRadius: "50%",
-  border: "3px solid var(--pptx-shell-border, rgba(255, 255, 255, 0.18))",
-  borderTopColor: "var(--pptx-shell-accent, #6aa3ff)",
-  animation: "pptx-loading-spin 0.9s linear infinite",
-};
-
-const loadingTextStyle: CSSProperties = {
-  color: "var(--pptx-shell-fg, #ececec)",
-  fontWeight: 500,
-  letterSpacing: "0.01em",
-};
-
-// Centred export-progress overlay — visually mirrors the existing
-// SettingsDialog modal so users perceive it as a system-level
-// confirmation that the click landed.
-const progressHostStyle: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1100,
-  font: "13px system-ui, -apple-system, sans-serif",
-  pointerEvents: "auto",
-};
-
-const progressBackdropStyle: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  background: "var(--pptx-shell-dialog-overlay, rgba(0, 0, 0, 0.45))",
-};
-
-const progressPanelStyle: CSSProperties = {
-  position: "relative",
-  width: "min(420px, 86vw)",
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  padding: "20px 24px",
-  background: "var(--pptx-shell-dialog-bg, #1f1f23)",
-  color: "var(--pptx-shell-dialog-fg, #ececec)",
-  border: "1px solid var(--pptx-shell-border, #2a2a30)",
-  borderRadius: 10,
-  boxShadow: "0 16px 48px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.5))",
-};
-
-const progressTitleStyle: CSSProperties = {
-  fontSize: 15,
-  fontWeight: 600,
-  letterSpacing: 0.1,
-};
-
-const progressStepStyle: CSSProperties = {
-  fontSize: 13,
-  color: "var(--pptx-shell-status, #b8b8c0)",
-  minHeight: 18,
-  fontVariantNumeric: "tabular-nums",
-};
-
-const progressBarTrackStyle: CSSProperties = {
-  position: "relative",
-  width: "100%",
-  height: 6,
-  borderRadius: 3,
-  background: "var(--pptx-shell-track, rgba(255, 255, 255, 0.08))",
-  overflow: "hidden",
-};
-
-const progressBarFillStyle: CSSProperties = {
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  left: 0,
-  background: "var(--pptx-shell-accent, #6aa3ff)",
-  borderRadius: 3,
-  transition: "width 120ms ease-out",
-};
-
-// Indeterminate fallback when the host hasn't supplied a current/total
-// pair yet — paints a thin sliver so users still see the bar exists.
-// Inline styles can't define keyframes, so we keep it static rather
-// than animated; the live "step" text already conveys motion.
-const progressBarIndeterminateStyle: CSSProperties = {
-  width: "30%",
-  opacity: 0.65,
-};
-
-const progressCounterStyle: CSSProperties = {
-  fontSize: 12,
-  color: "var(--pptx-shell-status, #888)",
-  fontVariantNumeric: "tabular-nums",
-  textAlign: "right",
-};
-
-const rulerCornerStyle: CSSProperties = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  width: RULER_SIZE,
-  height: RULER_SIZE,
-  background: "var(--pptx-shell-status-bg, #1f1f23)",
-  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
-  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
-  zIndex: 6,
-  pointerEvents: "none",
-};
-
-const rulerHStyle: CSSProperties = {
-  position: "absolute",
-  top: 0,
-  right: 0,
-  left: RULER_SIZE,
-  height: RULER_SIZE,
-  zIndex: 5,
-  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
-};
-
-const rulerVStyle: CSSProperties = {
-  position: "absolute",
-  top: RULER_SIZE,
-  left: 0,
-  bottom: 0,
-  width: RULER_SIZE,
-  zIndex: 5,
-  borderRight: "1px solid var(--pptx-shell-border, #2a2a30)",
-};
-
-const gridViewStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-  // `gridAutoRows: min-content` forces every row track to size to its
-  // content rather than stretching to fill the container's leftover
-  // height; combined with `alignContent: start`, that anchors a
-  // single-row deck to the top of the stage instead of letting the
-  // single row expand to half-height and centring vertically.
-  gridAutoRows: "min-content",
-  alignContent: "start",
-  alignItems: "start",
-  justifyItems: "stretch",
-  gap: 20,
-  padding: 24,
-  overflow: "auto",
-  width: "100%",
-  height: "100%",
-  boxSizing: "border-box",
-};
-
-const notesPanelStyle: CSSProperties = {
-  padding: "10px 16px",
-  background: "var(--pptx-shell-notes-bg, #1a1a1f)",
-  borderTop: "1px solid var(--pptx-shell-border, #2a2a30)",
-  overflow: "auto",
-  maxHeight: 200,
-  whiteSpace: "pre-wrap",
-};
-
-const notesHeadingStyle: CSSProperties = {
-  margin: "0 0 6px",
-  fontSize: 11,
-  letterSpacing: "0.05em",
-  textTransform: "uppercase",
-  color: "var(--pptx-shell-notes-heading, #888)",
-};
-
-const notesBodyStyle: CSSProperties = {
-  fontSize: 12,
-  color: "var(--pptx-shell-notes-fg, #ddd)",
-};
-const notesEmptyStyle: CSSProperties = {
-  color: "var(--pptx-shell-status, #666)",
-  fontSize: 12,
-};
-
-const notesMetaStyle: CSSProperties = {
-  fontSize: 11,
-  color: "var(--pptx-shell-accent, #6aa3ff)",
-  marginBottom: 4,
-};
-
-const searchDrawerStyle: CSSProperties = {
-  position: "absolute",
-  top: 12,
-  right: 12,
-  width: 280,
-  maxHeight: "calc(100% - 24px)",
-  background: "var(--pptx-shell-drawer-bg, #1f1f23)",
-  border: "1px solid var(--pptx-shell-border, #2a2a30)",
-  borderRadius: 6,
-  boxShadow: "0 6px 24px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.4))",
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-  zIndex: 10,
-};
-const searchHeaderStyle: CSSProperties = {
-  padding: "8px 10px",
-  borderBottom: "1px solid var(--pptx-shell-border, #2a2a30)",
-  fontSize: 11,
-  letterSpacing: "0.05em",
-  textTransform: "uppercase",
-  color: "var(--pptx-shell-status, #aaa)",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
-const searchInputStyle: CSSProperties = {
-  margin: 8,
-  padding: "4px 8px",
-  background: "transparent",
-  color: "inherit",
-  border: "1px solid var(--pptx-shell-border, #2a2a30)",
-  borderRadius: 4,
-  font: "inherit",
-};
-const searchEmptyStyle: CSSProperties = {
-  padding: 12,
-  color: "var(--pptx-shell-status, #666)",
-  fontStyle: "italic",
-};
-const searchListStyle: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-  overflowY: "auto",
-};
-const searchItemStyle: CSSProperties = {
-  padding: "8px 10px",
-  cursor: "pointer",
-  borderBottom: "1px solid var(--pptx-shell-border, rgba(255, 255, 255, 0.05))",
-  fontSize: 12,
-};
-const searchHitNumStyle: CSSProperties = {
-  fontVariantNumeric: "tabular-nums",
-  color: "var(--pptx-shell-accent, #6aa3ff)",
-  marginRight: 6,
-};
-
-const slideshowStyle: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  background: "#000",
-  zIndex: 100,
-};
-
-// Bottom-right hover zone for slideshow nav buttons. The zone itself
-// is invisible (no background) but reserves a 220×100 region for the
-// hover trigger. The buttons inside fade in via the CSS rule in
-// `SHELL_GLOBAL_CSS` (`[data-pptx-slideshow-nav]:hover > div`).
-const slideshowNavZoneStyle: CSSProperties = {
-  position: "absolute",
-  right: 0,
-  bottom: 0,
-  width: 220,
-  height: 100,
-  zIndex: 110,
-  // No background so the zone is invisible until the user hovers in.
-  // `pointer-events: auto` is the default; explicit so a future
-  // change to the parent doesn't inherit `none` and break clicks.
-  pointerEvents: "auto",
-};
-
-const slideshowNavGroupStyle: CSSProperties = {
-  position: "absolute",
-  right: 16,
-  bottom: 16,
-  display: "flex",
-  gap: 6,
-  padding: 6,
-  borderRadius: 8,
-  background: "rgba(20, 20, 24, 0.7)",
-  backdropFilter: "blur(8px)",
-  // Fade controlled by CSS hover rule; keep buttons reachable for
-  // keyboard focus by retaining pointer-events even while invisible.
-  opacity: 0,
-  transition: "opacity 120ms ease-out",
-};
-
-const slideshowNavButtonStyle: CSSProperties = {
-  width: 36,
-  height: 36,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "transparent",
-  color: "#ececec",
-  border: "1px solid rgba(255, 255, 255, 0.18)",
-  borderRadius: 6,
-  cursor: "pointer",
-  padding: 0,
-};
-
-const statusBarStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "4px 12px",
-  fontSize: 11,
-  color: "var(--pptx-shell-status, #888)",
-  background: "var(--pptx-shell-status-bg, #1f1f23)",
-  borderTop: "1px solid var(--pptx-shell-border, #2a2a30)",
-  minHeight: 28,
-};
-
-const phaseStyle: CSSProperties = { fontVariantNumeric: "tabular-nums" };
-const metaStyle: CSSProperties = { fontSize: 11 };
-
-const statusSepStyle: CSSProperties = {
-  width: 1,
-  height: 16,
-  background: "var(--pptx-shell-border, #2a2a30)",
-  margin: "0 4px",
-};
-
-const selectionFontsContainerStyle: CSSProperties = {
-  position: "relative",
-  display: "inline-flex",
-  alignItems: "center",
-};
-
-const selectionFontsButtonStyle: CSSProperties = {
-  background: "transparent",
-  color: "inherit",
-  border: "1px solid transparent",
-  borderRadius: 3,
-  padding: "2px 6px",
-  cursor: "pointer",
-  font: "inherit",
-  fontSize: 11,
-  minHeight: 22,
-  display: "inline-flex",
-  alignItems: "center",
-};
-const selectionFontsButtonActiveStyle: CSSProperties = {
-  ...selectionFontsButtonStyle,
-  background: "var(--pptx-shell-active, #3a3a44)",
-};
-
-const selectionFontsPopoverStyle: CSSProperties = {
-  position: "absolute",
-  // Status bar sits at the bottom of the shell, so the popover
-  // expands upward (mirrors `FontUsageIndicator`).
-  bottom: "calc(100% + 4px)",
-  left: 0,
-  minWidth: 220,
-  maxWidth: 360,
-  maxHeight: 280,
-  overflow: "auto",
-  background: "var(--pptx-shell-bg, #1f1f24)",
-  color: "var(--pptx-shell-fg, #e6e6ea)",
-  border: "1px solid var(--pptx-shell-border, #2c2c34)",
-  borderRadius: 6,
-  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
-  zIndex: 1000,
-  fontSize: 12,
-  padding: "4px 0",
-};
-
-const selectionFontsListStyle: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-};
-
-const selectionFontsListItemStyle: CSSProperties = {
-  padding: "5px 12px",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const statusIconStyle: CSSProperties = {
-  background: "transparent",
-  color: "inherit",
-  border: "1px solid transparent",
-  borderRadius: 3,
-  padding: "2px 6px",
-  cursor: "pointer",
-  font: "inherit",
-  minHeight: 22,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-const activeIconSmStyle: CSSProperties = {
-  ...statusIconStyle,
-  background: "var(--pptx-shell-active, #3a3a44)",
-  // Active state is signalled by background only — earlier versions
-  // also flipped `borderColor` to the accent, but that 1px line was
-  // perceived as a stray "white outline" against dark themes (the
-  // anti-aliased thin accent stroke desaturates to off-white in JPEG
-  // screenshots and on lower-DPI displays). Background-only matches
-  // PowerPoint's own toolbar convention and avoids the artefact.
-};
-
-const zoomSliderStyle: CSSProperties = {
-  width: 120,
-  margin: "0 6px",
-};
-
-const zoomPctStyle: CSSProperties = {
-  minWidth: 40,
-  textAlign: "right",
-  fontVariantNumeric: "tabular-nums",
-  cursor: "pointer",
-  userSelect: "none",
-};
