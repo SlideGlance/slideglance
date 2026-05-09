@@ -16,10 +16,7 @@
     "README.md",
     "LICENSE-MIT"
   ],
-  "scripts": {
-    "build": "node ../../scripts/run-build-wasm.mjs",
-    "build:dev": "node ../../scripts/run-build-wasm.mjs --dev"
-  },
+  "scripts": {},
   "main": "./dist/node/slideglance_measure_wasm.js",
   "types": "./dist/node/slideglance_measure_wasm.d.ts",
   "exports": {

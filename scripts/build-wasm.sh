@@ -41,16 +41,21 @@ PROFILE="${PROFILE:-release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 
-# Cross-package serialization
-# ---------------------------
-# Multiple JS packages list this script as their build / prebuild
-# (`@slideglance/core`, `@slideglance/measure`, `@slideglance/viewer`).
-# `pnpm -r build` invokes them in parallel, so two or more processes
-# can race on the wasm-pack global cache (`~/.wasm-pack/...`) and on
-# `wasm-opt`, producing platform-specific failures:
-#   - macOS:  `wasm-bindgen is not executable` (chmod race)
-#   - Linux:  `invalid type: sequence, expected a string` (cache file
-#             half-written when serde reads it)
+# Defense-in-depth serialization
+# ------------------------------
+# CI workflows build wasm artefacts up front (`bash scripts/build-wasm.sh`
+# as an explicit step) so the per-package `prebuild` hooks on viewer /
+# chrome-extension / web-playground collapse to cache-hit no-ops without
+# contending here. This lock exists for edge cases the primary path
+# does not cover — chiefly two dev terminals invoking `pnpm dev` and
+# `pnpm build` simultaneously, or hand-running `bash scripts/build-wasm.sh`
+# while a `pnpm --filter X build` is already in flight.
+# Without it, two parallel processes race on the wasm-pack global cache
+# (`~/.wasm-pack/...`) and on `wasm-opt`, producing platform-specific
+# failures:
+#   - macOS:   `wasm-bindgen is not executable` (chmod race)
+#   - Linux:   `invalid type: sequence, expected a string` (cache file
+#              half-written when serde reads it)
 #   - Windows: `wasm-opt`: file lock (os error 32)
 # `mkdir` is atomic on POSIX and on NTFS via Git Bash, so it works as
 # a cheap cross-platform lock without extra binaries (`flock` is not

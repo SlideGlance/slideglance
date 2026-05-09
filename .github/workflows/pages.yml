@@ -29,11 +29,13 @@ jobs:
           sudo apt-get install -y binaryen
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Build wasm-pack targets
-        run: |
-          wasm-pack build crates/slideglance-wasm --target bundler --out-dir ../../packages/core/dist/bundler --out-name slideglance_wasm
-          wasm-pack build crates/slideglance-wasm --target web     --out-dir ../../packages/core/dist/web     --out-name slideglance_wasm
-          wasm-pack build crates/slideglance-wasm --target nodejs  --out-dir ../../packages/core/dist/node    --out-name slideglance_wasm
+      # Single source of truth for wasm artefacts — builds both
+      # `slideglance-wasm` and `slideglance-measure-wasm` for all three
+      # consumer targets (bundler / web / node). Replaces three direct
+      # `wasm-pack build` calls that handled only `slideglance-wasm`
+      # and silently left `@slideglance/measure` unpopulated.
+      - name: Build wasm artefacts
+        run: bash scripts/build-wasm.sh
       - uses: pnpm/action-setup@v4
         with:
           version: 10

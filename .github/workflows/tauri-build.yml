@@ -59,6 +59,13 @@ jobs:
             libssl-dev
       - name: pnpm install
         run: pnpm install --frozen-lockfile
+      # Build wasm artefacts up front so the per-package `prebuild`
+      # hooks (viewer / chrome-extension / web-playground) collapse to
+      # cache-hit no-ops. Without this, `pnpm -r build` would fan out
+      # the same wasm-pack work across multiple packages and serialize
+      # them on `build-wasm.sh`'s defense-in-depth lock.
+      - name: Build wasm artefacts
+        run: bash scripts/build-wasm.sh
       - name: Build JS workspaces
         run: pnpm -r --filter './packages/*' --filter './apps/*' build
       - name: tauri build
