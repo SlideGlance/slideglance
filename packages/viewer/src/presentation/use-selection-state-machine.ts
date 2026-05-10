@@ -27,7 +27,7 @@
  * reducer state.
  */
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type { MutableRefObject } from "react";
 
 import { parseFirstFontFamily } from "../svg-utils.js";
@@ -136,7 +136,18 @@ export function useSelectionStateMachine(
   const onStagePointerDown = useCallback(
     (ev: React.PointerEvent<HTMLElement>): void => {
       if (ev.button !== 0) return;
-      if (textEditId) return; // text-edit owns the pointer
+      if (textEditId) {
+        // Pointer down inside the same shape that owns text-edit → let
+        // text-edit keep the pointer (caret placement / selection).
+        // Anywhere else → exit text-edit and treat the click as a fresh
+        // selection so the user is not stuck after double-clicking once.
+        const inEditTarget = (ev.target as Element | null)?.closest(
+          `[data-sp-id="${textEditId}"]`,
+        );
+        if (inEditTarget) return;
+        setTextEditId(null);
+        // Fall through into the normal selection path below.
+      }
       if (spaceHeld) {
         try {
           (ev.target as Element).setPointerCapture(ev.pointerId);
@@ -157,7 +168,16 @@ export function useSelectionStateMachine(
       pointerDownAtRef.current = { x: ev.clientX, y: ev.clientY, target };
       if (!target) setRubberBand(null);
     },
-    [spaceHeld, textEditId, panX, panY, panStartRef, pointerDownAtRef, setRubberBand],
+    [
+      spaceHeld,
+      textEditId,
+      setTextEditId,
+      panX,
+      panY,
+      panStartRef,
+      pointerDownAtRef,
+      setRubberBand,
+    ],
   );
 
   const onStagePointerMove = useCallback(
@@ -282,15 +302,30 @@ export function useSelectionStateMachine(
   );
 
   // Project each selected shape's stored user-space bbox into the
-  // overlay's stage-relative pixel space. Re-runs whenever selection,
-  // pan, zoom, or stage size changes (the live screen CTM moves).
-  const selectionBoxes: SelectionBox[] = useMemo(() => {
-    if (selectedIds.size === 0) return [];
+  // overlay's stage-relative pixel space. Stored in state and refreshed
+  // via useLayoutEffect (NOT useMemo) because the projection reads
+  // `getScreenCTM()` from the live SVG — and during a render-phase
+  // useMemo, the DOM still reflects the *previous* zoom/pan, so the
+  // overlay would draw at the old screen position for one frame after
+  // every zoom step. useLayoutEffect runs synchronously after commit but
+  // before paint, so the CTM is current.
+  const [selectionBoxes, setSelectionBoxes] = useState<SelectionBox[]>([]);
+  useLayoutEffect(() => {
+    if (selectedIds.size === 0) {
+      setSelectionBoxes([]);
+      return;
+    }
     const stage = stageRef.current;
     const svgEl = slideRef.current?.firstElementChild as SVGSVGElement | null;
-    if (!stage || !svgEl) return [];
+    if (!stage || !svgEl) {
+      setSelectionBoxes([]);
+      return;
+    }
     const ctm = svgEl.getScreenCTM?.();
-    if (!ctm) return [];
+    if (!ctm) {
+      setSelectionBoxes([]);
+      return;
+    }
     const stageRect = stage.getBoundingClientRect();
     const scrollLeft = stage.scrollLeft;
     const scrollTop = stage.scrollTop;
@@ -319,7 +354,7 @@ export function useSelectionStateMachine(
         h: Math.max(...ys) - Math.min(...ys),
       });
     }
-    return out;
+    setSelectionBoxes(out);
     // panX / panY / zoom changes move the slide → CTM changes →
     // re-project. The deps array is intentionally a superset of what
     // the body reads.
