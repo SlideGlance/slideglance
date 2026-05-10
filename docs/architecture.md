@@ -1,7 +1,5 @@
 # SlideGlance Architecture
 
-> Korean translation: [`architecture.ko.md`](architecture.ko.md)
-
 ## Table of contents
 
 1. [Layered overview](#layered-overview)
@@ -282,7 +280,6 @@ date. Set `FORCE=1` to override.
 ## Where to read next
 
 - [`docs/fonts.md`](fonts.md) — font pipeline reference.
-- [`docs/fonts.ko.md`](fonts.ko.md) — Korean translation.
 - [`testing/vrt/snapshot/README.md`](../testing/vrt/snapshot/README.md)
   — visual regression suite.
 - [`packages/viewer/README.md`](../packages/viewer/README.md) — viewer

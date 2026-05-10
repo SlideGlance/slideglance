@@ -1,7 +1,5 @@
 # Fonts in SlideGlance — Environment Reference
 
-> Korean translation: [`fonts.ko.md`](fonts.ko.md)
-
 Environments covered:
 
 1. **Native CLI** — `slideglance convert / render`

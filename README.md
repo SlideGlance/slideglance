@@ -283,8 +283,7 @@ graph TB
 ```
 
 For the full layer breakdown, data flow, and crate / package
-responsibilities, see [`docs/architecture.md`](docs/architecture.md)
-([한국어](docs/architecture.ko.md)).
+responsibilities, see [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
@@ -292,8 +291,8 @@ responsibilities, see [`docs/architecture.md`](docs/architecture.md)
 
 | Document                                          | What it covers                                                                                                                |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`docs/architecture.md`](docs/architecture.md) / [`architecture.ko.md`](docs/architecture.ko.md) | High-level component diagram, data flow, layer responsibilities, where each technology (Rust / WASM / npm / Tauri) fits.      |
-| [`docs/fonts.md`](docs/fonts.md) / [`fonts.ko.md`](docs/fonts.ko.md) | Font pipeline reference: priority chain, path vs. text mode, per-environment behavior (CLI / library / wasm / viewer), troubleshooting. |
+| [`docs/architecture.md`](docs/architecture.md) | High-level component diagram, data flow, layer responsibilities, where each technology (Rust / WASM / npm / Tauri) fits.      |
+| [`docs/fonts.md`](docs/fonts.md) | Font pipeline reference: priority chain, path vs. text mode, per-environment behavior (CLI / library / wasm / viewer), troubleshooting. |
 | [`apps/chrome-extension/README.md`](apps/chrome-extension/README.md) | Chrome-extension entry flows, install steps, privacy policy.                                                                  |
 | [`packages/viewer/README.md`](packages/viewer/README.md)            | `<PptxPresentation>` props, slot conventions, custom themes.                                                                  |
 | [`testing/vrt/snapshot/README.md`](testing/vrt/snapshot/README.md)  | Visual regression fixture / snapshot conventions.                                                                             |
