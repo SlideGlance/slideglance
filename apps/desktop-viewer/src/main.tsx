@@ -40,7 +40,17 @@ function createTauriController(): SlideController {
   return {
     async open(_bytes: Uint8Array) {
       const count = await invoke<number>("slide_count");
-      return { slideCount: count, fontDefs: "" };
+      // The Tauri Rust side does not currently surface font metadata —
+      // the controller contract widened to carry usage / failure / decoded
+      // arrays for the web side, but the desktop renderer renders slides
+      // directly via the system font stack so the lists stay empty here.
+      return {
+        slideCount: count,
+        fontDefs: "",
+        fontUsage: [],
+        fontLoadFailures: [],
+        decodedFonts: [],
+      };
     },
     async renderSlide(slide: number): Promise<RenderedSlide> {
       const id = ++renderCount;
@@ -121,7 +131,9 @@ function ViewerDesktopApp(): JSX.Element {
     showLoadingOverlay(label);
     const tShow = performance.now();
     // eslint-disable-next-line no-console
-    console.log(`[viewer-desktop] openPath ${path} | overlay+${(tShow - t0).toFixed(1)}ms`);
+    console.log(
+      `[viewer-desktop] openPath ${path} | overlay+${(tShow - t0).toFixed(1)}ms`,
+    );
     try {
       const summary = await invoke<DocSummary>("open_pptx_path", { path });
       const tParsed = performance.now();

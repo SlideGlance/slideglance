@@ -30,6 +30,9 @@
   "scripts": {
     "prebuild": "node ../../scripts/run-build-wasm.mjs",
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest"
   },

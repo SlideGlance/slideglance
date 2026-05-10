@@ -7,6 +7,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "preview": "node build.mjs && node serve.mjs"
+    "preview": "node build.mjs && node serve.mjs",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
   }
 }

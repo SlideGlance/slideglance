@@ -11,8 +11,10 @@
     "prebuild": "node ../../scripts/run-build-wasm.mjs",
     "build": "node scripts/render-icons.mjs && vite build",
     "package": "pnpm build && node scripts/package.mjs",
-    "test": "vitest run",
-    "lint": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@phosphor-icons/react": "catalog:",
