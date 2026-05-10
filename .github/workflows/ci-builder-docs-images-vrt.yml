@@ -42,6 +42,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Pre-build the toolchain image so the compose run step reuses it
+      # rather than triggering its own (uncached) build. `scope=builder-toolchain`
+      # is shared with ci-builder-vrt so both workflows hit the same GHA
+      # cache for the LibreOffice / ImageMagick / fonts apt layer + pnpm
+      # install layer.
+      - name: Build toolchain image (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/builder/docker/Dockerfile
+          tags: slideglance-builder-vrt:latest
+          load: true
+          cache-from: type=gha,scope=builder-toolchain
+          cache-to: type=gha,mode=max,scope=builder-toolchain
       - name: Run docs images VRT in Docker
         working-directory: packages/builder
         run: docker compose -f docker/docker-compose.yml run --rm docs-images-vrt
