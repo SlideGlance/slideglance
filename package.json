@@ -30,8 +30,6 @@
     "pnpm": ">=8"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
-    "@changesets/cli": "^2.29.8",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.2.0",
     "globals": "^17.4.0",
