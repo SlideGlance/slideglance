@@ -6,29 +6,17 @@
 use slideglance_font::{is_sym_pua_codepoint, CjkPlatform, FontMapping, ScriptFontContext};
 use slideglance_model::RunProperties;
 
-use crate::color::color_hex;
 use crate::svg_builder::{escape_xml_attr, escape_xml_text};
 use crate::text::script::split_by_script;
 use crate::text::style::build_style_attrs;
 
-/// SVG `<defs>` `<filter>` ID for a highlight color hex (without `#`).
-/// Lowercase, padded to 6 chars. Caller emits the matching filter
-/// definition once per unique color in the slide.
-#[must_use]
-pub fn highlight_filter_id(hex_no_hash: &str) -> String {
-    format!("hl_{}", hex_no_hash.to_lowercase())
-}
-
-fn highlight_attr(props: &RunProperties) -> String {
-    if let Some(highlight) = &props.highlight {
-        // `color_hex` returns "#RRGGBB"; strip the `#` for the filter id.
-        let hex = color_hex(highlight);
-        let id = highlight_filter_id(hex.trim_start_matches('#'));
-        format!(" filter=\"url(#{id})\"")
-    } else {
-        String::new()
-    }
-}
+// Highlight is rendered as a separate `<rect>` sibling of the `<text>`
+// element (see `text/body/mod.rs::render_text_body`). Putting `filter` on
+// `<tspan>` was unreliable across browsers — Chromium / WebKit interpret
+// the filter region as the parent `<text>` bbox, so the highlight bled
+// across the whole paragraph. The rect path is computed from the
+// pre-wrapped segments and the same measurer used for layout, so the box
+// lines up with the glyphs without depending on browser SVG quirks.
 
 /// True when the run has a Latin / EA font pair worth splitting per
 /// script. When both are `None` or equal, the segment renders as one
@@ -72,9 +60,8 @@ pub fn render_segment(
     } else {
         let styles =
             build_style_attrs(props, font_scale, None, mapping, cjk_platform, script_fonts);
-        let hl = highlight_attr(props);
         format!(
-            "<tspan {prefix}{styles}{hl}>{}</tspan>",
+            "<tspan {prefix}{styles}>{}</tspan>",
             escape_xml_text(text)
         )
     };
@@ -158,10 +145,9 @@ fn render_split(
             script_fonts,
         );
         let prefix_for = if i == 0 { prefix } else { "" };
-        let hl = highlight_attr(props);
         let _ = write!(
             out,
-            "<tspan {prefix_for}{styles}{hl}>{}</tspan>",
+            "<tspan {prefix_for}{styles}>{}</tspan>",
             escape_xml_text(&part.text)
         );
     }

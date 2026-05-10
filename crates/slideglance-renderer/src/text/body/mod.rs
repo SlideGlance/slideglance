@@ -14,11 +14,11 @@
 //! group wrapper.
 
 use slideglance_font::{
-    wrap_paragraph_with_chain, CjkPlatform, FontMapping, FontResolver, ScriptFontContext,
-    TextMeasurer,
+    wrap_paragraph_with_chain, CjkPlatform, FontMapping, FontResolver, FontStyle,
+    ScriptFontContext, TextMeasurer,
 };
 use slideglance_model::{BodyProperties, TextBody, TextVerticalType, Transform, WrapMode};
-use slideglance_utils::Emu;
+use slideglance_utils::{Emu, Pt};
 
 use std::fmt::Write as _;
 
@@ -38,8 +38,8 @@ use super::style::build_bullet_style_attrs;
 mod helpers;
 
 use helpers::{
-    build_highlight_filter_defs, get_line_font_size_segments, inject_default_text_color,
-    is_vertical, resolve_bullet_text, substitute_field_runs,
+    get_line_font_size_segments, highlight_color_for, inject_default_text_color, is_vertical,
+    resolve_bullet_text, serialize_highlight_rects, substitute_field_runs, HighlightRect,
 };
 
 /// Render a `<p:txBody>` to an SVG `<text>` (or rotated `<g>` wrapper for
@@ -204,6 +204,64 @@ pub fn render_text_body(
     > = std::collections::HashMap::new();
     let mut prev_space_after_px = 0.0_f64;
     let last_para_index = body.paragraphs.len().saturating_sub(1);
+    // Highlight overlay tracking. Each `<Mark>` / `<a:highlight>` run is
+    // measured at the same point we lay out the tspan and pushed as a
+    // separate `<rect>` emitted *before* the `<text>` element so the
+    // background paints behind the glyphs without depending on
+    // `<tspan filter>` (which browsers route through the parent text's
+    // bbox and overshoot the run).
+    let mut highlight_rects: Vec<HighlightRect> = Vec::new();
+    // `y_start` (the text element's `y` attribute) is finalized AFTER the
+    // paragraph loop, so during the loop we track baseline as an *offset*
+    // from y_start. After the loop, we add y_start to every rect's y.
+    let mut current_baseline_offset = 0.0_f64;
+    let measure_seg_width = |seg: &slideglance_font::LineSegment| -> f64 {
+        let pt = seg
+            .properties
+            .font_size
+            .map_or(default_font_size, Pt::raw)
+            * font_scale;
+        let style = FontStyle {
+            bold: seg.properties.bold,
+            italic: seg.properties.italic,
+        };
+        // Pass the same `font-family` chain string that the SVG `<text>`
+        // attribute will carry — browser-backed measurers (the wasm canvas
+        // measurer used by slideglance/viewer) measure off the chain, so
+        // omitting it here would let the rect's x drift relative to where
+        // the browser actually places the glyphs. Native (OpenType) backends
+        // ignore the chain via the trait's default impl. See KDD-15 for the
+        // motivation.
+        let pair = [
+            seg.properties.font_family.as_deref(),
+            seg.properties.font_family_ea.as_deref(),
+        ];
+        let chain = super::font_family::build_font_family_value(
+            &pair,
+            mapping,
+            cjk_platform,
+            script_fonts,
+        );
+        measurer.measure_text_width_with_chain(
+            &seg.text,
+            pt,
+            style,
+            seg.properties.font_family.as_deref(),
+            seg.properties.font_family_ea.as_deref(),
+            chain.as_deref(),
+        )
+    };
+    // Translate `align.x_pos` + `align.anchor` + the first segment's
+    // measured width into the actual SVG x where the line's first glyph
+    // starts. Subsequent segments flow naturally after, regardless of the
+    // anchor — that's how the browser positions tspans without their own x.
+    let line_start_x = |anchor: &str, x_pos: f64, first_seg_w: f64| -> f64 {
+        match anchor {
+            "middle" => x_pos - first_seg_w / 2.0,
+            "end" => x_pos - first_seg_w,
+            _ => x_pos,
+        }
+    };
 
     for (para_idx, para) in body.paragraphs.iter().enumerate() {
         let para_margin_left = para.properties.margin_left.map_or(0.0, Emu::to_pixels);
@@ -247,6 +305,9 @@ pub fn render_text_body(
                 bp.compat_ln_spc,
             );
             let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
+            if !is_first_line {
+                current_baseline_offset += line_height_pt * PX_PER_PT + paragraph_gap_px;
+            }
             let _ = write!(
                 tspans,
                 "<tspan x=\"{}\" dy=\"{dy}\" text-anchor=\"{}\"> </tspan>",
@@ -290,6 +351,9 @@ pub fn render_text_body(
                         bp.compat_ln_spc,
                     );
                     let dy = compute_dy(is_first_line, line_height_pt, line_gap_px);
+                    if !is_first_line {
+                        current_baseline_offset += line_height_pt * PX_PER_PT + line_gap_px;
+                    }
                     let _ = write!(
                         tspans,
                         "<tspan x=\"{}\" dy=\"{dy}\" text-anchor=\"{}\"> </tspan>",
@@ -318,6 +382,10 @@ pub fn render_text_body(
                             bp.compat_ln_spc,
                         );
                         let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
+                        if !is_first_line {
+                            current_baseline_offset +=
+                                line_height_pt * PX_PER_PT + paragraph_gap_px;
+                        }
                         let bullet_styles =
                             build_bullet_style_attrs(&para.properties, line_font_size, font_scale);
                         let space = if bullet_styles.is_empty() { "" } else { " " };
@@ -327,7 +395,34 @@ pub fn render_text_body(
                             n(bullet_x),
                             escape_xml_text(bullet_text)
                         );
+                        // Pre-measure for highlight rect emission. Segments
+                        // after the bullet flow from align.x_pos (left edge
+                        // of the body column) regardless of bullet width.
+                        let line_widths: Vec<f64> =
+                            line.segments.iter().map(measure_seg_width).collect();
+                        let first_w = line_widths.first().copied().unwrap_or(0.0);
+                        let mut current_x =
+                            line_start_x(align.anchor, align.x_pos, first_w);
                         for (seg_idx, seg) in line.segments.iter().enumerate() {
+                            let seg_w = line_widths[seg_idx];
+                            if let Some((color, alpha)) =
+                                highlight_color_for(&seg.properties)
+                            {
+                                let pt = seg
+                                    .properties
+                                    .font_size
+                                    .map_or(default_font_size, Pt::raw)
+                                    * font_scale;
+                                let font_size_px = pt * PX_PER_PT;
+                                highlight_rects.push(HighlightRect {
+                                    x: current_x,
+                                    y: current_baseline_offset - font_size_px * 0.85,
+                                    w: seg_w,
+                                    h: font_size_px * 1.1,
+                                    color_hex: color,
+                                    alpha,
+                                });
+                            }
                             let prefix = if seg_idx == 0 {
                                 format!(
                                     "x=\"{}\" text-anchor=\"{}\" ",
@@ -346,55 +441,76 @@ pub fn render_text_body(
                                 cjk_platform,
                                 script_fonts,
                             ));
+                            current_x += seg_w;
                         }
                         is_first_line = false;
                         continue;
                     }
                 }
 
+                // Hoist line-height computation out of the per-segment branch
+                // so we can advance `current_baseline_offset` (and therefore
+                // emit highlight rects at the correct y) BEFORE the loop.
+                let line_natural_height_pt = compute_line_natural_height(
+                    &line.segments,
+                    default_font_size,
+                    font_scale,
+                    measurer,
+                );
+                let line_font_size_pt =
+                    get_line_font_size_segments(line, default_font_size) * font_scale;
+                let line_height_pt = effective_line_height_pt(
+                    line_font_size_pt,
+                    line_natural_height_pt,
+                    get_line_spacing(para, ln_spc_reduction),
+                    para.properties.line_spacing.is_some(),
+                    bp.compat_ln_spc,
+                );
+                let dy_str = compute_dy(is_first_line, line_height_pt, line_gap_px);
+                if !is_first_line {
+                    current_baseline_offset += line_height_pt * PX_PER_PT + line_gap_px;
+                }
+                let line_widths: Vec<f64> =
+                    line.segments.iter().map(measure_seg_width).collect();
+                let first_w = line_widths.first().copied().unwrap_or(0.0);
+                let mut current_x = line_start_x(align.anchor, align.x_pos, first_w);
                 for (seg_idx, seg) in line.segments.iter().enumerate() {
-                    if seg_idx == 0 {
-                        let line_natural_height_pt = compute_line_natural_height(
-                            &line.segments,
-                            default_font_size,
-                            font_scale,
-                            measurer,
-                        );
-                        let line_font_size_pt =
-                            get_line_font_size_segments(line, default_font_size) * font_scale;
-                        let line_height_pt = effective_line_height_pt(
-                            line_font_size_pt,
-                            line_natural_height_pt,
-                            get_line_spacing(para, ln_spc_reduction),
-                            para.properties.line_spacing.is_some(),
-                            bp.compat_ln_spc,
-                        );
-                        let dy = compute_dy(is_first_line, line_height_pt, line_gap_px);
-                        let prefix = format!(
-                            "x=\"{}\" dy=\"{dy}\" text-anchor=\"{}\" ",
+                    let seg_w = line_widths[seg_idx];
+                    if let Some((color, alpha)) = highlight_color_for(&seg.properties) {
+                        let pt = seg
+                            .properties
+                            .font_size
+                            .map_or(default_font_size, Pt::raw)
+                            * font_scale;
+                        let font_size_px = pt * PX_PER_PT;
+                        highlight_rects.push(HighlightRect {
+                            x: current_x,
+                            y: current_baseline_offset - font_size_px * 0.85,
+                            w: seg_w,
+                            h: font_size_px * 1.1,
+                            color_hex: color,
+                            alpha,
+                        });
+                    }
+                    let prefix = if seg_idx == 0 {
+                        format!(
+                            "x=\"{}\" dy=\"{dy_str}\" text-anchor=\"{}\" ",
                             n(align.x_pos),
                             align.anchor
-                        );
-                        tspans.push_str(&render_segment(
-                            &seg.text,
-                            &seg.properties,
-                            font_scale,
-                            &prefix,
-                            mapping,
-                            cjk_platform,
-                            script_fonts,
-                        ));
+                        )
                     } else {
-                        tspans.push_str(&render_segment(
-                            &seg.text,
-                            &seg.properties,
-                            font_scale,
-                            "",
-                            mapping,
-                            cjk_platform,
-                            script_fonts,
-                        ));
-                    }
+                        String::new()
+                    };
+                    tspans.push_str(&render_segment(
+                        &seg.text,
+                        &seg.properties,
+                        font_scale,
+                        &prefix,
+                        mapping,
+                        cjk_platform,
+                        script_fonts,
+                    ));
+                    current_x += seg_w;
                 }
                 is_first_line = false;
             }
@@ -421,6 +537,9 @@ pub fn render_text_body(
                     bp.compat_ln_spc,
                 );
                 let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
+                if !is_first_line {
+                    current_baseline_offset += line_height_pt * PX_PER_PT + paragraph_gap_px;
+                }
                 let bullet_styles =
                     build_bullet_style_attrs(&para.properties, font_size, font_scale);
                 let space = if bullet_styles.is_empty() { "" } else { " " };
@@ -432,65 +551,117 @@ pub fn render_text_body(
                 );
             }
 
-            for run in &para.runs {
+            // No-wrap path also needs the line baseline advanced when the
+            // first run emits its own dy (no bullet branch). To keep the
+            // rect math right, measure every run on this single line first
+            // so the highlight rect emission below has the same widths
+            // we use for x accumulation.
+            let nowrap_run_widths: Vec<f64> = para
+                .runs
+                .iter()
+                .map(|r| {
+                    let pt = r
+                        .properties
+                        .font_size
+                        .map_or(default_font_size, Pt::raw)
+                        * font_scale;
+                    let style = FontStyle {
+                        bold: r.properties.bold,
+                        italic: r.properties.italic,
+                    };
+                    measurer.measure_text_width(
+                        &r.text,
+                        pt,
+                        style,
+                        r.properties.font_family.as_deref(),
+                        r.properties.font_family_ea.as_deref(),
+                    )
+                })
+                .collect();
+            let nowrap_first_w = para
+                .runs
+                .iter()
+                .position(|r| !r.text.is_empty())
+                .map(|i| nowrap_run_widths[i])
+                .unwrap_or(0.0);
+            let mut nowrap_current_x =
+                line_start_x(align.anchor, align.x_pos, nowrap_first_w);
+            // The baseline-y advance for the no-bullet branch happens
+            // inside the loop below at first-run emission time. Track
+            // whether we already advanced so we don't double-count.
+            let mut nowrap_baseline_advanced = bullet_text.is_some();
+            for (run_idx, run) in para.runs.iter().enumerate() {
                 if run.text.is_empty() {
                     continue;
                 }
-                if first_run_rendered {
-                    tspans.push_str(&render_segment(
-                        &run.text,
-                        &run.properties,
+                let run_w = nowrap_run_widths[run_idx];
+                let prefix = if first_run_rendered {
+                    String::new()
+                } else if bullet_text.is_some() {
+                    format!("x=\"{}\" text-anchor=\"{}\" ", n(align.x_pos), align.anchor)
+                } else {
+                    let natural_height_pt = compute_line_natural_height(
+                        &para.runs,
+                        default_font_size,
                         font_scale,
-                        "",
-                        mapping,
-                        cjk_platform,
-                        script_fonts,
-                    ));
-                    continue;
+                        measurer,
+                    );
+                    let first_run_font_size = para
+                        .runs
+                        .iter()
+                        .find(|r| !r.text.is_empty())
+                        .and_then(|r| r.properties.font_size.map(slideglance_utils::Pt::raw))
+                        .unwrap_or(default_font_size)
+                        * font_scale;
+                    let line_height_pt = effective_line_height_pt(
+                        first_run_font_size,
+                        natural_height_pt,
+                        get_line_spacing(para, ln_spc_reduction),
+                        para.properties.line_spacing.is_some(),
+                        bp.compat_ln_spc,
+                    );
+                    let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
+                    if !is_first_line && !nowrap_baseline_advanced {
+                        current_baseline_offset +=
+                            line_height_pt * PX_PER_PT + paragraph_gap_px;
+                        nowrap_baseline_advanced = true;
+                    }
+                    format!(
+                        "x=\"{}\" dy=\"{dy}\" text-anchor=\"{}\" ",
+                        n(align.x_pos),
+                        align.anchor
+                    )
+                };
+                if let Some((color, alpha)) = highlight_color_for(&run.properties) {
+                    let pt = run
+                        .properties
+                        .font_size
+                        .map_or(default_font_size, Pt::raw)
+                        * font_scale;
+                    let font_size_px = pt * PX_PER_PT;
+                    highlight_rects.push(HighlightRect {
+                        x: nowrap_current_x,
+                        y: current_baseline_offset - font_size_px * 0.85,
+                        w: run_w,
+                        h: font_size_px * 1.1,
+                        color_hex: color,
+                        alpha,
+                    });
                 }
-                {
-                    let prefix = if bullet_text.is_some() {
-                        format!("x=\"{}\" text-anchor=\"{}\" ", n(align.x_pos), align.anchor)
-                    } else {
-                        let natural_height_pt = compute_line_natural_height(
-                            &para.runs,
-                            default_font_size,
-                            font_scale,
-                            measurer,
-                        );
-                        let first_run_font_size = para
-                            .runs
-                            .iter()
-                            .find(|r| !r.text.is_empty())
-                            .and_then(|r| r.properties.font_size.map(slideglance_utils::Pt::raw))
-                            .unwrap_or(default_font_size)
-                            * font_scale;
-                        let line_height_pt = effective_line_height_pt(
-                            first_run_font_size,
-                            natural_height_pt,
-                            get_line_spacing(para, ln_spc_reduction),
-                            para.properties.line_spacing.is_some(),
-                            bp.compat_ln_spc,
-                        );
-                        let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
-                        format!(
-                            "x=\"{}\" dy=\"{dy}\" text-anchor=\"{}\" ",
-                            n(align.x_pos),
-                            align.anchor
-                        )
-                    };
-                    tspans.push_str(&render_segment(
-                        &run.text,
-                        &run.properties,
-                        font_scale,
-                        &prefix,
-                        mapping,
-                        cjk_platform,
-                        script_fonts,
-                    ));
-                    first_run_rendered = true;
-                }
+                tspans.push_str(&render_segment(
+                    &run.text,
+                    &run.properties,
+                    font_scale,
+                    &prefix,
+                    mapping,
+                    cjk_platform,
+                    script_fonts,
+                ));
+                nowrap_current_x += run_w;
+                first_run_rendered = true;
             }
+            // Suppress unused-warning for run_idx when no runs were highlighted.
+            let _ = nowrap_baseline_advanced;
             is_first_line = false;
         }
 
@@ -557,15 +728,17 @@ pub fn render_text_body(
         legacy_y_inc
     };
 
-    // Collect every distinct highlight color used by any run in this
-    // text body and emit a `<defs><filter>` per color. SVG `<text>`
-    // can't host `<rect>` children, so we emulate run-level highlight
-    // backgrounds with a per-color filter that flood-fills the tspan's
-    // filter region behind the glyph (`feFlood` + `feMerge` over
-    // `SourceGraphic`). The renderer's spec doesn't ship a
-    // text-mode highlight path; this is an intentional divergence so
-    // `<a:highlight>` runs are visible in browser-rendered SVG output.
-    let highlight_defs = build_highlight_filter_defs(&body);
+    // Translate the in-loop baseline-offset coordinates into final user
+    // space by adding the text element's `y` start. Doing this *after* the
+    // loop avoids needing y_start ahead of time (it's vertical-anchor
+    // dependent and computed from the wrapped layout above). Each rect
+    // sits behind the glyphs of a single highlighted run, exactly the box
+    // the path-mode renderer would draw — see
+    // `text/path_mode/segment.rs::emit_segment` for the parallel logic.
+    for r in &mut highlight_rects {
+        r.y += y_start;
+    }
+    let highlight_overlay = serialize_highlight_rects(&highlight_rects);
     // `font-kerning="none"` + `text-rendering="geometricPrecision"` make
     // the browser drop its own kerning-pair adjustments and sub-pixel
     // snapping, two of the biggest sources of "looks-different-than-PNG"
@@ -577,7 +750,7 @@ pub fn render_text_body(
     // backwards compatible — viewers that ignore the attributes get the
     // previous behaviour.
     let text_element = format!(
-        "{highlight_defs}<text x=\"0\" y=\"{}\" xml:space=\"preserve\" font-kerning=\"none\" text-rendering=\"geometricPrecision\">{tspans}</text>",
+        "{highlight_overlay}<text x=\"0\" y=\"{}\" xml:space=\"preserve\" font-kerning=\"none\" text-rendering=\"geometricPrecision\">{tspans}</text>",
         n(y_start)
     );
 

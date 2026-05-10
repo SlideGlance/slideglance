@@ -31,44 +31,58 @@ use crate::slide_context::SlideRenderContext;
 
 use super::super::auto_num::format_auto_num;
 use super::super::layout::has_visible_bullet;
-use super::super::segment::highlight_filter_id;
 use crate::color::color_hex;
 
-/// Walk every run of `body` and build the SVG `<defs>` block holding
-/// one `<filter>` per distinct highlight color. Returns "" when no run
-/// has a highlight set (the common case).
-pub(super) fn build_highlight_filter_defs(body: &TextBody) -> String {
-    use std::collections::BTreeSet;
-    let mut hexes: BTreeSet<String> = BTreeSet::new();
-    for para in &body.paragraphs {
-        for run in &para.runs {
-            if let Some(h) = &run.properties.highlight {
-                let hex = color_hex(h);
-                hexes.insert(hex.trim_start_matches('#').to_lowercase());
-            }
-        }
-    }
-    if hexes.is_empty() {
+/// One run-level highlight rectangle, projected into the same user-space
+/// coordinate frame the surrounding `<text>` element draws into.
+///
+/// Computed by `body/mod.rs` while it walks the wrapped lines so the rect
+/// can be measured with the *exact* same `TextMeasurer` used for line
+/// wrapping — no risk of width drift between layout and overlay. See the
+/// big rationale comment around `build_highlight_filter_defs`'s former
+/// home for why we don't use `<tspan filter="...">` any more.
+pub(super) struct HighlightRect {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub color_hex: String,
+    pub alpha: f32,
+}
+
+/// Serialize a list of highlight rects to an SVG fragment. Emitted *before*
+/// the `<text>` element so the rectangles paint behind the glyphs without
+/// requiring filter / mask trickery (which break across browsers).
+pub(super) fn serialize_highlight_rects(rects: &[HighlightRect]) -> String {
+    if rects.is_empty() {
         return String::new();
     }
-    let mut out = String::from("<defs>");
-    for hex in &hexes {
-        let id = highlight_filter_id(hex);
-        // x/y/width/height: expand a few percent past the tspan's ink
-        // box so the highlight doesn't clip glyph descenders or italic
-        // overhangs. `feFlood` paints the filter region with the
-        // highlight color, then `feMerge` stacks the original glyphs
-        // on top so the text remains legible.
+    let mut out = String::new();
+    for r in rects {
+        let alpha_attr = if r.alpha < 1.0 {
+            format!(" fill-opacity=\"{:.3}\"", r.alpha)
+        } else {
+            String::new()
+        };
         let _ = write!(
             out,
-            "<filter id=\"{id}\" x=\"-2%\" y=\"-15%\" width=\"104%\" height=\"130%\">\
-             <feFlood flood-color=\"#{hex}\"/>\
-             <feMerge><feMergeNode/><feMergeNode in=\"SourceGraphic\"/></feMerge>\
-             </filter>"
+            "<rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"{alpha_attr}/>",
+            r.x, r.y, r.w, r.h, r.color_hex
         );
     }
-    out.push_str("</defs>");
     out
+}
+
+/// Helper used by the per-line emitter to resolve the highlight color hex
+/// (without `#`). Returns `None` when the run has no highlight.
+pub(super) fn highlight_color_for(
+    props: &slideglance_model::RunProperties,
+) -> Option<(String, f32)> {
+    let hl = props.highlight.as_ref()?;
+    // The model stores alpha as f64; the rect serializer formats it as a
+    // 3-decimal SVG attribute, so a one-way f32 cast is precise enough and
+    // keeps the rect type small.
+    Some((color_hex(hl), hl.alpha as f32))
 }
 
 /// Push the body's `default_text_color` (resolved from the parent
