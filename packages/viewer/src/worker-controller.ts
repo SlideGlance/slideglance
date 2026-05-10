@@ -41,9 +41,8 @@ export async function createWorkerController(
     // returning its public URL as a string — so consumer bundlers can
     // co-locate the worker alongside their app bundle without us
     // having to hardcode paths.
-    const { default: workerUrl } = (await import(
-      "./pptx-worker.ts?worker&url"
-    )) as { default: string };
+    const { default: workerUrl } =
+      (await import("./pptx-worker.ts?worker&url")) as { default: string };
     worker = new Worker(workerUrl, { type: "module" });
   }
 
@@ -51,7 +50,10 @@ export async function createWorkerController(
   const pending = new Map<number, PendingHandlers>();
 
   worker.addEventListener("message", (ev) => {
-    const msg = ev.data as { type: string; id: number } & Record<string, unknown>;
+    const msg = ev.data as { type: string; id: number } & Record<
+      string,
+      unknown
+    >;
     const handler = pending.get(msg.id);
     if (!handler) return;
     pending.delete(msg.id);
@@ -85,10 +87,7 @@ export async function createWorkerController(
   }
 
   return {
-    async open(
-      bytes: Uint8Array,
-      options?: { extraFontDefsCss?: string },
-    ) {
+    async open(bytes: Uint8Array, options?: { extraFontDefsCss?: string }) {
       const result = await call<{
         slideCount: number;
         fontDefs: string;
@@ -118,13 +117,11 @@ export async function createWorkerController(
         // 200MB+ copy cost on large decks.
         [bytes.buffer as ArrayBuffer],
       );
-      const fontUsage: TypefaceUsage[] = (result.fontUsage ?? []).map(
-        (u) => ({
-          requested: u.requested,
-          fallbackChain: u.fallback_chain,
-          resolvedFamily: u.resolved_family,
-        }),
-      );
+      const fontUsage: TypefaceUsage[] = (result.fontUsage ?? []).map((u) => ({
+        requested: u.requested,
+        fallbackChain: u.fallback_chain,
+        resolvedFamily: u.resolved_family,
+      }));
       // Embedded-font load failures are a known, bounded class
       // (MTX-compressed payloads OTS rejects; fonts the deck doesn't
       // grant the embedding bit on; etc.) and the metric-match

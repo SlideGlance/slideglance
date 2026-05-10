@@ -24,7 +24,9 @@ async function ensureDist() {
     const st = await stat(DIST);
     if (!st.isDirectory()) throw new Error(`${DIST} is not a directory`);
   } catch {
-    throw new Error(`dist/ missing — run \`pnpm -F @slideglance/chrome-extension build\` first`);
+    throw new Error(
+      `dist/ missing — run \`pnpm -F @slideglance/chrome-extension build\` first`,
+    );
   }
 }
 

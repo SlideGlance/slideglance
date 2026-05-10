@@ -165,7 +165,11 @@ export function usePrintPdfExport(
       setTimeout(() => URL.revokeObjectURL(url), 4000);
       setPhase(t("status.exported", { count: slides.length }));
     } catch (err) {
-      setErrorMsg(t("status.pdfFailed", { reason: (err as Error).message ?? String(err) }));
+      setErrorMsg(
+        t("status.pdfFailed", {
+          reason: (err as Error).message ?? String(err),
+        }),
+      );
     } finally {
       setTimeout(() => setPhase(""), 2000);
       setTimeout(() => setProgress(null), 400);

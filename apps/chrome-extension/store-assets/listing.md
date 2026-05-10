@@ -45,15 +45,15 @@ Captured at 1280×800 (Web Store size). Upload in this order; the
 caption text is what we recommend for the listing's screenshot
 captions field.
 
-Sample deck used for the captures: [*Business Infographic
-Presentation*](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
+Sample deck used for the captures: [_Business Infographic
+Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
 by SlidesCarnival.
 
-| File | Caption |
-| --- | --- |
-| [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png) | Drop a `.pptx` or click *Open file* — the viewer is the same tab, no upload. |
-| [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png) | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
-| [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png) | Browser-only · offline-capable WebAssembly. MIT-licensed. |
-| [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png) | Thumbnails, ruler, slideshow, print, and PDF export — all client-side. |
-| [`screenshots/05-font-mapping-popover.png`](screenshots/05-font-mapping-popover.png) | Font fallback report shows exactly which authored typeface resolved to which installed face. |
-| [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png) | Grid view scans large decks at a glance. |
+| File                                                                                 | Caption                                                                                                                |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png)                   | Drop a `.pptx` or click _Open file_ — the viewer is the same tab, no upload.                                           |
+| [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png)   | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
+| [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png)             | Browser-only · offline-capable WebAssembly. MIT-licensed.                                                              |
+| [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png)   | Thumbnails, ruler, slideshow, print, and PDF export — all client-side.                                                 |
+| [`screenshots/05-font-mapping-popover.png`](screenshots/05-font-mapping-popover.png) | Font fallback report shows exactly which authored typeface resolved to which installed face.                           |
+| [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png)                       | Grid view scans large decks at a glance.                                                                               |

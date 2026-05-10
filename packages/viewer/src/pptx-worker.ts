@@ -71,8 +71,7 @@ const MEASURE_FALLBACK_CJK = [
 ];
 
 const PT_TO_PX = 96 / 72;
-const CJK_RE =
-  /[　-鿿가-힯豈-﫿！-｠ᄀ-ᇿꥠ-꥿ힰ-퟿]/;
+const CJK_RE = /[　-鿿가-힯豈-﫿！-｠ᄀ-ᇿꥠ-꥿ힰ-퟿]/;
 
 let measureCanvasCtx: OffscreenCanvasRenderingContext2D | null = null;
 function getMeasureCtx(): OffscreenCanvasRenderingContext2D {
@@ -112,9 +111,11 @@ function measureTextWidth(
   } else if (fontFamilyEa != null && fontFamilyEa.length > 0 && isCjk) {
     // EA font supplied but no full chain yet (pre-D3 WASM path).
     const fallbackList = MEASURE_FALLBACK_CJK.map((f) => `'${f}'`);
-    families = [`'${fontFamilyEa.replace(/'/g, "\\'")}'`, ...fallbackList, "sans-serif"].join(
-      ", ",
-    );
+    families = [
+      `'${fontFamilyEa.replace(/'/g, "\\'")}'`,
+      ...fallbackList,
+      "sans-serif",
+    ].join(", ");
   } else {
     // Last-resort: no chain from Rust (pre-D3 WASM or empty segment).
     const fallbackList = isCjk ? MEASURE_FALLBACK_CJK.map((f) => `'${f}'`) : [];
@@ -299,7 +300,9 @@ function parseFontFacesFromCss(css: string): ParsedFontFace[] {
  * bundle + metric-match catalog) handles every rejected face so
  * deck rendering is never blocked.
  */
-function validateCmap(ttf: Uint8Array): { ok: true } | { ok: false; reason: string } {
+function validateCmap(
+  ttf: Uint8Array,
+): { ok: true } | { ok: false; reason: string } {
   if (ttf.length < 12) return { ok: false, reason: "header too short" };
   const view = new DataView(ttf.buffer, ttf.byteOffset, ttf.byteLength);
   const numTables = view.getUint16(4);
@@ -308,7 +311,8 @@ function validateCmap(ttf: Uint8Array): { ok: true } | { ok: false; reason: stri
   let maxpOff = -1;
   for (let i = 0; i < numTables; i++) {
     const recOff = 12 + i * 16;
-    if (recOff + 16 > ttf.length) return { ok: false, reason: "table directory truncated" };
+    if (recOff + 16 > ttf.length)
+      return { ok: false, reason: "table directory truncated" };
     const tag = String.fromCharCode(
       ttf[recOff],
       ttf[recOff + 1],
@@ -336,15 +340,18 @@ function validateCmap(ttf: Uint8Array): { ok: true } | { ok: false; reason: stri
   const numSubtables = view.getUint16(cmapOff + 2);
   for (let i = 0; i < numSubtables; i++) {
     const recOff = cmapOff + 4 + i * 8;
-    if (recOff + 8 > cmapEnd) return { ok: false, reason: "encoding record overflow" };
+    if (recOff + 8 > cmapEnd)
+      return { ok: false, reason: "encoding record overflow" };
     const subOffFromCmap = view.getUint32(recOff + 4);
     const sub = cmapOff + subOffFromCmap;
-    if (sub + 6 > cmapEnd) return { ok: false, reason: "subtable header overflow" };
+    if (sub + 6 > cmapEnd)
+      return { ok: false, reason: "subtable header overflow" };
     const fmt = view.getUint16(sub);
     if (fmt !== 4) continue;
     const length = view.getUint16(sub + 2);
     const subEnd = sub + length;
-    if (subEnd > cmapEnd) return { ok: false, reason: "subtable length exceeds cmap" };
+    if (subEnd > cmapEnd)
+      return { ok: false, reason: "subtable length exceeds cmap" };
     const segCount = view.getUint16(sub + 6) >>> 1;
     const endCodesOff = sub + 14;
     const startCodesOff = endCodesOff + segCount * 2 + 2;
@@ -482,8 +489,14 @@ async function decompressMtxFonts(
       if (
         ttf.length < 4 ||
         !(
-          (ttf[0] === 0x00 && ttf[1] === 0x01 && ttf[2] === 0x00 && ttf[3] === 0x00) ||
-          (ttf[0] === 0x4f && ttf[1] === 0x54 && ttf[2] === 0x54 && ttf[3] === 0x4f)
+          (ttf[0] === 0x00 &&
+            ttf[1] === 0x01 &&
+            ttf[2] === 0x00 &&
+            ttf[3] === 0x00) ||
+          (ttf[0] === 0x4f &&
+            ttf[1] === 0x54 &&
+            ttf[2] === 0x54 &&
+            ttf[3] === 0x4f)
         )
       ) {
         failures.push({
@@ -592,7 +605,9 @@ async function handleOpen(
   const mtxResult = await decompressMtxFonts(mtxEntries);
 
   const deckFaces = parseFontFacesFromCss(fontDefs);
-  const extraFaces = extraFontDefsCss ? parseFontFacesFromCss(extraFontDefsCss) : [];
+  const extraFaces = extraFontDefsCss
+    ? parseFontFacesFromCss(extraFontDefsCss)
+    : [];
   const faces = [...deckFaces, ...extraFaces];
   const fontLoadFailures: Array<{ family: string; reason: string }> = [
     ...mtxResult.failures,
@@ -605,9 +620,7 @@ async function handleOpen(
         (self as unknown as { fonts: FontFaceSet }).fonts.add(loaded);
       } catch (err) {
         const reason =
-          err instanceof Error
-            ? `${err.name}: ${err.message}`
-            : String(err);
+          err instanceof Error ? `${err.name}: ${err.message}` : String(err);
         fontLoadFailures.push({ family, reason });
       }
     }),
@@ -728,7 +741,11 @@ self.addEventListener("message", (ev: MessageEvent) => {
   switch (msg.type) {
     case "open":
       handleOpen(msg.id, msg.bytes, msg.extraFontDefsCss).catch((err) => {
-        postMessage({ type: "error", id: msg.id, message: String(err?.message ?? err) });
+        postMessage({
+          type: "error",
+          id: msg.id,
+          message: String(err?.message ?? err),
+        });
       });
       break;
     case "render":

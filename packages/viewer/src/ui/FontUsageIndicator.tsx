@@ -184,7 +184,11 @@ export function FontUsageIndicator({
       </button>
 
       {open && (
-        <div style={popoverStyle} role="dialog" aria-label={t("fontUsage.title")}>
+        <div
+          style={popoverStyle}
+          role="dialog"
+          aria-label={t("fontUsage.title")}
+        >
           <header style={popoverHeaderStyle}>
             <span style={popoverTitleStyle}>{t("fontUsage.title")}</span>
             <button

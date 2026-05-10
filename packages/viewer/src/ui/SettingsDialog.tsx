@@ -107,7 +107,9 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
     appIcon,
     onSettingsChange,
   } = props;
-  const [settings, setSettings] = useState<ViewerSettings>(() => loadSettings());
+  const [settings, setSettings] = useState<ViewerSettings>(() =>
+    loadSettings(),
+  );
   const [, setLocaleTick] = useState<number>(0);
 
   // Subscribe to locale changes so the dialog re-renders when the
@@ -146,9 +148,21 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
     label: string;
     desc: string;
   }> = [
-    { value: "auto", label: t("dialog.themeAuto"), desc: t("dialog.themeAutoDesc") },
-    { value: "light", label: t("dialog.themeLight"), desc: t("dialog.themeLightDesc") },
-    { value: "dark", label: t("dialog.themeDark"), desc: t("dialog.themeDarkDesc") },
+    {
+      value: "auto",
+      label: t("dialog.themeAuto"),
+      desc: t("dialog.themeAutoDesc"),
+    },
+    {
+      value: "light",
+      label: t("dialog.themeLight"),
+      desc: t("dialog.themeLightDesc"),
+    },
+    {
+      value: "dark",
+      label: t("dialog.themeDark"),
+      desc: t("dialog.themeDarkDesc"),
+    },
     {
       value: "high-contrast",
       label: t("dialog.themeHighContrast"),
@@ -159,7 +173,9 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
   const localeOptions: Array<{ value: Locale; label: string }> = [
     {
       value: "auto",
-      label: t("dialog.languageAuto", { detected: LOCALE_DISPLAY_NAMES[detected] }),
+      label: t("dialog.languageAuto", {
+        detected: LOCALE_DISPLAY_NAMES[detected],
+      }),
     },
     ...SUPPORTED_LOCALES.map((code) => ({
       value: code as Locale,
@@ -198,7 +214,9 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
                 desc: opt.desc,
               }))}
               selected={settings.themeMode}
-              onSelect={(value) => updateSetting("themeMode", value as ThemeMode)}
+              onSelect={(value) =>
+                updateSetting("themeMode", value as ThemeMode)
+              }
             />
           </Section>
 
@@ -234,14 +252,19 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
               disabled={!settings.showRuler}
               options={(["cm", "px"] as RulerUnit[]).map((u) => ({
                 value: u,
-                label: u === "cm" ? t("dialog.rulerUnitCm") : t("dialog.rulerUnitPx"),
+                label:
+                  u === "cm"
+                    ? t("dialog.rulerUnitCm")
+                    : t("dialog.rulerUnitPx"),
                 desc:
                   u === "cm"
                     ? t("dialog.rulerUnitCmDesc")
                     : t("dialog.rulerUnitPxDesc"),
               }))}
               selected={settings.rulerUnit}
-              onSelect={(value) => updateSetting("rulerUnit", value as RulerUnit)}
+              onSelect={(value) =>
+                updateSetting("rulerUnit", value as RulerUnit)
+              }
             />
           </Section>
 
@@ -274,10 +297,7 @@ export function SettingsDialog(props: SettingsDialogProps): JSX.Element | null {
               <dt style={aboutDtStyle}>{t("dialog.aboutEngine")}</dt>
               <dd style={aboutDdStyle}>
                 <code style={aboutCodeStyle}>{engineCrate}</code>
-                <span style={aboutHintStyle}>
-                  {" "}
-                  (Rust crate → WebAssembly)
-                </span>
+                <span style={aboutHintStyle}> (Rust crate → WebAssembly)</span>
               </dd>
 
               {/* Legal block */}
@@ -631,7 +651,15 @@ function SlideGlanceMark(): JSX.Element {
       height="100%"
       role="img"
     >
-      <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="#f3f4f6" />
+      <rect
+        x="0"
+        y="0"
+        width="1024"
+        height="1024"
+        rx="232"
+        ry="232"
+        fill="#f3f4f6"
+      />
       <g
         stroke="#6b7280"
         strokeWidth="40"

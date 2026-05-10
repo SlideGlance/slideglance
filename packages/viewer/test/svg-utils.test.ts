@@ -12,7 +12,7 @@ describe("extractFontStyleCss", () => {
 
   it("strips the <defs><style>…</style></defs> wrapper", () => {
     const input =
-      '<defs><style type="text/css">@font-face{font-family:\'Foo\';src:url(data:font/ttf;base64,AAA);}</style></defs>';
+      "<defs><style type=\"text/css\">@font-face{font-family:'Foo';src:url(data:font/ttf;base64,AAA);}</style></defs>";
     const css = extractFontStyleCss(input);
     expect(css).toBe(
       "@font-face{font-family:'Foo';src:url(data:font/ttf;base64,AAA);}",
@@ -21,7 +21,7 @@ describe("extractFontStyleCss", () => {
 
   it("preserves multiple @font-face rules in order", () => {
     const input =
-      '<defs><style type="text/css">@font-face{font-family:\'A\';src:url(data:font/ttf;base64,A);}@font-face{font-family:\'B\';src:url(data:font/ttf;base64,B);}</style></defs>';
+      "<defs><style type=\"text/css\">@font-face{font-family:'A';src:url(data:font/ttf;base64,A);}@font-face{font-family:'B';src:url(data:font/ttf;base64,B);}</style></defs>";
     const css = extractFontStyleCss(input);
     expect(css.indexOf("'A'")).toBeLessThan(css.indexOf("'B'"));
     expect((css.match(/@font-face/g) ?? []).length).toBe(2);

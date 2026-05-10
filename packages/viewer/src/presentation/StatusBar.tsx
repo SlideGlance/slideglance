@@ -184,7 +184,10 @@ export function StatusBar(props: StatusBarProps): JSX.Element | null {
         aria-label={t("status.normalView")}
         aria-pressed={viewMode === "normal"}
       >
-        <SquaresFour size={14} weight={viewMode === "normal" ? "fill" : "regular"} />
+        <SquaresFour
+          size={14}
+          weight={viewMode === "normal" ? "fill" : "regular"}
+        />
       </button>
       <button
         style={viewMode === "grid" ? activeIconSmStyle : statusIconStyle}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -46,10 +46,10 @@
           <p class="eyebrow">Rust + WebAssembly · MIT</p>
           <h1>Open <code>.pptx</code> right in your browser.</h1>
           <p class="lede">
-            SlideGlance renders PowerPoint decks to SVG and PNG using a
-            Rust + WebAssembly core. No upload, no server roundtrip, no
-            Microsoft Office required — every file is parsed and drawn
-            inside the tab you opened it in.
+            SlideGlance renders PowerPoint decks to SVG and PNG using a Rust +
+            WebAssembly core. No upload, no server roundtrip, no Microsoft
+            Office required — every file is parsed and drawn inside the tab you
+            opened it in.
           </p>
           <div class="cta-row">
             <a
@@ -106,8 +106,8 @@
           <li>
             <h3>Local-first</h3>
             <p>
-              Files never leave your tab, process, or worker. No upload,
-              no server, no telemetry path for the deck contents.
+              Files never leave your tab, process, or worker. No upload, no
+              server, no telemetry path for the deck contents.
             </p>
           </li>
           <li>
@@ -120,8 +120,8 @@
           <li>
             <h3>Offline-capable</h3>
             <p>
-              Once the WebAssembly bundle is loaded, the viewer needs
-              zero network access — open decks on a plane.
+              Once the WebAssembly bundle is loaded, the viewer needs zero
+              network access — open decks on a plane.
             </p>
           </li>
           <li>
@@ -134,17 +134,16 @@
           <li>
             <h3>Wide PPTX coverage</h3>
             <p>
-              Theme inheritance, tables, charts, gradients, EMF-wrapped
-              bitmaps, WordArt warps, transitions, notes, sections,
-              embedded fonts.
+              Theme inheritance, tables, charts, gradients, EMF-wrapped bitmaps,
+              WordArt warps, transitions, notes, sections, embedded fonts.
             </p>
           </li>
           <li>
             <h3>Multi-surface</h3>
             <p>
-              Same Rust + WASM core powers the Chrome extension, web
-              playground, desktop viewer, embeddable React/Vue/Web
-              Component, and a native CLI.
+              Same Rust + WASM core powers the Chrome extension, web playground,
+              desktop viewer, embeddable React/Vue/Web Component, and a native
+              CLI.
             </p>
           </li>
         </ul>
@@ -153,9 +152,8 @@
       <section class="screenshots" aria-labelledby="screenshots-heading">
         <h2 id="screenshots-heading">Screenshots</h2>
         <p class="section-lede">
-          Captures from the Chrome extension surface — the same React
-          viewer the desktop app, web playground, and embeddable
-          component all use.
+          Captures from the Chrome extension surface — the same React viewer the
+          desktop app, web playground, and embeddable component all use.
         </p>
         <div class="shot-grid">
           <figure>
@@ -171,8 +169,8 @@
               />
             </a>
             <figcaption>
-              <strong>Empty state</strong> — drag a <code>.pptx</code>
-              or click <em>Open file</em>. Nothing leaves the tab.
+              <strong>Empty state</strong> — drag a <code>.pptx</code> or click
+              <em>Open file</em>. Nothing leaves the tab.
             </figcaption>
           </figure>
           <figure>
@@ -205,8 +203,7 @@
               />
             </a>
             <figcaption>
-              <strong>Grid view</strong> for scanning large decks at a
-              glance.
+              <strong>Grid view</strong> for scanning large decks at a glance.
             </figcaption>
           </figure>
           <figure>
@@ -239,8 +236,8 @@
               />
             </a>
             <figcaption>
-              <strong>Settings</strong> — theme + 8 interface languages,
-              ruler / units.
+              <strong>Settings</strong> — theme + 8 interface languages, ruler /
+              units.
             </figcaption>
           </figure>
           <figure>
@@ -276,15 +273,10 @@
         <h2>Ready to try it?</h2>
         <p>
           The web playground is a drag-and-drop SPA — drop any
-          <code>.pptx</code> on the page and it renders entirely in your
-          tab.
+          <code>.pptx</code> on the page and it renders entirely in your tab.
         </p>
         <div class="cta-row">
-          <a
-            class="btn btn-primary"
-            href="./playground/"
-            data-open-playground
-          >
+          <a class="btn btn-primary" href="./playground/" data-open-playground>
             <span>Open Web Playground</span>
             <span class="arrow" aria-hidden="true">→</span>
           </a>
@@ -306,9 +298,7 @@
         </div>
         <div class="footer-links">
           <a href="./playground/" data-open-playground>Web Playground</a>
-          <a
-            href="https://github.com/SlideGlance/slideglance"
-            rel="noopener"
+          <a href="https://github.com/SlideGlance/slideglance" rel="noopener"
             >GitHub</a
           >
           <a
@@ -496,11 +486,9 @@
           if (event.target === dialog) closeDialog();
         });
 
-        document
-          .querySelectorAll("[data-close-playground]")
-          .forEach((el) => {
-            el.addEventListener("click", () => closeDialog());
-          });
+        document.querySelectorAll("[data-close-playground]").forEach((el) => {
+          el.addEventListener("click", () => closeDialog());
+        });
 
         dialog.addEventListener("close", () => {
           document.body.classList.remove("playground-open");
@@ -523,8 +511,7 @@
           image.setAttribute("src", trigger.getAttribute("href"));
           const alt = trigger.querySelector("img")?.alt ?? "";
           image.setAttribute("alt", alt);
-          caption.textContent =
-            trigger.getAttribute("data-caption") ?? alt;
+          caption.textContent = trigger.getAttribute("data-caption") ?? alt;
         }
 
         function open(i) {
@@ -584,18 +571,16 @@
           .querySelectorAll("[data-close-lightbox]")
           .forEach((el) => el.addEventListener("click", close));
 
-        document
-          .querySelectorAll("[data-lightbox-nav]")
-          .forEach((el) =>
-            el.addEventListener("click", (event) => {
-              event.stopPropagation();
-              const dir = Number.parseInt(
-                el.getAttribute("data-lightbox-nav") ?? "1",
-                10,
-              );
-              show(index + dir);
-            }),
-          );
+        document.querySelectorAll("[data-lightbox-nav]").forEach((el) =>
+          el.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const dir = Number.parseInt(
+              el.getAttribute("data-lightbox-nav") ?? "1",
+              10,
+            );
+            show(index + dir);
+          }),
+        );
 
         document.addEventListener("keydown", (event) => {
           if (!lightbox.hasAttribute("open")) return;

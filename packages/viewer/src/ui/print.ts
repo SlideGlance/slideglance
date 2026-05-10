@@ -18,7 +18,11 @@ export interface PrintOptions {
    * thread for seconds; the host can mirror this into a status bar
    * so the UI keeps feeling alive.
    */
-  onProgress?: (info: { phase: "layout" | "open-dialog"; current: number; total: number }) => void;
+  onProgress?: (info: {
+    phase: "layout" | "open-dialog";
+    current: number;
+    total: number;
+  }) => void;
 }
 
 /**
@@ -44,7 +48,9 @@ export async function printDeck(
   const doc = win.document;
   doc.open();
   doc.write("<!doctype html><html><head>");
-  doc.write(`<title>${escapeHtml(options.title ?? "slideglance slides")}</title>`);
+  doc.write(
+    `<title>${escapeHtml(options.title ?? "slideglance slides")}</title>`,
+  );
   // `size: <orientation>` lets the user keep their paper-size choice
   // (A4, Letter, …) from the print dialog while the browser picks the
   // matching orientation. Forcing `landscape` here would override a
@@ -66,7 +72,10 @@ export async function printDeck(
     wrapper.className = "pptx-page";
     const parser = new DOMParser();
     const parsed = parser.parseFromString(slide.svg, "image/svg+xml");
-    if (parsed.documentElement && parsed.documentElement.tagName.toLowerCase() !== "parsererror") {
+    if (
+      parsed.documentElement &&
+      parsed.documentElement.tagName.toLowerCase() !== "parsererror"
+    ) {
       wrapper.appendChild(doc.importNode(parsed.documentElement, true));
     }
     doc.body.appendChild(wrapper);
@@ -92,7 +101,9 @@ function detectOrientation(slides: SlideSvg[]): "portrait" | "landscape" {
 }
 
 function parseSvgAspect(svg: string): number | null {
-  const m = /viewBox\s*=\s*"([^"]+)"/i.exec(svg) ?? /viewBox\s*=\s*'([^']+)'/i.exec(svg);
+  const m =
+    /viewBox\s*=\s*"([^"]+)"/i.exec(svg) ??
+    /viewBox\s*=\s*'([^']+)'/i.exec(svg);
   if (m) {
     const parts = m[1].split(/\s+/).map(Number);
     const w = parts[2];

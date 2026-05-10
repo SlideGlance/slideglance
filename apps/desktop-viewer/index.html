@@ -31,7 +31,10 @@
         align-items: center;
         justify-content: center;
         background: var(--pptx-shell-dialog-overlay, rgba(0, 0, 0, 0.45));
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
       body[data-pptx-loading="1"] #pptx-loading-overlay {
         display: flex;
@@ -63,14 +66,23 @@
         word-break: break-word;
       }
       @keyframes pptx-spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
   <body>
     <div id="root"></div>
-    <div id="pptx-loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+    <div
+      id="pptx-loading-overlay"
+      role="status"
+      aria-live="polite"
+      aria-hidden="true"
+    >
       <div class="pptx-loading-panel">
         <div class="pptx-loading-spinner" aria-hidden="true"></div>
         <div class="pptx-loading-text" id="pptx-loading-text"></div>

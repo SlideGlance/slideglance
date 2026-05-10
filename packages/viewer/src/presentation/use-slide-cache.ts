@@ -209,7 +209,9 @@ export function useSlideCache(args: UseSlideCacheArgs): UseSlideCacheResult {
       const out: SlideSvg[] = [];
       for (let n = 1; n <= slideCount; n += 1) {
         if (!silent) {
-          setPhase(t("phase.preparingSlideOf", { current: n, total: slideCount }));
+          setPhase(
+            t("phase.preparingSlideOf", { current: n, total: slideCount }),
+          );
         }
         onProgress?.(n, slideCount);
         const cached = await requestSlide(n);
@@ -252,7 +254,13 @@ export function useSlideCache(args: UseSlideCacheArgs): UseSlideCacheResult {
     return () => {
       cancelled = true;
     };
-  }, [noPrefetch, controller, slideCount, allSlidesReady, ensureAllSlidesRendered]);
+  }, [
+    noPrefetch,
+    controller,
+    slideCount,
+    allSlidesReady,
+    ensureAllSlidesRendered,
+  ]);
 
   // Active slide fetch.
   //

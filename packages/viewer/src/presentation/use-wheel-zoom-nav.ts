@@ -45,7 +45,14 @@ export interface UseWheelZoomNavArgs {
 }
 
 export function useWheelZoomNav(args: UseWheelZoomNavArgs): void {
-  const { stageRef, slideshow, viewMode, slideCount, setZoom, setCurrentSlide } = args;
+  const {
+    stageRef,
+    slideshow,
+    viewMode,
+    slideCount,
+    setZoom,
+    setCurrentSlide,
+  } = args;
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -71,7 +78,8 @@ export function useWheelZoomNav(args: UseWheelZoomNavArgs): void {
       // sensitivity / threshold constants work the same regardless
       // of input device. Most trackpads ship pixel deltas already.
       let dy = ev.deltaY;
-      if (ev.deltaMode === 1) dy *= 16; // line → px
+      if (ev.deltaMode === 1)
+        dy *= 16; // line → px
       else if (ev.deltaMode === 2) dy *= stage.clientHeight; // page
 
       // ctrlKey covers both real Ctrl-wheel AND the synthetic pinch
@@ -104,7 +112,8 @@ export function useWheelZoomNav(args: UseWheelZoomNavArgs): void {
       lastWheelAt = now;
 
       // Treat sub-pixel rounding as still-at-edge.
-      const atBottom = stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 1;
+      const atBottom =
+        stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 1;
       const atTop = stage.scrollTop <= 0;
 
       if (dy > 0) {

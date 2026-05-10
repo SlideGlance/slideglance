@@ -133,9 +133,27 @@ function drawRuler(
   ctx.lineWidth = 1;
 
   if (geom.unit === "cm") {
-    drawCm(ctx, isHoriz, rulerThickness, slideStart, slideEnd, geom, fg, fgFaint);
+    drawCm(
+      ctx,
+      isHoriz,
+      rulerThickness,
+      slideStart,
+      slideEnd,
+      geom,
+      fg,
+      fgFaint,
+    );
   } else {
-    drawPx(ctx, isHoriz, rulerThickness, slideStart, slideEnd, geom, fg, fgFaint);
+    drawPx(
+      ctx,
+      isHoriz,
+      rulerThickness,
+      slideStart,
+      slideEnd,
+      geom,
+      fg,
+      fgFaint,
+    );
   }
 }
 

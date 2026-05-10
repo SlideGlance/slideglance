@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { createRoot } from "react-dom/client";
 import {
   PptxPresentation,
@@ -46,18 +52,15 @@ function App(): JSX.Element {
   // sits in the parent's render output and stays frozen at the
   // locale active when App first rendered.
   const [, setLocaleTick] = useState(0);
-  useEffect(
-    () => subscribeLocale(() => setLocaleTick((n) => n + 1)),
-    [],
-  );
+  useEffect(() => subscribeLocale(() => setLocaleTick((n) => n + 1)), []);
   // True while a presentation is being loaded into memory — set by
   // both the `?src=…` URL fetch path and the local file-pick path.
   // Suppresses the EmptyState ("Open a .pptx file.") prompt during
   // the load window: the user already triggered the open, so the
   // upload prompt is jarring and confusing if it flashes back at
   // them while they wait for bytes to arrive.
-  const [loading, setLoading] = useState<boolean>(() =>
-    parseViewerSrc(window.location.href) !== null,
+  const [loading, setLoading] = useState<boolean>(
+    () => parseViewerSrc(window.location.href) !== null,
   );
   // Bundled Google Fonts stylesheet contents — fetched once at startup
   // from the same `<link>` URL the extension's HTML loads for paint.

@@ -14,7 +14,10 @@ const externals = [
 ];
 
 const pkg = JSON.parse(
-  readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf-8"),
+  readFileSync(
+    fileURLToPath(new URL("./package.json", import.meta.url)),
+    "utf-8",
+  ),
 ) as { name: string; version: string };
 
 export default defineConfig({

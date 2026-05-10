@@ -27,14 +27,17 @@
  * reducer state.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { MutableRefObject } from "react";
 
 import { parseFirstFontFamily } from "../svg-utils.js";
-import type {
-  RubberBandRect,
-  SelectionBox,
-} from "../ui/SelectionOverlay.js";
+import type { RubberBandRect, SelectionBox } from "../ui/SelectionOverlay.js";
 
 export interface RubberBandState {
   x0: number;
@@ -183,8 +186,12 @@ export function useSelectionStateMachine(
   const onStagePointerMove = useCallback(
     (ev: React.PointerEvent<HTMLElement>): void => {
       if (panStartRef.current) {
-        setPanX(panStartRef.current.panX + (ev.clientX - panStartRef.current.x));
-        setPanY(panStartRef.current.panY + (ev.clientY - panStartRef.current.y));
+        setPanX(
+          panStartRef.current.panX + (ev.clientX - panStartRef.current.x),
+        );
+        setPanY(
+          panStartRef.current.panY + (ev.clientY - panStartRef.current.y),
+        );
         return;
       }
       const downAt = pointerDownAtRef.current;
@@ -239,8 +246,8 @@ export function useSelectionStateMachine(
         // Rubber-band hit-test: project every cached bbox into screen
         // coords via the live `getScreenCTM()` and AABB-intersect with
         // the band. Coords throughout are viewport (pointer client).
-        const svgEl =
-          slideRef.current?.firstElementChild as SVGSVGElement | null;
+        const svgEl = slideRef.current
+          ?.firstElementChild as SVGSVGElement | null;
         const ctm = svgEl?.getScreenCTM?.() ?? null;
         if (svgEl && ctm) {
           const hits = new Set<string>();
@@ -422,10 +429,14 @@ export function useSelectionStateMachine(
     const stage = stageRef.current;
     if (!stage) return null;
     const r = stage.getBoundingClientRect();
-    const left = Math.min(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
-    const top = Math.min(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
-    const right = Math.max(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
-    const bottom = Math.max(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
+    const left =
+      Math.min(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
+    const top =
+      Math.min(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
+    const right =
+      Math.max(rubberBand.x0, rubberBand.x1) - r.left + stage.scrollLeft;
+    const bottom =
+      Math.max(rubberBand.y0, rubberBand.y1) - r.top + stage.scrollTop;
     return { x: left, y: top, w: right - left, h: bottom - top };
   }, [rubberBand, stageRef]);
 

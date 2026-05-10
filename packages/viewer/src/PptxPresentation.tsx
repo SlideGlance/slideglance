@@ -69,9 +69,7 @@ import type { CachedSlide } from "./presentation/types.js";
 import { Ruler } from "./ui/Ruler.js";
 import { SettingsDialog } from "./ui/SettingsDialog.js";
 import { SectionNav } from "./ui/SectionNav.js";
-import {
-  SelectionOverlay,
-} from "./ui/SelectionOverlay.js";
+import { SelectionOverlay } from "./ui/SelectionOverlay.js";
 import { ShortcutsDialog } from "./ui/ShortcutsDialog.js";
 // FontUsageIndicator is now mounted inside `presentation/StatusBar.tsx`.
 import { searchSlides, type SearchHit } from "./ui/search.js";
@@ -125,9 +123,14 @@ function clamp(value: number, min: number, max: number): number {
  * so the user can see *why* the button is disabled — empty deck vs.
  * still-prefetching — instead of just a dead control.
  */
-function deckGateTitle(base: string, ready: boolean, slideCount: number): string {
+function deckGateTitle(
+  base: string,
+  ready: boolean,
+  slideCount: number,
+): string {
   if (slideCount === 0) return t("output.gateLoadFirst");
-  if (!ready) return t("output.gatePreparing", { current: 0, total: slideCount });
+  if (!ready)
+    return t("output.gatePreparing", { current: 0, total: slideCount });
   return base;
 }
 
@@ -273,8 +276,12 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   const onReadyFiredRef = useRef<boolean>(false);
 
   // ---- Settings + theme + locale -------------------------------------------
-  const [settings, setSettings] = useState<ViewerSettings>(() => loadSettings());
-  const [theme, setTheme] = useState<ThemeName>(() => resolveTheme(loadSettings().themeMode));
+  const [settings, setSettings] = useState<ViewerSettings>(() =>
+    loadSettings(),
+  );
+  const [theme, setTheme] = useState<ThemeName>(() =>
+    resolveTheme(loadSettings().themeMode),
+  );
   const [, setLocaleTick] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -358,7 +365,11 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   const [sidebarWidth, setSidebarWidth] = useState<number>(
     () => loadSettings().sidebarWidth,
   );
-  const sidebarResizeStartRef = useRef<{ pointerId: number; startX: number; startWidth: number } | null>(null);
+  const sidebarResizeStartRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
@@ -382,14 +393,18 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   // they can't drill into.
   const [selectionFontsOpen, setSelectionFontsOpen] = useState<boolean>(false);
   const selectionFontsRef = useRef<HTMLDivElement | null>(null);
-  const [rubberBand, setRubberBand] =
-    useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [rubberBand, setRubberBand] = useState<{
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  } | null>(null);
   // Viewport bbox cache, keyed by sp-id. Built once per slide mount
   // (or when the SVG host re-renders) so hit-testing during pan/zoom
   // doesn't have to call getBBox/getCTM per shape per frame.
-  const bboxMapRef = useRef<Map<string, { x: number; y: number; w: number; h: number }>>(
-    new Map(),
-  );
+  const bboxMapRef = useRef<
+    Map<string, { x: number; y: number; w: number; h: number }>
+  >(new Map());
   // Pointer-down snapshot used by the selection state machine. Stored
   // as a ref so re-renders during a drag don't reset it.
   const pointerDownAtRef = useRef<{
@@ -427,7 +442,9 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   // the effect's dependency array (which would re-bind the listener
   // on every render).
   const handlePrintRef = useRef<(() => Promise<void>) | null>(null);
-  const pendingRef = useRef<Map<number, Promise<CachedSlide | null>>>(new Map());
+  const pendingRef = useRef<Map<number, Promise<CachedSlide | null>>>(
+    new Map(),
+  );
   // Monotonic deck-epoch counter. Incremented on every deck swap
   // (`externalSlideCount` / `name` change). Each `requestSlide` task
   // captures the epoch when it starts; if the epoch advances while
@@ -897,7 +914,9 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
           onPointerMove={(ev) => {
             const start = sidebarResizeStartRef.current;
             if (!start || start.pointerId !== ev.pointerId) return;
-            const next = clampSidebarWidth(start.startWidth + (ev.clientX - start.startX));
+            const next = clampSidebarWidth(
+              start.startWidth + (ev.clientX - start.startX),
+            );
             setSidebarWidth(next);
           }}
           onPointerUp={(ev) => {
@@ -1017,7 +1036,8 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
                         top: "50%",
                         transform: `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px))`,
                         background: "white",
-                        boxShadow: "0 4px 12px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.45))",
+                        boxShadow:
+                          "0 4px 12px var(--pptx-shell-shadow, rgba(0, 0, 0, 0.45))",
                       }}
                     />
                     <SelectionOverlay
@@ -1207,7 +1227,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
             </div>
             {progress.total != null && progress.total > 0 ? (
               <div style={progressCounterStyle}>
-                {(progress.current ?? 0)} / {progress.total}
+                {progress.current ?? 0} / {progress.total}
               </div>
             ) : (
               <div style={progressCounterStyle}>&nbsp;</div>
@@ -1221,4 +1241,3 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
 
 // Subcomponents (`ThumbnailSidebar`, `Thumbnail`, `NotesPanel`,
 // `GridView`) live in `presentation/{Thumbnail,NotesPanel,GridView}.tsx`.
-

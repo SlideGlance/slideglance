@@ -230,7 +230,8 @@ export type MessageKey =
   | "shortcuts.toggleSearch"
   | "shortcuts.print";
 
-type Catalog = Partial<Record<MessageKey, string>> & Record<"_locale", ResolvedLocale>;
+type Catalog = Partial<Record<MessageKey, string>> &
+  Record<"_locale", ResolvedLocale>;
 
 const EN: Catalog = {
   _locale: "en",
@@ -463,7 +464,8 @@ const KO: Catalog = {
   "dialog.title": "설정",
   "dialog.appearance": "모양",
   "dialog.theme": "테마",
-  "dialog.themeDesc": "슬라이드, 리본, 사이드바, 대화 상자를 포함한 뷰어 전체에 적용됩니다.",
+  "dialog.themeDesc":
+    "슬라이드, 리본, 사이드바, 대화 상자를 포함한 뷰어 전체에 적용됩니다.",
   "dialog.themeAuto": "자동",
   "dialog.themeAutoDesc": "OS / 브라우저 따라가기",
   "dialog.themeLight": "라이트",
@@ -482,7 +484,8 @@ const KO: Catalog = {
   "dialog.rulerUnitPx": "픽셀 (px)",
   "dialog.rulerUnitPxDesc": "화면 픽셀",
   "dialog.language": "언어",
-  "dialog.languageDesc": "뷰어 인터페이스 언어를 선택합니다. 자동은 브라우저/OS 기본값을 따릅니다.",
+  "dialog.languageDesc":
+    "뷰어 인터페이스 언어를 선택합니다. 자동은 브라우저/OS 기본값을 따릅니다.",
   "dialog.languageAuto": "자동 ({detected})",
   "dialog.about": "정보",
   "dialog.aboutAppName": "앱",
@@ -970,7 +973,8 @@ const ZH_TW: Catalog = {
   "dialog.rulerUnitPx": "像素 (px)",
   "dialog.rulerUnitPxDesc": "螢幕像素",
   "dialog.language": "語言",
-  "dialog.languageDesc": "選擇檢視器介面語言。自動會跟隨瀏覽器 / 作業系統設定。",
+  "dialog.languageDesc":
+    "選擇檢視器介面語言。自動會跟隨瀏覽器 / 作業系統設定。",
   "dialog.languageAuto": "自動 ({detected})",
   "dialog.about": "關於",
   "dialog.aboutAppName": "應用",
@@ -1072,7 +1076,8 @@ const ES: Catalog = {
   "output.slideshow": "Presentación",
   "output.slideshowTitle": "Iniciar presentación (F5)",
   "output.gateLoadFirst": "Carga un archivo primero",
-  "output.gatePreparing": "Preparando diapositivas — {current} / {total} listas",
+  "output.gatePreparing":
+    "Preparando diapositivas — {current} / {total} listas",
   "settings.title": "Ajustes",
   "settings.openTitle": "Ajustes",
   "file.open": "Abrir",
@@ -1236,7 +1241,8 @@ const FR: Catalog = {
   "output.slideshow": "Diaporama",
   "output.slideshowTitle": "Démarrer le diaporama (F5)",
   "output.gateLoadFirst": "Chargez un fichier d'abord",
-  "output.gatePreparing": "Préparation des diapositives — {current} / {total} prêtes",
+  "output.gatePreparing":
+    "Préparation des diapositives — {current} / {total} prêtes",
   "settings.title": "Paramètres",
   "settings.openTitle": "Paramètres",
   "file.open": "Ouvrir",
@@ -1257,7 +1263,8 @@ const FR: Catalog = {
   "status.slideEmpty": "—",
   "status.selectionFontLabel": "Police :",
   "status.selectionFontMultiple": "{first} + {extra} autres",
-  "status.selectionFontTitle": "Police(s) utilisée(s) par la sélection : {fonts}",
+  "status.selectionFontTitle":
+    "Police(s) utilisée(s) par la sélection : {fonts}",
   "fontUsage.title": "Correspondance des polices",
   "fontUsage.close": "Fermer",
   "fontUsage.headerRequested": "Police d'origine",
@@ -1269,7 +1276,8 @@ const FR: Catalog = {
   "notes.headingWithSection": "Notes — diapositive {current} · {section}",
   "notes.empty": "Aucune note pour cette diapositive.",
   "notes.standaloneHeading": "Notes — diapositive {current}",
-  "notes.standaloneEmpty": "Aucune note de présentateur pour cette diapositive.",
+  "notes.standaloneEmpty":
+    "Aucune note de présentateur pour cette diapositive.",
   "notes.layoutLabel": "disposition : {value}",
   "notes.sectionLabel": "section : {value}",
   "notes.noSlide": "Aucune diapositive chargée.",
@@ -1310,7 +1318,8 @@ const FR: Catalog = {
   "dialog.aboutPackage": "Paquet",
   "dialog.aboutVersion": "Version",
   "dialog.aboutRendering": "Environnement",
-  "dialog.aboutRenderingValue": "WebAssembly · navigateur uniquement · hors-ligne",
+  "dialog.aboutRenderingValue":
+    "WebAssembly · navigateur uniquement · hors-ligne",
   "dialog.aboutLicense": "Licence",
   "dialog.viewerSettingsAriaLabel": "Paramètres du visualiseur",
   "phase.preparingSlide": "Préparation de la diapositive {current} / {total}…",
@@ -1400,7 +1409,8 @@ const DE: Catalog = {
   "output.slideshow": "Bildschirmpräsentation",
   "output.slideshowTitle": "Präsentation starten (F5)",
   "output.gateLoadFirst": "Zuerst eine Datei laden",
-  "output.gatePreparing": "Folien werden vorbereitet — {current} / {total} fertig",
+  "output.gatePreparing":
+    "Folien werden vorbereitet — {current} / {total} fertig",
   "settings.title": "Einstellungen",
   "settings.openTitle": "Einstellungen",
   "file.open": "Öffnen",
@@ -1563,10 +1573,10 @@ function normalizeTag(raw: string): ResolvedLocale | null {
   // doesn't collapse onto whichever happens to come first.
   if (lower.startsWith("zh")) {
     if (
-      lower.includes("tw")
-      || lower.includes("hk")
-      || lower.includes("mo")
-      || lower.includes("hant")
+      lower.includes("tw") ||
+      lower.includes("hk") ||
+      lower.includes("mo") ||
+      lower.includes("hant")
     ) {
       return "zh-TW";
     }
@@ -1588,13 +1598,16 @@ function normalizeTag(raw: string): ResolvedLocale | null {
 export function detectLocale(): ResolvedLocale {
   const candidates: string[] = [];
   if (typeof navigator !== "undefined") {
-    const langs = (navigator as Navigator & { languages?: readonly string[] }).languages;
+    const langs = (navigator as Navigator & { languages?: readonly string[] })
+      .languages;
     if (Array.isArray(langs)) candidates.push(...langs);
-    if (typeof navigator.language === "string") candidates.push(navigator.language);
+    if (typeof navigator.language === "string")
+      candidates.push(navigator.language);
   }
   // POSIX fallback (Node, Vitest happy-dom without navigator.language).
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    ?.env;
+  const env = (
+    globalThis as { process?: { env?: Record<string, string | undefined> } }
+  ).process?.env;
   if (env) {
     for (const key of ["LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"] as const) {
       const v = env[key];

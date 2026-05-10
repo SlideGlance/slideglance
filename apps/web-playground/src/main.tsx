@@ -91,33 +91,36 @@ function PlaygroundApp(): JSX.Element {
     }
   }, []);
 
-  const onFile = useCallback(async (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const file = ev.target.files?.[0];
-    if (!file) return;
-    setActiveSampleUrl(null);
-    setInfo(t("playground.loadingFile", { name: file.name }));
-    const t0 = performance.now();
-    try {
-      const buf = new Uint8Array(await file.arrayBuffer());
-      setName(file.name);
-      setSrc(buf);
-      setOpenCount((n) => n + 1);
-      const ms = Math.round(performance.now() - t0);
-      setInfo(
-        t("playground.fileInfo", {
-          name: file.name,
-          bytes: buf.byteLength.toLocaleString(),
-          ms,
-        }),
-      );
-    } catch (err) {
-      setInfo(
-        t("playground.convertFailed", {
-          reason: (err as Error).message ?? String(err),
-        }),
-      );
-    }
-  }, []);
+  const onFile = useCallback(
+    async (ev: React.ChangeEvent<HTMLInputElement>) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+      setActiveSampleUrl(null);
+      setInfo(t("playground.loadingFile", { name: file.name }));
+      const t0 = performance.now();
+      try {
+        const buf = new Uint8Array(await file.arrayBuffer());
+        setName(file.name);
+        setSrc(buf);
+        setOpenCount((n) => n + 1);
+        const ms = Math.round(performance.now() - t0);
+        setInfo(
+          t("playground.fileInfo", {
+            name: file.name,
+            bytes: buf.byteLength.toLocaleString(),
+            ms,
+          }),
+        );
+      } catch (err) {
+        setInfo(
+          t("playground.convertFailed", {
+            reason: (err as Error).message ?? String(err),
+          }),
+        );
+      }
+    },
+    [],
+  );
 
   const samplesUi = useMemo(
     () =>

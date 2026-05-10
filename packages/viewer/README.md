@@ -32,12 +32,12 @@ viewer.addEventListener("slidechange", (ev) => {
 
 ## Properties
 
-| Attribute / Property            | Type                            | Default            |
-| ------------------------------- | ------------------------------- | ------------------ |
-| `src`                           | `string \| null`                | `null`             |
-| `current-slide` / `currentSlide`| `number`                        | `1`                |
-| `text-render-mode`              | `"text" \| "path" \| "auto"`    | `"text"`           |
-| `font-fallback`                 | `"first-available" \| "system" \| "none"` | `"first-available"` |
+| Attribute / Property             | Type                                      | Default             |
+| -------------------------------- | ----------------------------------------- | ------------------- |
+| `src`                            | `string \| null`                          | `null`              |
+| `current-slide` / `currentSlide` | `number`                                  | `1`                 |
+| `text-render-mode`               | `"text" \| "path" \| "auto"`              | `"text"`            |
+| `font-fallback`                  | `"first-available" \| "system" \| "none"` | `"first-available"` |
 
 ## Methods
 

@@ -43,7 +43,9 @@ export interface UseKeyboardShortcutsArgs {
    *  effect to re-subscribe on every print-handler identity flip. */
   handlePrintRef: MutableRefObject<(() => Promise<void>) | null>;
   /** Live cache of every shape's bbox. Cmd/Ctrl+A selects every key. */
-  bboxMapRef: MutableRefObject<Map<string, { x: number; y: number; w: number; h: number }>>;
+  bboxMapRef: MutableRefObject<
+    Map<string, { x: number; y: number; w: number; h: number }>
+  >;
   /** Slide DOM host for Cmd/Ctrl+C text extraction. */
   slideRef: MutableRefObject<HTMLElement | null>;
 

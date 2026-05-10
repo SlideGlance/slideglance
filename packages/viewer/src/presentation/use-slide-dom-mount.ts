@@ -161,7 +161,10 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
       //   gives a user-space rect that the existing zoom-aware
       //   projection step in `selectionBoxes` can transform back
       //   to screen space.
-      const map = new Map<string, { x: number; y: number; w: number; h: number }>();
+      const map = new Map<
+        string,
+        { x: number; y: number; w: number; h: number }
+      >();
       const svgEl = host.firstElementChild as SVGSVGElement | null;
       const screenCTM = svgEl?.getScreenCTM?.() ?? null;
       if (
@@ -177,7 +180,8 @@ export function useSlideDomMount(args: UseSlideDomMountArgs): void {
           inverse = null;
         }
         if (inverse) {
-          const els = svgEl.querySelectorAll<SVGGraphicsElement>("[data-sp-id]");
+          const els =
+            svgEl.querySelectorAll<SVGGraphicsElement>("[data-sp-id]");
           for (const el of Array.from(els)) {
             const id = (el as unknown as HTMLElement).dataset.spId;
             if (!id) continue;

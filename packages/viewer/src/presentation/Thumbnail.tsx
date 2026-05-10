@@ -18,13 +18,7 @@
  * scroll-out / scroll-in produces a perceptible flash.
  */
 
-import {
-  memo,
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { parseAspect, uniquifyIds } from "../svg-utils.js";
 import { t } from "../ui/i18n.js";
@@ -200,7 +194,14 @@ export interface ThumbnailSidebarProps {
 export const ThumbnailSidebar = memo(function ThumbnailSidebar(
   props: ThumbnailSidebarProps,
 ): JSX.Element {
-  const { slideCount, currentSlide, onSelect, getThumbnail, aspectFallback, deckKey } = props;
+  const {
+    slideCount,
+    currentSlide,
+    onSelect,
+    getThumbnail,
+    aspectFallback,
+    deckKey,
+  } = props;
   return (
     <div style={thumbStripStyle}>
       {Array.from({ length: slideCount }, (_, i) => {

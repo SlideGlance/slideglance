@@ -33,7 +33,11 @@ export interface ExportPdfOptions {
    * export — without a yield point the rasterize-loop blocks the
    * main thread for seconds on 100+ slide decks.
    */
-  onProgress?: (info: { phase: "rasterize" | "encode"; current: number; total: number }) => void;
+  onProgress?: (info: {
+    phase: "rasterize" | "encode";
+    current: number;
+    total: number;
+  }) => void;
 }
 
 /**
@@ -41,7 +45,9 @@ export interface ExportPdfOptions {
  * page, each rendered as a JPEG. Throws when a slide SVG cannot be
  * rasterized.
  */
-export async function exportToPdf(options: ExportPdfOptions): Promise<Uint8Array> {
+export async function exportToPdf(
+  options: ExportPdfOptions,
+): Promise<Uint8Array> {
   if (options.slides.length === 0) {
     throw new Error("exportToPdf: no slides to export");
   }
@@ -53,7 +59,11 @@ export async function exportToPdf(options: ExportPdfOptions): Promise<Uint8Array
   const pages: Array<{ jpeg: Uint8Array; width: number; height: number }> = [];
   for (let i = 0; i < options.slides.length; i += 1) {
     onProgress({ phase: "rasterize", current: i, total });
-    const page = await rasterizeSvgToJpeg(options.slides[i].svg, targetWidth, quality);
+    const page = await rasterizeSvgToJpeg(
+      options.slides[i].svg,
+      targetWidth,
+      quality,
+    );
     if (page) pages.push(page);
     // Yield to the event loop so the browser can repaint progress UI
     // and stay responsive to user input. Without this the entire
@@ -112,7 +122,9 @@ async function rasterizeSvgToJpeg(
 }
 
 function parseSvgAspect(svg: string): number {
-  const m = /viewBox\s*=\s*"([^"]+)"/i.exec(svg) ?? /viewBox\s*=\s*'([^']+)'/i.exec(svg);
+  const m =
+    /viewBox\s*=\s*"([^"]+)"/i.exec(svg) ??
+    /viewBox\s*=\s*'([^']+)'/i.exec(svg);
   if (m) {
     const parts = m[1].split(/\s+/).map(Number);
     const w = parts[2];
@@ -162,7 +174,9 @@ function canvasToBlob(
  * For simplicity we group each page as 3 sequential objects:
  *   page i → page object, image XObject, content stream.
  */
-function buildPdf(pages: Array<{ jpeg: Uint8Array; width: number; height: number }>): Uint8Array {
+function buildPdf(
+  pages: Array<{ jpeg: Uint8Array; width: number; height: number }>,
+): Uint8Array {
   const enc = new TextEncoder();
   const chunks: Array<Uint8Array | string> = [];
   const offsets: number[] = []; // byte offset of each object (1-indexed: offsets[1] = first object)

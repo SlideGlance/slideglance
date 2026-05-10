@@ -141,10 +141,14 @@ export function useDeckLoader(args: UseDeckLoaderArgs): void {
         if (typeof document !== "undefined" && document.fonts) {
           for (const d of meta.decodedFonts ?? []) {
             try {
-              const face = new FontFace(d.family, d.bytes.buffer as ArrayBuffer, {
-                weight: d.weight,
-                style: d.style,
-              });
+              const face = new FontFace(
+                d.family,
+                d.bytes.buffer as ArrayBuffer,
+                {
+                  weight: d.weight,
+                  style: d.style,
+                },
+              );
               face
                 .load()
                 .then((loaded) => {

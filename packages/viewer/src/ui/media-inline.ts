@@ -12,7 +12,8 @@
 
 import type { MediaBlob } from "../types.js";
 
-const TRANSPARENT_GIF = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+const TRANSPARENT_GIF =
+  "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 
 /**
  * Replace every `pptx-media://{hash}` URL in `svg` with a fully-
@@ -20,7 +21,10 @@ const TRANSPARENT_GIF = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACA
  * map fall back to a 1×1 transparent GIF — same defensive behaviour
  * the live viewer uses.
  */
-export function inlineMediaAsDataUrls(svg: string, media: Map<string, MediaBlob>): string {
+export function inlineMediaAsDataUrls(
+  svg: string,
+  media: Map<string, MediaBlob>,
+): string {
   if (svg.indexOf("pptx-media://") < 0) return svg;
   const cache = new Map<string, string>();
   return svg.replace(/pptx-media:\/\/([0-9a-f]+)/g, (_match, hash: string) => {

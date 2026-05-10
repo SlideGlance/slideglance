@@ -67,7 +67,9 @@ export function stripMatchMarkers(excerpt: string): string {
  * Split an excerpt into ordered `(text, isMatch)` runs so renderers
  * can wrap the highlighted span without parsing markers themselves.
  */
-export function splitMatches(excerpt: string): Array<{ text: string; isMatch: boolean }> {
+export function splitMatches(
+  excerpt: string,
+): Array<{ text: string; isMatch: boolean }> {
   const out: Array<{ text: string; isMatch: boolean }> = [];
   let cursor = 0;
   while (cursor < excerpt.length) {
@@ -76,13 +78,20 @@ export function splitMatches(excerpt: string): Array<{ text: string; isMatch: bo
       out.push({ text: excerpt.slice(cursor), isMatch: false });
       break;
     }
-    if (open > cursor) out.push({ text: excerpt.slice(cursor, open), isMatch: false });
+    if (open > cursor)
+      out.push({ text: excerpt.slice(cursor, open), isMatch: false });
     const close = excerpt.indexOf(MATCH_CLOSE, open + MATCH_OPEN.length);
     if (close === -1) {
-      out.push({ text: excerpt.slice(open + MATCH_OPEN.length), isMatch: true });
+      out.push({
+        text: excerpt.slice(open + MATCH_OPEN.length),
+        isMatch: true,
+      });
       break;
     }
-    out.push({ text: excerpt.slice(open + MATCH_OPEN.length, close), isMatch: true });
+    out.push({
+      text: excerpt.slice(open + MATCH_OPEN.length, close),
+      isMatch: true,
+    });
     cursor = close + MATCH_CLOSE.length;
   }
   return out;

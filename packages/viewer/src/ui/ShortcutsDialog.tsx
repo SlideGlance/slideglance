@@ -20,7 +20,9 @@ interface ShortcutRow {
  * `<PptxPresentation>`'s keyboard `useEffect`. If this list and the
  * handler ever drift, the handler wins; this dialog is a hint.
  */
-export function ShortcutsDialog(props: ShortcutsDialogProps): JSX.Element | null {
+export function ShortcutsDialog(
+  props: ShortcutsDialogProps,
+): JSX.Element | null {
   const { open, onClose } = props;
   const [, setLocaleTick] = useState<number>(0);
 
@@ -63,7 +65,10 @@ export function ShortcutsDialog(props: ShortcutsDialogProps): JSX.Element | null
       titleKey: "shortcuts.groupSelection",
       rows: [
         { keys: t("shortcuts.click"), descKey: "shortcuts.selectShape" },
-        { keys: "Shift / ⌘ + " + t("shortcuts.click"), descKey: "shortcuts.toggleSelect" },
+        {
+          keys: "Shift / ⌘ + " + t("shortcuts.click"),
+          descKey: "shortcuts.toggleSelect",
+        },
         { keys: t("shortcuts.drag"), descKey: "shortcuts.rubberBand" },
         { keys: "⌘/Ctrl + A", descKey: "shortcuts.selectAll" },
         { keys: "⌘/Ctrl + C", descKey: "shortcuts.copyText" },
@@ -81,7 +86,12 @@ export function ShortcutsDialog(props: ShortcutsDialogProps): JSX.Element | null
   ];
 
   return (
-    <div style={backdropStyle} role="dialog" aria-modal="true" onClick={onClose}>
+    <div
+      style={backdropStyle}
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
       <div style={panelStyle} onClick={(ev) => ev.stopPropagation()}>
         <header style={headerStyle}>
           <h2 style={titleStyle}>{t("shortcuts.title")}</h2>

@@ -1,4 +1,7 @@
-import { buildPptxInterceptRule, PPTX_RULE_ID } from "./shared/intercept-rule.js";
+import {
+  buildPptxInterceptRule,
+  PPTX_RULE_ID,
+} from "./shared/intercept-rule.js";
 
 const VIEWER_PATH = "src/viewer/index.html";
 const CONTEXT_MENU_ID = "slideglance-open-link";

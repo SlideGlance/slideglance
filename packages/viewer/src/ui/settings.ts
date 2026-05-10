@@ -72,7 +72,10 @@ export const SIDEBAR_WIDTH_DEFAULT = 220;
 /** Clamp `width` to the supported sidebar range. */
 export function clampSidebarWidth(width: number): number {
   if (!Number.isFinite(width)) return SIDEBAR_WIDTH_DEFAULT;
-  return Math.max(SIDEBAR_WIDTH_MIN, Math.min(SIDEBAR_WIDTH_MAX, Math.round(width)));
+  return Math.max(
+    SIDEBAR_WIDTH_MIN,
+    Math.min(SIDEBAR_WIDTH_MAX, Math.round(width)),
+  );
 }
 
 /** Defaults applied when no value is found in storage. */

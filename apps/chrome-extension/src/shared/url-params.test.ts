@@ -11,9 +11,9 @@ describe("parseViewerSrc", () => {
   });
 
   it("returns the fragment URL verbatim for single-param input", () => {
-    expect(parseViewerSrc("https://x/viewer.html#https://example.com/foo.pptx")).toBe(
-      "https://example.com/foo.pptx",
-    );
+    expect(
+      parseViewerSrc("https://x/viewer.html#https://example.com/foo.pptx"),
+    ).toBe("https://example.com/foo.pptx");
   });
 
   it("preserves multi-param URLs (the DNR raw-substitution case)", () => {
@@ -38,7 +38,9 @@ describe("parseViewerSrc", () => {
   });
 
   it("rejects javascript: src to avoid XSS smuggling", () => {
-    expect(parseViewerSrc("https://x/viewer.html#javascript:alert(1)")).toBeNull();
+    expect(
+      parseViewerSrc("https://x/viewer.html#javascript:alert(1)"),
+    ).toBeNull();
   });
 
   it("rejects chrome-extension: src", () => {
@@ -48,7 +50,9 @@ describe("parseViewerSrc", () => {
   });
 
   it("rejects file: src", () => {
-    expect(parseViewerSrc("https://x/viewer.html#file:///etc/passwd")).toBeNull();
+    expect(
+      parseViewerSrc("https://x/viewer.html#file:///etc/passwd"),
+    ).toBeNull();
   });
 
   it("returns null for malformed input", () => {

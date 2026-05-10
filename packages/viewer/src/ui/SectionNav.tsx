@@ -28,7 +28,9 @@ export function SectionNav(props: SectionNavProps): JSX.Element {
 
   const sections = computeSections(slides);
   if (sections.length === 0) {
-    return <div style={{ ...hostStyle, ...emptyStyle }}>{t("section.empty")}</div>;
+    return (
+      <div style={{ ...hostStyle, ...emptyStyle }}>{t("section.empty")}</div>
+    );
   }
 
   // Active section is the highest entry whose startSlide <= currentSlide.
@@ -44,7 +46,9 @@ export function SectionNav(props: SectionNavProps): JSX.Element {
         return (
           <button
             key={`${section.name}-${section.startSlide}`}
-            style={isActive ? { ...buttonStyle, ...activeButtonStyle } : buttonStyle}
+            style={
+              isActive ? { ...buttonStyle, ...activeButtonStyle } : buttonStyle
+            }
             onClick={() => onJump(section.startSlide)}
             title={`${section.name} (${t("viewer.slideTitle", { number: section.startSlide })})`}
           >

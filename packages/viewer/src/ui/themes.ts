@@ -236,10 +236,15 @@ export function applyTheme(el: HTMLElement, vars: ThemeVars): void {
  * `"light"` as a stable default.
  */
 export function detectSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return "light";
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 /**
@@ -247,12 +252,18 @@ export function detectSystemTheme(): "light" | "dark" {
  * with `"light"` or `"dark"` whenever `prefers-color-scheme` flips.
  * Returns a teardown function that removes the listener.
  */
-export function subscribeSystemTheme(cb: (mode: "light" | "dark") => void): () => void {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+export function subscribeSystemTheme(
+  cb: (mode: "light" | "dark") => void,
+): () => void {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return () => {};
   }
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  const handler = (ev: MediaQueryListEvent): void => cb(ev.matches ? "dark" : "light");
+  const handler = (ev: MediaQueryListEvent): void =>
+    cb(ev.matches ? "dark" : "light");
   // `addEventListener` on MediaQueryList is the modern API; older
   // Safari (< 14) only had `addListener`. Both are supported via
   // feature detection so we don't break in legacy browser embeds.

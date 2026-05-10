@@ -6,17 +6,17 @@ locally — no upload, no server.
 
 ## Screenshots
 
-| | |
-| :---: | :---: |
-| ![Empty state with Open file button](store-assets/screenshots/01-empty-state.png) | ![Presentation viewer with thumbnails and ruler](store-assets/screenshots/04-presentation-viewer.png) |
-| Drop a `.pptx` or pick from disk — nothing leaves the tab. | Slide stage + thumbnail rail + ruler + slideshow / print / PDF export. |
-| ![Grid view of all slides](store-assets/screenshots/06-grid-view.png) | ![Font mapping popover](store-assets/screenshots/05-font-mapping-popover.png) |
-| Grid view for scanning large decks at a glance. | Font fallback report shows which authored typeface resolved to which installed face. |
-| ![Settings — theme + language](store-assets/screenshots/02-settings-appearance.png) | ![Settings — about](store-assets/screenshots/03-settings-about.png) |
-| Theme + 8 interface languages (English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). | Browser-only, offline-capable WebAssembly. MIT-licensed. |
+|                                                                                                                 |                                                                                                       |
+| :-------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
+|                ![Empty state with Open file button](store-assets/screenshots/01-empty-state.png)                | ![Presentation viewer with thumbnails and ruler](store-assets/screenshots/04-presentation-viewer.png) |
+|                           Drop a `.pptx` or pick from disk — nothing leaves the tab.                            |                Slide stage + thumbnail rail + ruler + slideshow / print / PDF export.                 |
+|                      ![Grid view of all slides](store-assets/screenshots/06-grid-view.png)                      |             ![Font mapping popover](store-assets/screenshots/05-font-mapping-popover.png)             |
+|                                 Grid view for scanning large decks at a glance.                                 |         Font fallback report shows which authored typeface resolved to which installed face.          |
+|               ![Settings — theme + language](store-assets/screenshots/02-settings-appearance.png)               |                  ![Settings — about](store-assets/screenshots/03-settings-about.png)                  |
+| Theme + 8 interface languages (English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |                       Browser-only, offline-capable WebAssembly. MIT-licensed.                        |
 
-> Sample deck used for the screenshots: [*Business Infographic
-> Presentation*](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
+> Sample deck used for the screenshots: [_Business Infographic
+> Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
 > by SlidesCarnival.
 
 ## Entry flows
@@ -85,7 +85,7 @@ still require a `chrome://extensions` reload.
 
 1. Click the toolbar icon — an empty viewer tab opens with the
    "Open file" prompt.
-2. Drag any local `.pptx` onto the empty state, or click *Open file*.
+2. Drag any local `.pptx` onto the empty state, or click _Open file_.
    Slides should render with the toolbar / thumbnails / ruler.
 3. Visit any direct `.pptx` URL on the public internet
    (e.g. an academic course page or open conference site). The
@@ -96,11 +96,11 @@ still require a `chrome://extensions` reload.
 
 ## Permissions
 
-| Permission | Why |
-|---|---|
-| `<all_urls>` host | Redirect any direct `.pptx` URL to the viewer; fetch the same URL with the user's cookies for authenticated sites. All processing local. |
-| `declarativeNetRequest` | Dynamic redirect rule, registered on install. |
-| `contextMenus` | Adds the "Open with SlideGlance" right-click item. |
+| Permission              | Why                                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `<all_urls>` host       | Redirect any direct `.pptx` URL to the viewer; fetch the same URL with the user's cookies for authenticated sites. All processing local. |
+| `declarativeNetRequest` | Dynamic redirect rule, registered on install.                                                                                            |
+| `contextMenus`          | Adds the "Open with SlideGlance" right-click item.                                                                                       |
 
 ## Privacy
 
