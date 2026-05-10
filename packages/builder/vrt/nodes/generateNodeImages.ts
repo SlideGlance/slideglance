@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { buildPptx } from "../../src/index.js";
-import { comparePng } from "../../vrt/lib/comparePng.js";
-import { pptxToPng } from "../../vrt/lib/pptxToPng.js";
+import { comparePng } from "../lib/comparePng.js";
+import { pptxToPng } from "../lib/pptxToPng.js";
 import {
   ACTUAL_DIR,
   DIFF_DIR,

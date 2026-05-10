@@ -1,13 +1,18 @@
 import fs from "fs";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-import { THRESHOLD } from "./config.js";
+
+// pixelmatch threshold (0.0 = strict, 1.0 = permissive). 0.1 was chosen
+// so font-rendering anti-aliasing differences across LibreOffice patch
+// versions don't trip the suite. Override via the `threshold` argument
+// at the call site for stricter / looser checks.
+const DEFAULT_THRESHOLD = 0.1;
 
 export function comparePng(
   actualPath: string,
   expectedPath: string,
   diffPath: string,
-  threshold: number = THRESHOLD,
+  threshold: number = DEFAULT_THRESHOLD,
 ): number {
   const img1 = PNG.sync.read(fs.readFileSync(actualPath));
   const img2 = PNG.sync.read(fs.readFileSync(expectedPath));

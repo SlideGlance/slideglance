@@ -1,2 +1,6 @@
-output/
-.pptx-temp/
+# Per-suite generated outputs:
+#   decks/output/   — runtime output of vrt/decks/runVrt.ts
+#   preview/output/ — runtime output of vrt/preview/runPreview.ts
+#   nodes/output/   — runtime output of vrt/nodes/generateNodeImages.ts
+**/output/
+**/.pptx-temp/

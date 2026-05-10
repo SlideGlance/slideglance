@@ -8,10 +8,7 @@
   },
   "include": [
     "src/**/*",
-    "preview/**/*",
-    "vrt/**/*",
-    "scripts/docs-images/**/*",
-    "main.ts"
+    "vrt/**/*"
   ],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

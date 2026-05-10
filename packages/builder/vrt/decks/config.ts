@@ -1,10 +1,9 @@
 import path from "path";
 
-const LIB_DIR = path.dirname(new URL(import.meta.url).pathname);
-const VRT_DIR = path.dirname(LIB_DIR);
-export const OUTPUT_DIR = path.join(VRT_DIR, "output");
+const DECKS_DIR = path.dirname(new URL(import.meta.url).pathname);
+export const OUTPUT_DIR = path.join(DECKS_DIR, "output");
 
-export const EXPECTED_DIR = path.join(VRT_DIR, "expected");
+export const EXPECTED_DIR = path.join(DECKS_DIR, "expected");
 export const ACTUAL_DIR = path.join(OUTPUT_DIR, "actual");
 export const DIFF_DIR = path.join(OUTPUT_DIR, "diff");
 
@@ -46,5 +45,3 @@ export const PAGE_NAMES = [
   "37-table-cell-border",
   "38-d4-schema-additions",
 ] as const;
-
-export const THRESHOLD = 0.1;

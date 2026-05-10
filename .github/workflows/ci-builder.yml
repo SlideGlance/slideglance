@@ -83,5 +83,5 @@ jobs:
           name: builder
           json-summary-path: packages/builder/coverage/coverage-summary.json
 
-      - run: pnpm exec tsx main.ts
+      - run: pnpm exec tsx vrt/preview/sample.ts
         working-directory: packages/builder

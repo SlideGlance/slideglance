@@ -1,7 +1,7 @@
 import path from "path";
 
-const SCRIPT_DIR = path.dirname(new URL(import.meta.url).pathname);
-const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "../..");
+const NODES_DIR = path.dirname(new URL(import.meta.url).pathname);
+const PROJECT_ROOT = path.resolve(NODES_DIR, "../..");
 export const IMAGES_DIR = path.join(PROJECT_ROOT, "docs", "images");
 
 // VRT directory.
