@@ -1,4 +1,3 @@
-
 export const PX_PER_IN = 96;
 
 export const pxToIn = (px: number) => px / PX_PER_IN;

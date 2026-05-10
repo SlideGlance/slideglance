@@ -1,4 +1,3 @@
-
 import { registerNode } from "./nodeRegistry.ts";
 import { textNodeDef } from "./definitions/text.ts";
 import { ulNodeDef, olNodeDef } from "./definitions/list.ts";

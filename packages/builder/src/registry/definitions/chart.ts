@@ -1,4 +1,3 @@
-
 import type { NodeDefinition } from "../types.ts";
 import { renderChartNode } from "../../renderPptx/nodes/chart.ts";
 

@@ -1,4 +1,3 @@
-
 import type { BuilderNode, AlignItems } from "../types.ts";
 import type { BuildContext } from "../buildContext.ts";
 import type { YogaNodeMap } from "./types.ts";
@@ -133,7 +132,10 @@ async function getYoga(): Promise<Yoga> {
  * - Indeterminate when alignSelf is specified as something other than stretch.
  * - Indeterminate when the parent's alignItems is specified as something other than stretch (the default).
  */
-function nodeHasDefiniteWidth(node: BuilderNode, parentNode?: BuilderNode): boolean {
+function nodeHasDefiniteWidth(
+  node: BuilderNode,
+  parentNode?: BuilderNode,
+): boolean {
   // Has an explicit width.
   if (node.w !== undefined) return true;
 
@@ -207,8 +209,7 @@ async function buildPomWithYogaTree(
         node.type === "ol" ||
         node.type === "shape") &&
       node.noWrap === true;
-    const noShrink =
-      node.type === "icon" || mainAxisIsFixed || isNoWrapText;
+    const noShrink = node.type === "icon" || mainAxisIsFixed || isNoWrapText;
     yn.setFlexShrink(noShrink ? 0 : 1);
   }
 

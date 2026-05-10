@@ -1,4 +1,3 @@
-
 import type { BuilderNode } from "../../types.ts";
 import { walkPOMTree } from "../../shared/walkTree.ts";
 

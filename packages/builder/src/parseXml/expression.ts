@@ -108,7 +108,9 @@ function tokenize(s: string): Token[] {
         }
       }
       if (j >= s.length) {
-        throw new Error(`unterminated string literal starting at position ${i}`);
+        throw new Error(
+          `unterminated string literal starting at position ${i}`,
+        );
       }
       tokens.push({ type: "STRING", value: raw, pos: i });
       i = j + 1;
@@ -471,7 +473,5 @@ function compare(a: unknown, b: unknown): number {
   if (typeof a === "string" && typeof b === "string") {
     return a < b ? -1 : a > b ? 1 : 0;
   }
-  throw new Error(
-    `cannot compare values of type ${typeof a} and ${typeof b}`,
-  );
+  throw new Error(`cannot compare values of type ${typeof a} and ${typeof b}`);
 }

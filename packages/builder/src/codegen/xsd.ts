@@ -466,7 +466,9 @@ function emitInlineFormatTypes(w: XmlWriter): void {
   emitStructuredChildElement(w, "Col", { mixed: false });
   emitStructuredChildElement(w, "Tr", { children: ["Td"] });
   emitStructuredChildElement(w, "Td", { mixed: true });
-  emitStructuredChildElement(w, "ChartSeries", { children: ["ChartDataPoint"] });
+  emitStructuredChildElement(w, "ChartSeries", {
+    children: ["ChartDataPoint"],
+  });
   emitStructuredChildElement(w, "ChartDataPoint", { mixed: false });
 
   // <svg> child of <Svg> — permissive content model so authors can paste

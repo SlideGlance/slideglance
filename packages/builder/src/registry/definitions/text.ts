@@ -1,4 +1,3 @@
-
 import type { BuilderNode } from "../../types.ts";
 import type { NodeDefinition, Yoga } from "../types.ts";
 import type { Node as YogaNode } from "yoga-layout";
@@ -13,7 +12,12 @@ import { renderTextNode } from "../../renderPptx/nodes/text.ts";
 export const textNodeDef: NodeDefinition = {
   type: "text",
   category: "leaf",
-  applyYogaStyle(node: BuilderNode, yn: YogaNode, yoga: Yoga, ctx: BuildContext) {
+  applyYogaStyle(
+    node: BuilderNode,
+    yn: YogaNode,
+    yoga: Yoga,
+    ctx: BuildContext,
+  ) {
     const n = node as Extract<BuilderNode, { type: "text" }>;
     const text = n.text;
     const fontSizePx = resolveTextStyleValue(

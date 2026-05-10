@@ -1,4 +1,3 @@
-
 /**
  * Build the pptxgenjs `objectName` string for a BuilderNode. This is serialized
  * into OOXML `<p:cNvPr name="node#N">` and later consumed by the SVG renderer
@@ -9,6 +8,8 @@
  * Returns undefined when the node has no `__nodeId` (e.g. parse ran without
  * `trackSourcePos`), in which case callers should omit the option entirely.
  */
-export function builderObjectName(node: { __nodeId?: number }): string | undefined {
+export function builderObjectName(node: {
+  __nodeId?: number;
+}): string | undefined {
   return node.__nodeId !== undefined ? `node#${node.__nodeId}` : undefined;
 }

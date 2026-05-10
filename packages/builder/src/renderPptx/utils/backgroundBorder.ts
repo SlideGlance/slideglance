@@ -1,4 +1,3 @@
-
 import type { PositionedNode, ShadowStyle } from "../../types.ts";
 import { getImageData } from "../../shared/measureImage.ts";
 import type { RenderContext } from "../types.ts";

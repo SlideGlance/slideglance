@@ -235,11 +235,11 @@ A future enhancement to expose at least the title placeholder via `<Slide title=
 
 When both XML `<Master>` definitions and programmatic `BuildPptxOptions.master` / `masters` are provided, the builder resolves which masters to use according to a fixed three-tier priority:
 
-| Priority    | Source                                          | Wins when                                                           |
-| ----------- | ----------------------------------------------- | ------------------------------------------------------------------- |
-| 1 (highest) | `options.masters` (array)                       | Always wins if provided                                             |
+| Priority    | Source                                         | Wins when                                                           |
+| ----------- | ---------------------------------------------- | ------------------------------------------------------------------- |
+| 1 (highest) | `options.masters` (array)                      | Always wins if provided                                             |
 | 2           | XML `<Master>` elements within `<SlideGlance>` | Wins when `options.masters` is absent                               |
-| 3 (lowest)  | `options.master` (single)                       | Used only when both `options.masters` and XML `<Master>` are absent |
+| 3 (lowest)  | `options.master` (single)                      | Used only when both `options.masters` and XML `<Master>` are absent |
 
 Behavior matrix:
 

@@ -1,4 +1,3 @@
-
 /**
  * Build-time option types shared by `buildPptx` and `buildContext`.
  *

@@ -80,19 +80,13 @@ export function collectStyles(
 
       if (!name) {
         errors.push(
-          formatErrorAt(
-            styleEl,
-            '<Style>: Missing required attribute "name"',
-          ),
+          formatErrorAt(styleEl, '<Style>: Missing required attribute "name"'),
         );
         continue;
       }
       if (styles[name]) {
         errors.push(
-          formatErrorAt(
-            styleEl,
-            `<Style>: Duplicate style name "${name}"`,
-          ),
+          formatErrorAt(styleEl, `<Style>: Duplicate style name "${name}"`),
         );
         continue;
       }

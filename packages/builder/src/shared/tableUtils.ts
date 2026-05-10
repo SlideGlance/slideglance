@@ -1,4 +1,3 @@
-
 import type { TableNode } from "../types.ts";
 
 const DEFAULT_TABLE_ROW_HEIGHT = 32;

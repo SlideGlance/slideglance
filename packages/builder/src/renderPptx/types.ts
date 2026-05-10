@@ -1,4 +1,3 @@
-
 import type { BuildContext } from "../buildContext.ts";
 
 type PptxGenJSClass = import("pptxgenjs").default;

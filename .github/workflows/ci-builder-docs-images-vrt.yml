@@ -1,0 +1,40 @@
+name: CI - builder Docs Images VRT
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/builder/docs/**"
+      - "packages/builder/src/**"
+      - "packages/builder/scripts/docs-images/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "packages/builder/docker-compose.yml"
+      - ".github/workflows/ci-builder-docs-images-vrt.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/builder/docs/**"
+      - "packages/builder/src/**"
+      - "packages/builder/scripts/docs-images/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "packages/builder/docker-compose.yml"
+      - ".github/workflows/ci-builder-docs-images-vrt.yml"
+
+jobs:
+  docs-images-vrt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run docs images VRT in Docker
+        working-directory: packages/builder
+        run: docker compose run --rm docs-images-vrt
+      - name: Upload diff on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-docs-images-vrt-diff
+          path: packages/builder/docs/images/output/diff/

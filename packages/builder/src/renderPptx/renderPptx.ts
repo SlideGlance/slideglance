@@ -1,4 +1,3 @@
-
 // pptxgenjs type alias
 type PptxGenJSInstance = import("pptxgenjs").default;
 

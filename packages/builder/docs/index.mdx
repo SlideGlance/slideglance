@@ -48,21 +48,21 @@ await pptx.writeFile({ fileName: "presentation.pptx" });
 
 ## Node List
 
-| Node    | Description                                                  |
-| ------- | ------------------------------------------------------------ |
-| Text    | Text with rich inline formatting (B / I / U / S / Mark / Span / A) |
-| Ul      | Bullet list with `<Li>` items                                |
-| Ol      | Numbered list with `<Li>` items + `numberType`               |
-| Image   | Images from path, URL, or `data:` URI; with sizing modes     |
-| Table   | Columns + rows + cells, colspan/rowspan, per-cell decoration |
-| Shape   | 178 PowerPoint preset shapes with fill / line / text         |
-| Chart   | Bar, line, pie, area, doughnut, radar                        |
-| Line    | Straight line / arrow with absolute endpoints                |
-| Layer   | Absolute-positioned overlay container                        |
-| VStack  | Vertical Flexbox container                                   |
-| HStack  | Horizontal Flexbox container                                 |
-| Icon    | Lucide icon catalogue, optional badge variants               |
-| Svg     | Inline `<svg>` rasterised to PNG                             |
+| Node   | Description                                                        |
+| ------ | ------------------------------------------------------------------ |
+| Text   | Text with rich inline formatting (B / I / U / S / Mark / Span / A) |
+| Ul     | Bullet list with `<Li>` items                                      |
+| Ol     | Numbered list with `<Li>` items + `numberType`                     |
+| Image  | Images from path, URL, or `data:` URI; with sizing modes           |
+| Table  | Columns + rows + cells, colspan/rowspan, per-cell decoration       |
+| Shape  | 178 PowerPoint preset shapes with fill / line / text               |
+| Chart  | Bar, line, pie, area, doughnut, radar                              |
+| Line   | Straight line / arrow with absolute endpoints                      |
+| Layer  | Absolute-positioned overlay container                              |
+| VStack | Vertical Flexbox container                                         |
+| HStack | Horizontal Flexbox container                                       |
+| Icon   | Lucide icon catalogue, optional badge variants                     |
+| Svg    | Inline `<svg>` rasterised to PNG                                   |
 
 See [Nodes](./nodes.md) for the complete attribute reference. Composite-diagram styling (timelines, trees, flowcharts, matrices, pyramids, process arrows) is no longer a built-in node — compose it from `Layer` + `Shape` + `Line` + `Text`. The [`examples/builder-reference`](https://github.com/slideglance/builder/tree/main/examples/builder-reference) deck shows full diagram recipes built that way.
 

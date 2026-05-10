@@ -466,7 +466,10 @@ const documentMeta = defineMeta({
     color: { coerce: "color", doc: "Default text color." },
     bold: { coerce: "boolean", doc: "Default bold." },
     italic: { coerce: "boolean", doc: "Default italic." },
-    underline: { coerce: "underline", doc: "Default underline (boolean or object)." },
+    underline: {
+      coerce: "underline",
+      doc: "Default underline (boolean or object).",
+    },
     strike: { coerce: "boolean", doc: "Default strikethrough." },
     highlight: { coerce: "color", doc: "Default highlight colour." },
     lineHeight: { coerce: "number", doc: "Default lineHeight multiplier." },
@@ -559,7 +562,7 @@ const styleMeta = defineMeta({
 const ifMeta = defineMeta({
   tag: "If",
   description:
-    'Conditional include. Body is emitted when `test` evaluates truthy. Expression supports identifiers, dotted paths (e.g. `m.tone`), comparisons (==, !=, <, <=, >, >=), logical operators (&&, ||, !), and the helpers empty(), not(), length().',
+    "Conditional include. Body is emitted when `test` evaluates truthy. Expression supports identifiers, dotted paths (e.g. `m.tone`), comparisons (==, !=, <, <=, >, >=), logical operators (&&, ||, !), and the helpers empty(), not(), length().",
   contentModel: "any",
   attributes: {
     test: {

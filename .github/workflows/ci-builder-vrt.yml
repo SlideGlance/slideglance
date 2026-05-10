@@ -1,0 +1,40 @@
+name: CI - builder VRT
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/builder/src/**"
+      - "packages/builder/vrt/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "packages/builder/docker-compose.yml"
+      - ".github/workflows/ci-builder-vrt.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/builder/src/**"
+      - "packages/builder/vrt/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "packages/builder/docker-compose.yml"
+      - ".github/workflows/ci-builder-vrt.yml"
+
+jobs:
+  vrt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run VRT in Docker
+        working-directory: packages/builder
+        run: docker compose run --rm vrt
+      - name: Upload diff on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-vrt-diff
+          path: |
+            packages/builder/vrt/actual.png
+            packages/builder/vrt/diff.png

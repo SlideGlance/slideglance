@@ -1,4 +1,3 @@
-
 import type { RenderContext } from "../types.ts";
 
 /**

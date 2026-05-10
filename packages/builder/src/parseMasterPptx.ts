@@ -1,4 +1,3 @@
-
 import { XMLParser } from "fast-xml-parser";
 import type { SlideMasterBackground } from "./types.ts";
 import type { DiagnosticCollector } from "./diagnostics.ts";

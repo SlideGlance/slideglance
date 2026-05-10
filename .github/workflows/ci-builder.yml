@@ -1,0 +1,87 @@
+name: CI - builder
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/builder/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
+      - ".github/workflows/ci-builder.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/builder/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
+      - ".github/workflows/ci-builder.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @slideglance/builder run codegen:check
+      - run: pnpm --filter @slideglance/builder run fmt:check
+      - run: pnpm --filter @slideglance/builder run lint
+      - run: pnpm --filter @slideglance/builder run knip
+      - run: pnpm --filter @slideglance/builder run typecheck
+      - run: pnpm --filter @slideglance/builder run test:coverage
+
+      - name: Cache main branch coverage
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: packages/builder/coverage/coverage-summary.json
+          key: builder-coverage-main-${{ github.sha }}
+
+      - name: Backup PR coverage
+        if: github.event_name == 'pull_request'
+        run: cp packages/builder/coverage/coverage-summary.json /tmp/pr-coverage-summary.json
+
+      - name: Restore main branch coverage
+        id: restore-main-coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/builder/coverage/coverage-summary.json
+          key: builder-coverage-main-
+          restore-keys: builder-coverage-main-
+
+      - name: Prepare coverage for comparison
+        if: github.event_name == 'pull_request' && steps.restore-main-coverage.outputs.cache-matched-key != ''
+        run: |
+          mkdir -p __main_coverage
+          mv packages/builder/coverage/coverage-summary.json __main_coverage/
+          cp /tmp/pr-coverage-summary.json packages/builder/coverage/coverage-summary.json
+
+      - name: Coverage summary comment (with comparison)
+        if: github.event_name == 'pull_request' && steps.restore-main-coverage.outputs.cache-matched-key != ''
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: builder
+          json-summary-path: packages/builder/coverage/coverage-summary.json
+          json-summary-compare-path: __main_coverage/coverage-summary.json
+
+      - name: Coverage summary comment (without comparison)
+        if: github.event_name == 'pull_request' && steps.restore-main-coverage.outputs.cache-matched-key == ''
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: builder
+          json-summary-path: packages/builder/coverage/coverage-summary.json
+
+      - run: pnpm exec tsx main.ts
+        working-directory: packages/builder

@@ -1,4 +1,3 @@
-
 import type { BuilderNode } from "../../types.ts";
 import { walkPOMTree } from "../../shared/walkTree.ts";
 
@@ -10,7 +9,10 @@ const MIN_SCALE = 0.6;
  * Affects: text, ul, ol, shape.
  * @returns `true` when something changed.
  */
-export function reduceFontSize(node: BuilderNode, targetRatio: number): boolean {
+export function reduceFontSize(
+  node: BuilderNode,
+  targetRatio: number,
+): boolean {
   const ratio = Math.max(targetRatio, MIN_SCALE);
   let changed = false;
 

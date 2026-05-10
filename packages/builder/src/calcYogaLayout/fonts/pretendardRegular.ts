@@ -1,4 +1,3 @@
-
 /**
  * Pretendard font (Pretendard-Regular.otf)
  * License: SIL Open Font License 1.1

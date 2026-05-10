@@ -22,13 +22,13 @@ Minimal hello world:
 
 All available tags:
 
-| Category             | Tags                                                                                                                                            |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Containers           | `<VStack>`, `<HStack>`, `<Layer>`                                                                                                               |
-| Content              | `<Text>`, `<Ul>`/`<Ol>`/`<Li>`, `<Image>`, `<Table>` (`<Col>`, `<Tr>`, `<Td>`)                                                                  |
-| Inline (within text) | `<B>`, `<I>`, `<U>`, `<S>`, `<Mark>`, `<Span>`, `<A>`                                                                                           |
-| Graphics             | `<Shape>`, `<Line>`, `<Icon>`, `<Svg>`                                                                                                          |
-| Diagrams             | `<Chart>`                                                                                                                                       |
+| Category             | Tags                                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Containers           | `<VStack>`, `<HStack>`, `<Layer>`                                                                                                              |
+| Content              | `<Text>`, `<Ul>`/`<Ol>`/`<Li>`, `<Image>`, `<Table>` (`<Col>`, `<Tr>`, `<Td>`)                                                                 |
+| Inline (within text) | `<B>`, `<I>`, `<U>`, `<S>`, `<Mark>`, `<Span>`, `<A>`                                                                                          |
+| Graphics             | `<Shape>`, `<Line>`, `<Icon>`, `<Svg>`                                                                                                         |
+| Diagrams             | `<Chart>`                                                                                                                                      |
 | Meta / Composition   | `<SlideGlance>`, `<Slide>`, `<Master>`, `<Styles>`/`<Style>`, `<Templates>`/`<Template>`/`<Use>`/`<Slot>`, `<Import>`, `<Fragment>`, `<Notes>` |
 
 See [Node List](#node-list) for detailed attribute references for each tag.
@@ -382,14 +382,14 @@ Repeats its body once per element of `items`. Required: `items` (JSON array, eit
 
 Both `test=` and `items=` (after substitution) accept the same small expression language:
 
-| Form | Example | Notes |
-| --- | --- | --- |
-| Identifier / dotted path | `m`, `m.tone.shade` | Walks objects; returns `undefined` past null/missing keys. |
-| Literals | `"text"`, `'text'`, `42`, `3.14`, `true`, `false`, `null` | Strings support `\"`, `\'`, `\n`, `\t` escapes. |
-| Comparisons | `==`, `!=`, `<`, `<=`, `>`, `>=` | `==`/`!=` coerce string↔number so `m.size == 40` works. |
-| Logical | `&&`, `\|\|`, `!` | Short-circuits. |
-| Helpers | `empty(x)`, `not(x)`, `length(x)` | `empty` is true for null / undefined / `""` / `[]` / `{}`. |
-| Parens | `(expr)` | Standard grouping. |
+| Form                     | Example                                                   | Notes                                                      |
+| ------------------------ | --------------------------------------------------------- | ---------------------------------------------------------- |
+| Identifier / dotted path | `m`, `m.tone.shade`                                       | Walks objects; returns `undefined` past null/missing keys. |
+| Literals                 | `"text"`, `'text'`, `42`, `3.14`, `true`, `false`, `null` | Strings support `\"`, `\'`, `\n`, `\t` escapes.            |
+| Comparisons              | `==`, `!=`, `<`, `<=`, `>`, `>=`                          | `==`/`!=` coerce string↔number so `m.size == 40` works.    |
+| Logical                  | `&&`, `\|\|`, `!`                                         | Short-circuits.                                            |
+| Helpers                  | `empty(x)`, `not(x)`, `length(x)`                         | `empty` is true for null / undefined / `""` / `[]` / `{}`. |
+| Parens                   | `(expr)`                                                  | Standard grouping.                                         |
 
 Intentionally absent: arithmetic, regex, indexing (`[]`), string concatenation, ternary. If the data needs that level of computation it belongs in build-time TypeScript that emits the XML, not in the markup.
 
@@ -416,7 +416,7 @@ The `items` attribute is a single XML attribute value carrying a JSON literal. T
    ]' as="r"> … </Foreach>
    ```
 
-2. **`{ident}` patterns inside JSON values.** Placeholder substitution runs over the `items` attribute *before* JSON parsing, so a literal substring like `{gradient}` (a single identifier inside braces) is interpreted as a placeholder lookup against the outer scope and errors out. Escape with `{{ident}}` so the substituter emits the literal `{ident}`:
+2. **`{ident}` patterns inside JSON values.** Placeholder substitution runs over the `items` attribute _before_ JSON parsing, so a literal substring like `{gradient}` (a single identifier inside braces) is interpreted as a placeholder lookup against the outer scope and errors out. Escape with `{{ident}}` so the substituter emits the literal `{ident}`:
 
    ```xml
    <Foreach items='[
@@ -552,14 +552,14 @@ When the per-iteration content is too rich to fit in `<Use>` attributes, fill th
 
 #### When to reach for these
 
-|  Reach for                         | When the markup is…                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `<Foreach>`                        | …a list of 3+ near-identical Use calls that differ only in scalar attributes.                      |
-| `<Foreach>` + `<If>`               | …a list whose membership is data-driven (active/featured/published flags).                         |
-| `<Foreach>` + `<Choose>`           | …a list where each row picks one of N styling variants (tone, status, severity).                   |
-| `<If>` (standalone)                | …an optional ornament (connector, divider, badge) that only appears in some contexts.              |
-| `<Choose>` (standalone)            | …a one-of-N dispatch on a single value (tone-by-tone style, status-driven copy).                   |
-| Don't reach                        | …data needs arithmetic, regex, or string concat — emit the XML from build-time TypeScript instead. |
+| Reach for                | When the markup is…                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `<Foreach>`              | …a list of 3+ near-identical Use calls that differ only in scalar attributes.                      |
+| `<Foreach>` + `<If>`     | …a list whose membership is data-driven (active/featured/published flags).                         |
+| `<Foreach>` + `<Choose>` | …a list where each row picks one of N styling variants (tone, status, severity).                   |
+| `<If>` (standalone)      | …an optional ornament (connector, divider, badge) that only appears in some contexts.              |
+| `<Choose>` (standalone)  | …a one-of-N dispatch on a single value (tone-by-tone style, status-driven copy).                   |
+| Don't reach              | …data needs arithmetic, regex, or string concat — emit the XML from build-time TypeScript instead. |
 
 The full deck recipe — `<Foreach>` + `<Choose>` + `<If>` building a roadmap with per-tone connectors and status chips — lives in `examples/builder-reference/chapters/16-control-flow.xml`.
 
@@ -975,26 +975,26 @@ A node for drawing charts. Supports bar charts, line charts, pie charts, area ch
 </Chart>
 ```
 
-| Attribute              | Values                                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------------------------- |
-| `chartType`            | `bar` / `line` / `pie` / `area` / `doughnut` / `radar` (required)                               |
+| Attribute              | Values                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `chartType`            | `bar` / `line` / `pie` / `area` / `doughnut` / `radar` (required)                                |
 | `data`                 | JSON array `[{name?, labels[], values[]}]` — alternative to `<ChartSeries>` / `<ChartDataPoint>` |
-| `showLegend`           | boolean                                                                                         |
-| `showTitle`            | boolean                                                                                         |
-| `title`                | string                                                                                          |
-| `chartColors`          | JSON array `'["hex1","hex2"]'` — per-series palette                                             |
-| `radarStyle`           | `standard` / `marker` / `filled` (radar only)                                                   |
-| `legendPos`            | `t` / `b` / `l` / `r` / `tr` (default: `r`)                                                     |
-| `legendFontSize`       | number in pt (default: `12`)                                                                    |
-| `catAxisLabelFontSize` | number in pt — category axis label font size                                                    |
-| `valAxisLabelFontSize` | number in pt — value axis label font size                                                       |
-| `barGapWidthPct`       | number — gap between bars as a percentage of bar width (default: `100`, bar/area only)          |
-| `lineDataSymbolSize`   | number — data-point marker size for line / radar charts                                         |
-| `showValue`            | boolean — display data values on each bar/point                                                 |
-| `barGrouping`          | `clustered` / `stacked` / `percentStacked` — bar grouping mode (bar/area only)                  |
-| `valAxisMinVal`        | number — minimum value for the value axis                                                       |
-| `valAxisMaxVal`        | number — maximum value for the value axis                                                       |
-| `altText`              | string — accessible description read by screen readers                                          |
+| `showLegend`           | boolean                                                                                          |
+| `showTitle`            | boolean                                                                                          |
+| `title`                | string                                                                                           |
+| `chartColors`          | JSON array `'["hex1","hex2"]'` — per-series palette                                              |
+| `radarStyle`           | `standard` / `marker` / `filled` (radar only)                                                    |
+| `legendPos`            | `t` / `b` / `l` / `r` / `tr` (default: `r`)                                                      |
+| `legendFontSize`       | number in pt (default: `12`)                                                                     |
+| `catAxisLabelFontSize` | number in pt — category axis label font size                                                     |
+| `valAxisLabelFontSize` | number in pt — value axis label font size                                                        |
+| `barGapWidthPct`       | number — gap between bars as a percentage of bar width (default: `100`, bar/area only)           |
+| `lineDataSymbolSize`   | number — data-point marker size for line / radar charts                                          |
+| `showValue`            | boolean — display data values on each bar/point                                                  |
+| `barGrouping`          | `clustered` / `stacked` / `percentStacked` — bar grouping mode (bar/area only)                   |
+| `valAxisMinVal`        | number — minimum value for the value axis                                                        |
+| `valAxisMaxVal`        | number — maximum value for the value axis                                                        |
+| `altText`              | string — accessible description read by screen readers                                           |
 
 **Usage Examples:**
 
@@ -1194,12 +1194,12 @@ A node for rendering inline SVG graphics. SVGs are rasterized to PNG at the spec
 </Svg>
 ```
 
-| Attribute | Values                                                                                |
-| --------- | ------------------------------------------------------------------------------------- |
-| `w`       | number (default: 24, width in px)                                                     |
-| `h`       | number (default: 24, height in px)                                                    |
+| Attribute | Values                                                                                 |
+| --------- | -------------------------------------------------------------------------------------- |
+| `w`       | number (default: 24, width in px)                                                      |
+| `h`       | number (default: 24, height in px)                                                     |
 | `color`   | hex color — recolours monochrome SVGs by injecting `stroke` / `fill="none"` on `<svg>` |
-| `altText` | string — accessible description read by screen readers                                |
+| `altText` | string — accessible description read by screen readers                                 |
 
 A `<svg>` child element is required.
 

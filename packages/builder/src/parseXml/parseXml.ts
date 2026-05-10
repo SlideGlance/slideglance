@@ -1,4 +1,3 @@
-
 /**
  * Public entry points for the builder XML parser.
  *
@@ -28,7 +27,10 @@ import {
 
 export type { ImportResolver } from "./imports.ts";
 export type { BuilderSourceMap, BuilderSourcePos } from "./parseContext.ts";
-export type { ParseBuilderDocumentOptions, ParsedBuilderDocument } from "./document.ts";
+export type {
+  ParseBuilderDocumentOptions,
+  ParsedBuilderDocument,
+} from "./document.ts";
 export { ParseXmlError } from "./document.ts";
 
 /**

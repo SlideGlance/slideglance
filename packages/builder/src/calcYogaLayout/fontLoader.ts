@@ -1,4 +1,3 @@
-
 /**
  * Bundled-font registry + thin facade over `@slideglance/measure`'s
  * `TextMeasurer` for layout-time text measurement.

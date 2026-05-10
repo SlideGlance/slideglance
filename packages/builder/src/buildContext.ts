@@ -1,4 +1,3 @@
-
 import type { TextMeasurementMode } from "./calcYogaLayout/measureText.ts";
 import type { DefaultTextStyle } from "./types.ts";
 import {

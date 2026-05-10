@@ -1,4 +1,3 @@
-
 import type { BuilderNode } from "../../types.ts";
 import type { NodeDefinition } from "../types.ts";
 import { calcTableIntrinsicSize } from "../../shared/tableUtils.ts";

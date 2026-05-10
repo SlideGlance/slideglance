@@ -1,4 +1,3 @@
-
 // ===== Template macro expansion =====
 //
 // Implements <Templates>/<Template>/<Use>/<Slot> as a parse-time macro pass over
@@ -327,7 +326,14 @@ function expandChoose(
   }
   if (otherwise !== null) {
     return getRawChildren(otherwise).flatMap((c) =>
-      substituteAndResolveSlots(c, scope, slots, errors, templateName, slotRoots),
+      substituteAndResolveSlots(
+        c,
+        scope,
+        slots,
+        errors,
+        templateName,
+        slotRoots,
+      ),
     );
   }
   return [];
@@ -372,7 +378,14 @@ function substituteAndResolveSlots(
     // Fallback: <Slot>'s own children are the default content (template body,
     // not caller-supplied) — let them be stomped to the <Use> site.
     return getRawChildren(node).flatMap((c) =>
-      substituteAndResolveSlots(c, scope, slots, errors, templateName, slotRoots),
+      substituteAndResolveSlots(
+        c,
+        scope,
+        slots,
+        errors,
+        templateName,
+        slotRoots,
+      ),
     );
   }
 
@@ -386,7 +399,14 @@ function substituteAndResolveSlots(
       return [];
     }
     return getRawChildren(node).flatMap((c) =>
-      substituteAndResolveSlots(c, scope, slots, errors, templateName, slotRoots),
+      substituteAndResolveSlots(
+        c,
+        scope,
+        slots,
+        errors,
+        templateName,
+        slotRoots,
+      ),
     );
   }
 
@@ -558,7 +578,14 @@ function expandUseElement(
 
   const slotRoots = new Set<XmlNode>();
   const expanded = tmpl.body.flatMap((n) =>
-    substituteAndResolveSlots(n, params, slots, errors, templateName, slotRoots),
+    substituteAndResolveSlots(
+      n,
+      params,
+      slots,
+      errors,
+      templateName,
+      slotRoots,
+    ),
   );
 
   // Rewrite expanded nodes' source-position attributes to point at the <Use>
@@ -650,11 +677,7 @@ export function expandTemplatesInNodes(
     // here; <If>/<Choose> mainly carry value when nested inside a <Foreach>
     // at the same level. Any <Use> the directive produces is expanded by the
     // recursive call below.
-    if (
-      tag === "If" ||
-      tag === "Choose" ||
-      tag === "Foreach"
-    ) {
+    if (tag === "If" || tag === "Choose" || tag === "Foreach") {
       const expanded = substituteAndResolveSlots(
         node,
         {},

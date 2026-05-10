@@ -1,4 +1,3 @@
-
 import type { DefaultTextStyle } from "./types.ts";
 
 export const DEFAULT_FONT_FAMILY = "Noto Sans JP";

@@ -64,21 +64,21 @@ await pptx.writeFile({ fileName: "presentation.pptx" });
 
 ## Available Nodes
 
-| Node         | Description                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------- |
-| Text         | Text with font styling, decoration, inline bold/italic/underline/strike/highlight/color, and hyperlinks |
-| Ul           | Unordered (bullet) list with Li items                                                                   |
-| Ol           | Ordered (numbered) list with Li items                                                                   |
-| Image        | Images from file path, URL, or base64                                                                   |
-| Table        | Tables with customizable columns and rows                                                               |
-| Shape        | PowerPoint shapes (roundRect, ellipse, etc.)                                                            |
-| Chart        | Charts (bar, line, pie, area, doughnut, radar)                                                          |
-| Line         | Horizontal / vertical lines                                                                             |
-| Layer        | Absolute-positioned overlay container                                                                   |
-| VStack       | Vertical stack layout                                                                                   |
-| HStack       | Horizontal stack layout                                                                                 |
-| Icon         | Lucide icons                                                                                            |
-| Svg          | Inline SVG graphics                                                                                     |
+| Node   | Description                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------- |
+| Text   | Text with font styling, decoration, inline bold/italic/underline/strike/highlight/color, and hyperlinks |
+| Ul     | Unordered (bullet) list with Li items                                                                   |
+| Ol     | Ordered (numbered) list with Li items                                                                   |
+| Image  | Images from file path, URL, or base64                                                                   |
+| Table  | Tables with customizable columns and rows                                                               |
+| Shape  | PowerPoint shapes (roundRect, ellipse, etc.)                                                            |
+| Chart  | Charts (bar, line, pie, area, doughnut, radar)                                                          |
+| Line   | Horizontal / vertical lines                                                                             |
+| Layer  | Absolute-positioned overlay container                                                                   |
+| VStack | Vertical stack layout                                                                                   |
+| HStack | Horizontal stack layout                                                                                 |
+| Icon   | Lucide icons                                                                                            |
+| Svg    | Inline SVG graphics                                                                                     |
 
 For detailed node documentation, see [Nodes](./docs/nodes.md).
 

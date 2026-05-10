@@ -1,4 +1,3 @@
-
 import type { BuilderNode } from "../types.ts";
 
 /**

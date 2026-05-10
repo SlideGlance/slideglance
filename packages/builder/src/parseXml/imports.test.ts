@@ -423,7 +423,9 @@ describe("imports", () => {
       resolveImport: resolver,
       sourcePath: rootPath,
     });
-    const vstack = result.nodes[0] as { children: { type: string; text: string }[] };
+    const vstack = result.nodes[0] as {
+      children: { type: string; text: string }[];
+    };
     // <If test="m.kept"> drops the Q2 row; the imported <Template> resolves
     // for both surviving iterations.
     expect(vstack.children.map((c) => c.text)).toEqual(["Q1", "Q3"]);

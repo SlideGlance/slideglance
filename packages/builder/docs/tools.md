@@ -35,11 +35,11 @@ code --install-extension slideglance.builder-vscode
 
 ### Available Commands
 
-| Command                          | Default title                  | Effect                              |
-| -------------------------------- | ------------------------------ | ----------------------------------- |
-| `slideBuilder.openPreview`       | Slide Builder: Open Preview    | Open or focus the live preview pane |
-| `slideBuilder.refreshPreview`    | Slide Builder: Refresh Preview | Force a full rebuild of the preview |
-| `slideBuilder.exportPptx`        | Slide Builder: Export PPTX     | Write the current deck to `.pptx`   |
+| Command                       | Default title                  | Effect                              |
+| ----------------------------- | ------------------------------ | ----------------------------------- |
+| `slideBuilder.openPreview`    | Slide Builder: Open Preview    | Open or focus the live preview pane |
+| `slideBuilder.refreshPreview` | Slide Builder: Refresh Preview | Force a full rebuild of the preview |
+| `slideBuilder.exportPptx`     | Slide Builder: Export PPTX     | Write the current deck to `.pptx`   |
 
 ### Limitation
 

@@ -1,4 +1,3 @@
-
 /**
  * Noto Sans CJK JP min font (NotoSansJP-Regular-min.otf).
  * License: SIL Open Font License 1.1.

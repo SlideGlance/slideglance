@@ -247,7 +247,10 @@ function parseAttrs(openTag: string): Record<string, string> {
   return attrs;
 }
 
-function rebuildUseTag(originalTag: string, attrs: Record<string, string>): string {
+function rebuildUseTag(
+  originalTag: string,
+  attrs: Record<string, string>,
+): string {
   const selfClosing = /\/\s*>$/.test(originalTag);
   const tagBody = Object.entries(attrs)
     .map(([k, v]) => `${k}="${v.replace(/"/g, "&quot;")}"`)
@@ -415,7 +418,12 @@ function equalizeHeights(
   // overlap when applied right-to-left.
   const updates = new Map<
     string,
-    { hit: UseHit; absStart: number; absEnd: number; attrs: Record<string, string> }
+    {
+      hit: UseHit;
+      absStart: number;
+      absEnd: number;
+      attrs: Record<string, string>;
+    }
   >();
 
   // For cross-template equalization we group hits by AXIS name across
@@ -460,7 +468,11 @@ function equalizeHeights(
         const { hit, axis } = entry;
         const text = hit.attrs[axis.textParam] ?? "";
         const wAttr = hit.attrs.w;
-        const colWidthPx = resolveColumnWidthPx(wAttr, adjustedParent, cardCount);
+        const colWidthPx = resolveColumnWidthPx(
+          wAttr,
+          adjustedParent,
+          cardCount,
+        );
         const colInner = Math.max(40, colWidthPx - axis.padding * 2);
         const h = estimateTextHeightPx(
           text,
@@ -563,11 +575,14 @@ function equalizeWidths(
           .split(/\s+/)
           .find((c) => c in CLASS_FONT_HEURISTICS);
         const heur = cls ? CLASS_FONT_HEURISTICS[cls] : null;
-        const fontSize = parseFloat(hit.attrs.fontSize ?? "")
-          || heur?.fontSize
-          || 13;
+        const fontSize =
+          parseFloat(hit.attrs.fontSize ?? "") || heur?.fontSize || 13;
         const charWidthFactor = heur?.charWidthFactor ?? 0.55;
-        const w = estimateNaturalWidthPx(hit.innerText, fontSize, charWidthFactor);
+        const w = estimateNaturalWidthPx(
+          hit.innerText,
+          fontSize,
+          charWidthFactor,
+        );
         if (w > max) max = w;
       }
       if (max === 0) continue;
@@ -610,7 +625,12 @@ function equalizeWidths(
 type TableHit = {
   start: number;
   end: number;
-  cols: { start: number; end: number; raw: string; attrs: Record<string, string> }[];
+  cols: {
+    start: number;
+    end: number;
+    raw: string;
+    attrs: Record<string, string>;
+  }[];
   /** Each row: array of <Td> inner text by column index. */
   rowsCellText: string[][];
   /** Default font size from `<Table fontSize="…">` if present. */
@@ -674,7 +694,13 @@ function findTableSiblingsInScope(src: string): TableHit[][] {
       rowsCellText.push(cells);
     }
 
-    tables.push({ start: open, end: close + "</Table>".length, cols, rowsCellText, fontSize });
+    tables.push({
+      start: open,
+      end: close + "</Table>".length,
+      cols,
+      rowsCellText,
+      fontSize,
+    });
     cursor = close + "</Table>".length;
   }
   // For now treat every Table in the document as a single scope. The

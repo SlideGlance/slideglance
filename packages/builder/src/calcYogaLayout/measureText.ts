@@ -1,4 +1,3 @@
-
 import {
   measureTextWidth as measureTextWidthOpentype,
   isBundledFont,

@@ -1,4 +1,3 @@
-
 import type { BuilderNode, PositionedNode } from "../../types.ts";
 import type { NodeDefinition } from "../types.ts";
 import { rasterizeIcon } from "../../icons/index.ts";

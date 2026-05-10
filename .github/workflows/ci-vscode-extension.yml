@@ -1,0 +1,53 @@
+name: CI - vscode-extension
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/vscode-extension/**"
+      - "packages/builder/src/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/builder/tsconfig.json"
+      - ".node-version"
+      - ".github/workflows/ci-vscode-extension.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "apps/vscode-extension/**"
+      - "packages/builder/src/**"
+      - "package.json"
+      - "packages/builder/package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/builder/tsconfig.json"
+      - ".node-version"
+      - ".github/workflows/ci-vscode-extension.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build builder
+        run: pnpm --filter @slideglance/builder run build
+      - name: Format check
+        run: pnpm --filter @slideglance/vscode-extension run fmt:check
+      - name: Lint
+        run: pnpm --filter @slideglance/vscode-extension run lint
+      - name: Type check
+        run: pnpm --filter @slideglance/vscode-extension run typecheck
+      - name: Build
+        run: pnpm --filter @slideglance/vscode-extension run build

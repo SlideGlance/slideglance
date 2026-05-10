@@ -1,4 +1,3 @@
-
 // ===== <Import src="..."/> macro expansion =====
 //
 // Allows splitting a builder XML document across multiple files. <Import> is

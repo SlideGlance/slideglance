@@ -1,4 +1,3 @@
-
 // ===== Source-position injection =====
 //
 // Before feeding an XML string to fast-xml-parser, this utility injects

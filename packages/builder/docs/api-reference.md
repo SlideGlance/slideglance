@@ -97,35 +97,35 @@ The slide dimensions in pixels. Internally converted to inches at 96 DPI.
 
 #### `options` (optional)
 
-| Property             | Type                                      | Default     | Description                                                                                                                                                                                                                                                |
-| -------------------- | ----------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `master`             | `SlideMasterOptions`                      | `undefined` | Slide master settings                                                                                                                                                                                                                                      |
-| `masters`            | `SlideMasterOptions[]`                    | `undefined` | Multiple named slide masters. Each item should have a unique `title`                                                                                                                                                                                       |
-| `defaultMaster`      | `string`                                  | `undefined` | Default master name when using `masters` or XML `<SlideGlance>
-  <Document defaultMaster="..." />`                                                                                                                                                                       |
-| `masterPptx`         | `ArrayBuffer \| Uint8Array`               | `undefined` | Existing PPTX file to use as master (extracts background). See [Master Slide](./master-slide.md).                                                                                                                                                          |
-| `textMeasurement`    | `TextMeasurementMode`                     | `"auto"`    | Text width measurement method                                                                                                                                                                                                                              |
-| `defaultTextStyle`   | `DefaultTextStyle`                        | `undefined` | Default text attributes (fontSize / fontFamily / color / lineHeight) applied to all text nodes. Per-node attrs and `<SlideGlance>` `defaultTextStyle` still override                                                                                      |
-| `autoFit`            | `boolean`                                 | `true`      | Auto-fit content when it overflows slides                                                                                                                                                                                                                  |
-| `strict`             | `boolean`                                 | `false`     | Throw `DiagnosticsError` if any diagnostics are collected                                                                                                                                                                                                  |
-| `resolveImport`      | `ImportResolver`                          | `undefined` | Synchronous loader called for every `<Import src="..." />`. Required when the XML uses `<Import>`. Signature: `(src, fromPath) => { content, path }`                                                                                                       |
-| `sourcePath`         | `string`                                  | `undefined` | Absolute path of the root document. Passed as `fromPath` on the first `resolveImport` call so relative `<Import>` paths resolve correctly                                                                                                                  |
-| `trackSourcePos`     | `boolean`                                 | `false`     | When `true`, the returned `BuildPptxResult` carries a `sourceMap` and every rendered pptxgenjs object gets an `objectName="node#N"` encoding its origin node id                                                                                             |
-| `docProps`           | `{ title?, author?, company?, subject? }` | `undefined` | Document metadata written to the PPTX file's core properties (docProps/core.xml). Presentation-level `lang` is not supported by pptxgenjs 4.0.1 — use `defaultLang` instead                                                                                |
-| `defaultLang`        | `string`                                  | `undefined` | BCP 47 language tag applied as fallback to text runs without an explicit `lang` attribute (e.g. `"en-US"`, `"ja-JP"`). Currently applied to `<Text>` runs only — `<Shape>`, `<Ul>`, and `<Ol>` text uses pptxgenjs runtime defaults.                       |
-| `allowedHrefSchemes` | `string[]`                                | `undefined` | Additional URL schemes allowed in `<A href>` beyond the defaults (`https:`, `http:`, `mailto:`, `tel:`)                                                                                                                                                    |
-| `imageSrcGuard`      | `ImageSrcGuardOptions`                    | `undefined` | Opt-in validation for `<Image src>` and `<Master backgroundPath>`. When omitted, no validation is applied                                                                                                                                                  |
-| `masterPptxLimits`   | `MasterPptxLimits`                        | `undefined` | Size caps for the `masterPptx` buffer (default: 50 MB total, 5 MB per image)                                                                                                                                                                               |
-| `maxTemplateNodes`   | `number`                                  | `100000`    | Maximum nodes produced by `<Use>` template expansion. Exceeding the limit emits a `TEMPLATE_EXPANSION_LIMIT` diagnostic                                                                                                                                    |
+| Property                          | Type                                      | Default     | Description                                                                                                                                                                                                                          |
+| --------------------------------- | ----------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `master`                          | `SlideMasterOptions`                      | `undefined` | Slide master settings                                                                                                                                                                                                                |
+| `masters`                         | `SlideMasterOptions[]`                    | `undefined` | Multiple named slide masters. Each item should have a unique `title`                                                                                                                                                                 |
+| `defaultMaster`                   | `string`                                  | `undefined` | Default master name when using `masters` or XML `<SlideGlance>                                                                                                                                                                       |
+| <Document defaultMaster="..." />` |
+| `masterPptx`                      | `ArrayBuffer \| Uint8Array`               | `undefined` | Existing PPTX file to use as master (extracts background). See [Master Slide](./master-slide.md).                                                                                                                                    |
+| `textMeasurement`                 | `TextMeasurementMode`                     | `"auto"`    | Text width measurement method                                                                                                                                                                                                        |
+| `defaultTextStyle`                | `DefaultTextStyle`                        | `undefined` | Default text attributes (fontSize / fontFamily / color / lineHeight) applied to all text nodes. Per-node attrs and `<SlideGlance>` `defaultTextStyle` still override                                                                 |
+| `autoFit`                         | `boolean`                                 | `true`      | Auto-fit content when it overflows slides                                                                                                                                                                                            |
+| `strict`                          | `boolean`                                 | `false`     | Throw `DiagnosticsError` if any diagnostics are collected                                                                                                                                                                            |
+| `resolveImport`                   | `ImportResolver`                          | `undefined` | Synchronous loader called for every `<Import src="..." />`. Required when the XML uses `<Import>`. Signature: `(src, fromPath) => { content, path }`                                                                                 |
+| `sourcePath`                      | `string`                                  | `undefined` | Absolute path of the root document. Passed as `fromPath` on the first `resolveImport` call so relative `<Import>` paths resolve correctly                                                                                            |
+| `trackSourcePos`                  | `boolean`                                 | `false`     | When `true`, the returned `BuildPptxResult` carries a `sourceMap` and every rendered pptxgenjs object gets an `objectName="node#N"` encoding its origin node id                                                                      |
+| `docProps`                        | `{ title?, author?, company?, subject? }` | `undefined` | Document metadata written to the PPTX file's core properties (docProps/core.xml). Presentation-level `lang` is not supported by pptxgenjs 4.0.1 — use `defaultLang` instead                                                          |
+| `defaultLang`                     | `string`                                  | `undefined` | BCP 47 language tag applied as fallback to text runs without an explicit `lang` attribute (e.g. `"en-US"`, `"ja-JP"`). Currently applied to `<Text>` runs only — `<Shape>`, `<Ul>`, and `<Ol>` text uses pptxgenjs runtime defaults. |
+| `allowedHrefSchemes`              | `string[]`                                | `undefined` | Additional URL schemes allowed in `<A href>` beyond the defaults (`https:`, `http:`, `mailto:`, `tel:`)                                                                                                                              |
+| `imageSrcGuard`                   | `ImageSrcGuardOptions`                    | `undefined` | Opt-in validation for `<Image src>` and `<Master backgroundPath>`. When omitted, no validation is applied                                                                                                                            |
+| `masterPptxLimits`                | `MasterPptxLimits`                        | `undefined` | Size caps for the `masterPptx` buffer (default: 50 MB total, 5 MB per image)                                                                                                                                                         |
+| `maxTemplateNodes`                | `number`                                  | `100000`    | Maximum nodes produced by `<Use>` template expansion. Exceeding the limit emits a `TEMPLATE_EXPANSION_LIMIT` diagnostic                                                                                                              |
 
 ### Return Value
 
 Returns a `BuildPptxResult` object:
 
-| Field         | Type                        | Description                                                                                                                                                                                                     |
-| ------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pptx`        | pptxgenjs                   | The generated presentation instance                                                                                                                                                                             |
-| `diagnostics` | `Diagnostic[]`              | Warnings collected during the build process                                                                                                                                                                     |
+| Field         | Type                            | Description                                                                                                                                                                                                      |
+| ------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pptx`        | pptxgenjs                       | The generated presentation instance                                                                                                                                                                              |
+| `diagnostics` | `Diagnostic[]`                  | Warnings collected during the build process                                                                                                                                                                      |
 | `sourceMap`   | `BuilderSourceMap \| undefined` | Only present when `trackSourcePos: true`. Maps each rendered node's `__nodeId` → its origin `{ file, line }`. Useful for tools (e.g. the builder-vscode preview) that want click-to-reveal-source in the editor. |
 
 ```typescript
@@ -172,19 +172,19 @@ try {
 
 Each `Diagnostic` carries a stable `code` literal so callers can branch on the failure mode without parsing `message`. Optional `sourcePos` carries the `{ file, line }` of the offending element when the parser can attribute it.
 
-| Code                       | Severity           | Triggered by                                                                                                                  |
-| -------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `IMAGE_MEASURE_FAILED`     | warning            | An `<Image>` source could not be measured during the prefetch pass; the layout falls back to declared `w`/`h` or zero size.   |
-| `IMAGE_NOT_PREFETCHED`     | warning            | An `<Image>` was rendered without a measured size (the prefetch step did not run for it). The image still renders.            |
-| `AUTOFIT_OVERFLOW`         | warning            | Auto-fit ran every shrink strategy but content still overflowed the slide. Output may be truncated visually.                  |
-| `SCALE_BELOW_THRESHOLD`    | warning            | Auto-fit's uniform-scale fallback would scale below the 0.5× safety threshold. Content is left at its overflowing size.       |
-| `MASTER_PPTX_PARSE_FAILED` | warning            | The `masterPptx` buffer could not be parsed. The build proceeds without the extracted background.                             |
-| `MASTER_PPTX_SIZE_LIMIT`   | warning            | The `masterPptx` buffer or one of its embedded images exceeds `masterPptxLimits`. The buffer is rejected and the build proceeds. |
-| `INVALID_HREF_SCHEME`      | warning            | An `<A href>` value uses a scheme outside the allowlist (defaults: `https:` `http:` `mailto:` `tel:`, plus `allowedHrefSchemes`). The hyperlink is dropped. |
-| `INVALID_IMAGE_SRC`        | warning            | `imageSrcGuard` rejected an `<Image src>` or `<Master backgroundPath>` value (scheme not in `allowSchemes`, or path escapes `allowBaseDir`). The image is dropped. |
-| `TEMPLATE_EXPANSION_LIMIT` | warning            | `<Use>` template expansion produced more than `maxTemplateNodes` nodes (default 100,000). Subsequent expansion is aborted.     |
-| `TEMPLATES_NOT_AT_ROOT`    | warning            | A `<Templates>` block was found nested inside `<Slide>` / `<VStack>` / etc. instead of at `<SlideGlance>` or `<Fragment>` root. The block is ignored. |
-| `INVALID_NUMBER_TYPE`      | warning            | `<Ol numberType="...">` was set to a value outside the supported enum. The attribute is stripped.                              |
+| Code                       | Severity | Triggered by                                                                                                                                                       |
+| -------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `IMAGE_MEASURE_FAILED`     | warning  | An `<Image>` source could not be measured during the prefetch pass; the layout falls back to declared `w`/`h` or zero size.                                        |
+| `IMAGE_NOT_PREFETCHED`     | warning  | An `<Image>` was rendered without a measured size (the prefetch step did not run for it). The image still renders.                                                 |
+| `AUTOFIT_OVERFLOW`         | warning  | Auto-fit ran every shrink strategy but content still overflowed the slide. Output may be truncated visually.                                                       |
+| `SCALE_BELOW_THRESHOLD`    | warning  | Auto-fit's uniform-scale fallback would scale below the 0.5× safety threshold. Content is left at its overflowing size.                                            |
+| `MASTER_PPTX_PARSE_FAILED` | warning  | The `masterPptx` buffer could not be parsed. The build proceeds without the extracted background.                                                                  |
+| `MASTER_PPTX_SIZE_LIMIT`   | warning  | The `masterPptx` buffer or one of its embedded images exceeds `masterPptxLimits`. The buffer is rejected and the build proceeds.                                   |
+| `INVALID_HREF_SCHEME`      | warning  | An `<A href>` value uses a scheme outside the allowlist (defaults: `https:` `http:` `mailto:` `tel:`, plus `allowedHrefSchemes`). The hyperlink is dropped.        |
+| `INVALID_IMAGE_SRC`        | warning  | `imageSrcGuard` rejected an `<Image src>` or `<Master backgroundPath>` value (scheme not in `allowSchemes`, or path escapes `allowBaseDir`). The image is dropped. |
+| `TEMPLATE_EXPANSION_LIMIT` | warning  | `<Use>` template expansion produced more than `maxTemplateNodes` nodes (default 100,000). Subsequent expansion is aborted.                                         |
+| `TEMPLATES_NOT_AT_ROOT`    | warning  | A `<Templates>` block was found nested inside `<Slide>` / `<VStack>` / etc. instead of at `<SlideGlance>` or `<Fragment>` root. The block is ignored.              |
+| `INVALID_NUMBER_TYPE`      | warning  | `<Ol numberType="...">` was set to a value outside the supported enum. The attribute is stripped.                                                                  |
 
 When `strict: true`, any of the above also turns into a `DiagnosticsError`.
 
@@ -327,12 +327,16 @@ type ImageSrcGuardOptions = {
   allowBaseDir?: string;
 };
 
-const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
-  imageSrcGuard: {
-    allowSchemes: ["https:", "data:"],
-    allowBaseDir: path.resolve("./assets"),
+const { pptx } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  {
+    imageSrcGuard: {
+      allowSchemes: ["https:", "data:"],
+      allowBaseDir: path.resolve("./assets"),
+    },
   },
-});
+);
 ```
 
 ### masterPptxLimits
@@ -347,10 +351,17 @@ type MasterPptxLimits = {
   maxImageBytes?: number;
 };
 
-const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
-  masterPptx: fs.readFileSync("template.pptx"),
-  masterPptxLimits: { maxBytes: 25 * 1024 * 1024, maxImageBytes: 1 * 1024 * 1024 },
-});
+const { pptx } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  {
+    masterPptx: fs.readFileSync("template.pptx"),
+    masterPptxLimits: {
+      maxBytes: 25 * 1024 * 1024,
+      maxImageBytes: 1 * 1024 * 1024,
+    },
+  },
+);
 ```
 
 ### allowedHrefSchemes
@@ -358,9 +369,13 @@ const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
 Widen the default `<A href>` allowlist (`https:`, `http:`, `mailto:`, `tel:`). Hyperlinks with a scheme outside the combined list emit `INVALID_HREF_SCHEME` and the hyperlink is dropped (text content is preserved).
 
 ```typescript
-const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
-  allowedHrefSchemes: ["ftp:", "sftp:"],
-});
+const { pptx } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  {
+    allowedHrefSchemes: ["ftp:", "sftp:"],
+  },
+);
 ```
 
 ### docProps
@@ -368,14 +383,18 @@ const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
 Document metadata written to the PPTX's `docProps/core.xml`. PowerPoint surfaces these in **File → Info → Properties** and Office search uses them as well. All fields are optional.
 
 ```typescript
-const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
-  docProps: {
-    title: "Q4 2026 Review",
-    author: "Acme Corp.",
-    company: "Acme Corp.",
-    subject: "Quarterly business review",
+const { pptx } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  {
+    docProps: {
+      title: "Q4 2026 Review",
+      author: "Acme Corp.",
+      company: "Acme Corp.",
+      subject: "Quarterly business review",
+    },
   },
-});
+);
 ```
 
 ### defaultLang
@@ -383,9 +402,13 @@ const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
 BCP 47 fallback language tag applied to `<Text>` runs that do not declare an explicit `lang` attribute. The `lang` attribute on individual runs always wins. Currently scoped to `<Text>` runs only (`<Shape>`, `<Ul>`, `<Ol>` text use pptxgenjs runtime defaults).
 
 ```typescript
-const { pptx } = await buildPptx(xml, { w: 1280, h: 720 }, {
-  defaultLang: "ko-KR",
-});
+const { pptx } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  {
+    defaultLang: "ko-KR",
+  },
+);
 ```
 
 ### maxTemplateNodes

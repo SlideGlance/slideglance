@@ -1,4 +1,3 @@
-
 import type { PositionedNode, LineArrow } from "../../types.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn, pxToPt } from "../units.ts";

@@ -37,9 +37,7 @@ export function walkRegistry(): WalkedRegistry {
 
   // builder node tags = nodes that have a `type` discriminant; excludes
   // document containers (SlideGlance/Slide/Fragment).
-  const nodeTags = nodes
-    .filter((n) => n.type !== undefined)
-    .map((n) => n.tag);
+  const nodeTags = nodes.filter((n) => n.type !== undefined).map((n) => n.tag);
 
   return { nodes, meta, roots, nodeTags };
 }

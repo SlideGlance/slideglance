@@ -1,4 +1,3 @@
-
 export type DiagnosticCode =
   | "IMAGE_MEASURE_FAILED"
   | "IMAGE_NOT_PREFETCHED"

@@ -156,19 +156,18 @@ function coerceDefaultTextStyleField(
   }
 }
 
-const DOCUMENT_DEFAULT_TEXT_STYLE_KEYS: ReadonlyArray<
-  keyof DefaultTextStyle
-> = [
-  "fontFamily",
-  "fontSize",
-  "color",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "highlight",
-  "lineHeight",
-];
+const DOCUMENT_DEFAULT_TEXT_STYLE_KEYS: ReadonlyArray<keyof DefaultTextStyle> =
+  [
+    "fontFamily",
+    "fontSize",
+    "color",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "highlight",
+    "lineHeight",
+  ];
 
 // Strip an optional XML prolog (`<?xml … ?>`) and any leading whitespace. The
 // prolog only carries encoding/version metadata that we already control via
@@ -522,10 +521,7 @@ function parseSlideElement(
 
   if (notesElements.length > 1) {
     errors.push(
-      formatErrorAt(
-        slideElement,
-        "<Slide>: Only one <Notes> child is allowed",
-      ),
+      formatErrorAt(slideElement, "<Slide>: Only one <Notes> child is allowed"),
     );
   }
 
@@ -648,54 +644,59 @@ function inlineImportsAsText(
   trackSource: boolean,
 ): string {
   if (!resolver) return rootText;
-  return rootText.replace(IMPORT_TAG_RE, (_match: string, attrsRaw: string): string => {
-    const attrs: Record<string, string> = {};
-    for (const m of attrsRaw.matchAll(IMPORT_ATTR_RE)) {
-      const key = m[1];
-      if (!key) continue;
-      attrs[key] = m[3] ?? m[4] ?? "";
-    }
-    const src = attrs.src?.trim();
-    if (!src) {
-      errors.push('<Import>: missing required attribute "src"');
-      return "";
-    }
-    let resolved: { content: string; path: string };
-    try {
-      resolved = resolver(src, fromPath);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      errors.push(`<Import src="${src}">: failed to load — ${message}`);
-      return "";
-    }
-    if (visited.has(resolved.path)) {
-      errors.push(
-        `<Import src="${src}">: circular import detected at ${resolved.path}`,
+  return rootText.replace(
+    IMPORT_TAG_RE,
+    (_match: string, attrsRaw: string): string => {
+      const attrs: Record<string, string> = {};
+      for (const m of attrsRaw.matchAll(IMPORT_ATTR_RE)) {
+        const key = m[1];
+        if (!key) continue;
+        attrs[key] = m[3] ?? m[4] ?? "";
+      }
+      const src = attrs.src?.trim();
+      if (!src) {
+        errors.push('<Import>: missing required attribute "src"');
+        return "";
+      }
+      let resolved: { content: string; path: string };
+      try {
+        resolved = resolver(src, fromPath);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        errors.push(`<Import src="${src}">: failed to load — ${message}`);
+        return "";
+      }
+      if (visited.has(resolved.path)) {
+        errors.push(
+          `<Import src="${src}">: circular import detected at ${resolved.path}`,
+        );
+        return "";
+      }
+      visited.add(resolved.path);
+      let importedText = resolved.content;
+      if (trackSource) {
+        importedText = injectSourceAttrs(importedText, resolved.path);
+      }
+      importedText = importedText.replace(XML_PROLOG_RE, "");
+      importedText = inlineImportsAsText(
+        importedText,
+        resolver,
+        resolved.path,
+        visited,
+        errors,
+        trackSource,
       );
-      return "";
-    }
-    visited.add(resolved.path);
-    let importedText = resolved.content;
-    if (trackSource) {
-      importedText = injectSourceAttrs(importedText, resolved.path);
-    }
-    importedText = importedText.replace(XML_PROLOG_RE, "");
-    importedText = inlineImportsAsText(
-      importedText,
-      resolver,
-      resolved.path,
-      visited,
-      errors,
-      trackSource,
-    );
-    visited.delete(resolved.path);
-    // Strip the outer <Fragment> / <SlideGlance> wrapper so the inner children
-    // splice into the parent in place of the <Import> element.
-    const wrapMatch = importedText.match(
-      /^\s*<(Fragment|SlideGlance)\b[^>]*>([\s\S]*)<\/\1>\s*$/,
-    );
-    return wrapMatch && wrapMatch[2] !== undefined ? wrapMatch[2] : importedText;
-  });
+      visited.delete(resolved.path);
+      // Strip the outer <Fragment> / <SlideGlance> wrapper so the inner children
+      // splice into the parent in place of the <Import> element.
+      const wrapMatch = importedText.match(
+        /^\s*<(Fragment|SlideGlance)\b[^>]*>([\s\S]*)<\/\1>\s*$/,
+      );
+      return wrapMatch && wrapMatch[2] !== undefined
+        ? wrapMatch[2]
+        : importedText;
+    },
+  );
 }
 
 /**

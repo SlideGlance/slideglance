@@ -154,7 +154,6 @@ const chartSample = `
 </VStack>
 `;
 
-
 const vstackSample = `
 <VStack w="100%" h="max" padding="40" gap="32" justifyContent="center" alignItems="center" backgroundColor="${palette.background}">
   <Text fontSize="28" bold="true" color="${palette.navy}" w="100%" textAlign="center">VStack Node Example</Text>

@@ -103,7 +103,9 @@ describe("evaluateExpression", () => {
     });
 
     it("rejects unknown function names", () => {
-      expect(() => evaluateExpression("foo(x)", {})).toThrow(/unknown function/);
+      expect(() => evaluateExpression("foo(x)", {})).toThrow(
+        /unknown function/,
+      );
     });
   });
 
@@ -115,7 +117,9 @@ describe("evaluateExpression", () => {
     });
 
     it("rejects unknown characters", () => {
-      expect(() => evaluateExpression("1 @ 2", {})).toThrow(/unexpected character/);
+      expect(() => evaluateExpression("1 @ 2", {})).toThrow(
+        /unexpected character/,
+      );
     });
   });
 });

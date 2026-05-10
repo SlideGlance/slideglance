@@ -1,4 +1,3 @@
-
 import type { DefaultTextStyle } from "../types.ts";
 import {
   resolveFontFamily,

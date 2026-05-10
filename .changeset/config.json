@@ -7,6 +7,16 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
+  "ignore": [
+    "@slideglance/core",
+    "@slideglance/measure",
+    "@slideglance/viewer",
+    "@slideglance/chrome-extension",
+    "@slideglance/desktop-viewer",
+    "@slideglance/landing",
+    "@slideglance/web-playground",
+    "@slideglance/builder-reference-example"
+  ],
   "privatePackages": {
     "version": true,
     "tag": true

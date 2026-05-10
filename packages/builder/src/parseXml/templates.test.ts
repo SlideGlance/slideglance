@@ -570,7 +570,7 @@ describe("templates · MyBatis-style directives", () => {
       parseBuilderDocument(xml);
     } catch (e) {
       threw = true;
-      expect((e as ParseXmlError).message).toContain('<If>: missing required');
+      expect((e as ParseXmlError).message).toContain("<If>: missing required");
     }
     expect(threw).toBe(true);
   });
