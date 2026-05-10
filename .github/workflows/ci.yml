@@ -1,10 +1,17 @@
-name: CI
+name: CI - rust-workspace
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -96,8 +103,8 @@ jobs:
           # confuses cargo-deny in some configurations.
           arguments: ""
 
-  vrt:
-    name: VRT (snapshot regression)
+  vrt-rust:
+    name: VRT (Rust snapshot regression)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

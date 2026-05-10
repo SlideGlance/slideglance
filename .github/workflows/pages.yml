@@ -37,11 +37,9 @@ jobs:
       - name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @slideglance/viewer build

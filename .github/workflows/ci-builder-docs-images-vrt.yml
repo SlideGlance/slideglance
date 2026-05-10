@@ -1,8 +1,8 @@
-name: CI - builder Docs Images VRT
+name: CI - builder-docs-images-vrt
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/docs/**"
       - "packages/builder/src/**"
@@ -11,10 +11,12 @@ on:
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
       - "packages/builder/docker/**"
       - ".github/workflows/ci-builder-docs-images-vrt.yml"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/docs/**"
       - "packages/builder/src/**"
@@ -23,8 +25,17 @@ on:
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
       - "packages/builder/docker/**"
       - ".github/workflows/ci-builder-docs-images-vrt.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   docs-images-vrt:

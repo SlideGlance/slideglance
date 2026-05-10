@@ -1,23 +1,25 @@
-name: CI - builder Size Limit
+name: CI - builder-size-limit
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/src/**"
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "packages/builder/.size-limit.js"
       - ".node-version"
       - ".github/workflows/ci-builder-size-limit.yml"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/src/**"
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "packages/builder/.size-limit.js"
       - ".node-version"
       - ".github/workflows/ci-builder-size-limit.yml"
@@ -25,6 +27,10 @@ on:
 permissions:
   contents: read
   pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   size-limit:

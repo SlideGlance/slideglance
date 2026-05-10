@@ -2,7 +2,7 @@ name: CI - builder
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/**"
       - "package.json"
@@ -11,7 +11,7 @@ on:
       - ".node-version"
       - ".github/workflows/ci-builder.yml"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/**"
       - "package.json"
@@ -19,6 +19,13 @@ on:
       - "pnpm-workspace.yaml"
       - ".node-version"
       - ".github/workflows/ci-builder.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

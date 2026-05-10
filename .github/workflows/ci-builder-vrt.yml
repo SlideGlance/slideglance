@@ -1,26 +1,37 @@
-name: CI - builder VRT
+name: CI - builder-vrt
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/src/**"
       - "packages/builder/vrt/**"
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
       - "packages/builder/docker/**"
       - ".github/workflows/ci-builder-vrt.yml"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "packages/builder/src/**"
       - "packages/builder/vrt/**"
       - "package.json"
       - "packages/builder/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
       - "packages/builder/docker/**"
       - ".github/workflows/ci-builder-vrt.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   vrt:

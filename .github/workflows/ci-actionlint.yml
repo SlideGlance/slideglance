@@ -1,14 +1,21 @@
-name: CI - Actionlint
+name: CI - actionlint
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - ".github/workflows/**"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   actionlint:

@@ -1,0 +1,93 @@
+name: CI - js-workspaces
+
+# Lint / typecheck / fmt:check coverage for the JS workspaces that
+# don't have a dedicated CI lane (viewer, chrome-extension, web-playground,
+# desktop-viewer, landing, builder-reference-example).
+# `--if-present` skips packages that don't define the script, which is
+# why every package was given the same script vocabulary in the recent
+# script-standardization commit.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/viewer/**"
+      - "apps/chrome-extension/**"
+      - "apps/web-playground/**"
+      - "apps/desktop-viewer/**"
+      - "apps/landing/**"
+      - "examples/builder-reference/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
+      - ".github/workflows/ci-js-workspaces.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/viewer/**"
+      - "apps/chrome-extension/**"
+      - "apps/web-playground/**"
+      - "apps/desktop-viewer/**"
+      - "apps/landing/**"
+      - "examples/builder-reference/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".node-version"
+      - ".github/workflows/ci-js-workspaces.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - name: Install wasm-pack
+        # viewer / web-playground / chrome-extension / desktop-viewer
+        # transitively depend on the wasm artefacts produced by
+        # scripts/build-wasm.sh; tsc on those packages reads the
+        # generated d.ts under packages/{core,measure}/dist/.
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+      - run: pnpm install --frozen-lockfile
+      - name: Build wasm artefacts
+        run: bash scripts/build-wasm.sh
+      - name: typecheck (viewer)
+        run: pnpm --filter @slideglance/viewer run typecheck
+      - name: fmt:check (viewer)
+        run: pnpm --filter @slideglance/viewer run fmt:check
+      - name: typecheck (chrome-extension)
+        run: pnpm --filter @slideglance/chrome-extension run typecheck
+      - name: fmt:check (chrome-extension)
+        run: pnpm --filter @slideglance/chrome-extension run fmt:check
+      - name: typecheck (web-playground)
+        run: pnpm --filter @slideglance/web-playground run typecheck
+      - name: fmt:check (web-playground)
+        run: pnpm --filter @slideglance/web-playground run fmt:check
+      - name: typecheck (desktop-viewer)
+        run: pnpm --filter @slideglance/desktop-viewer run typecheck
+      - name: fmt:check (desktop-viewer)
+        run: pnpm --filter @slideglance/desktop-viewer run fmt:check
+      - name: fmt:check (landing)
+        run: pnpm --filter @slideglance/landing run fmt:check
+      - name: typecheck (builder-reference-example)
+        run: pnpm --filter @slideglance/builder-reference-example run typecheck
+      - name: fmt:check (builder-reference-example)
+        run: pnpm --filter @slideglance/builder-reference-example run fmt:check

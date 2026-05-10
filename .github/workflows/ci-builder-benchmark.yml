@@ -1,4 +1,4 @@
-name: CI - builder Benchmark
+name: CI - builder-benchmark
 
 on:
   push:
@@ -10,6 +10,7 @@ on:
       - "packages/builder/package.json"
       - "packages/builder/scripts/format-bench-comment.ts"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".node-version"
       - ".github/workflows/ci-builder-benchmark.yml"
   pull_request:
@@ -21,12 +22,17 @@ on:
       - "packages/builder/package.json"
       - "packages/builder/scripts/format-bench-comment.ts"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".node-version"
       - ".github/workflows/ci-builder-benchmark.yml"
 
 permissions:
   contents: read
   pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   benchmark:

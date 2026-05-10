@@ -2,7 +2,7 @@ name: CI - vscode-extension
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "apps/vscode-extension/**"
       - "packages/builder/src/**"
@@ -14,7 +14,7 @@ on:
       - ".node-version"
       - ".github/workflows/ci-vscode-extension.yml"
   pull_request:
-    branches: ["main"]
+    branches: [main]
     paths:
       - "apps/vscode-extension/**"
       - "packages/builder/src/**"
@@ -25,6 +25,13 @@ on:
       - "packages/builder/tsconfig.json"
       - ".node-version"
       - ".github/workflows/ci-vscode-extension.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
