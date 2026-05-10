@@ -1,0 +1,17 @@
+{
+  "name": "@slideglance/builder-reference-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "XML reference deck generated with @slideglance/builder.",
+  "scripts": {
+    "build": "tsx build.ts"
+  },
+  "dependencies": {
+    "@slideglance/builder": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "tsx": "4.21.0"
+  }
+}

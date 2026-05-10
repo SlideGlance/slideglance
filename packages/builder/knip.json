@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/convertFontToBase64.ts",
+    "scripts/generate-icon-data.ts",
+    "scripts/format-bench-comment.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "vrt/**/*.ts",
+    "preview/**/*.ts",
+    "scripts/docs-images/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "ignoreBinaries": ["eslint", "knip", "prettier", "tsc"],
+  "ignoreDependencies": ["typescript-eslint"],
+  "vitest": {
+    "config": ["vitest.config.ts"]
+  },
+  "rules": {
+    "exports": "warn"
+  }
+}

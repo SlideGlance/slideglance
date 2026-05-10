@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "apps/*"
+  - "examples/*"
 
 # Single source of truth for npm dependency versions used in 2+
 # packages. Reference from any package.json with `"react": "catalog:"`

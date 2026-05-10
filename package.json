@@ -5,6 +5,7 @@
   "author": "Taehwan Kwag",
   "private": true,
   "description": "slideglance monorepo root — orchestrates the Rust workspace + the JS packages.",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "version:sync": "node scripts/sync-versions.mjs",
     "version:check": "node scripts/sync-versions.mjs --check",
@@ -27,5 +28,28 @@
   "engines": {
     "node": ">=18",
     "pnpm": ">=8"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.29.8",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "jiti": "^2.6.1",
+    "knip": "^6.3.0",
+    "prettier": "3.8.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "diff@>=6.0.0 <8.0.3": ">=8.0.3",
+      "serialize-javascript@<7.0.5": ">=7.0.5",
+      "flatted@<=3.4.1": ">=3.4.2",
+      "brace-expansion@<1.1.13": "1.1.13",
+      "brace-expansion@>=2.0.0 <2.0.3": "2.0.3",
+      "path-to-regexp@>=8.0.0 <8.4.0": ">=8.4.0"
+    }
   }
 }

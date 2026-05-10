@@ -1,0 +1,106 @@
+{
+  "name": "@slideglance/builder",
+  "version": "0.1.0",
+  "description": "Declarative slide builder: XML DSL with a Flexbox layout engine, compiled to PPTX.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "dist-schema",
+    "README.md",
+    "LICENSE"
+  ],
+  "homepage": "https://github.com/SlideGlance/slideglance#readme",
+  "bugs": {
+    "url": "https://github.com/SlideGlance/slideglance/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "packages/builder"
+  },
+  "license": "MIT",
+  "keywords": [
+    "powerpoint",
+    "pptx",
+    "presentation",
+    "slides",
+    "typescript",
+    "declarative",
+    "flexbox",
+    "layout",
+    "office",
+    "xml",
+    "dsl",
+    "slideglance"
+  ],
+  "author": "slideglance",
+  "contributors": [
+    "Hiroki Sakabe (original @slideglance/builder author)"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "codegen": "tsx scripts/codegen.ts",
+    "codegen:check": "tsx scripts/codegen.ts --check",
+    "prepublishOnly": "pnpm run codegen:check && pnpm run build && pnpm run lint && pnpm run fmt:check && pnpm run typecheck && pnpm run test:run",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "knip": "knip",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "vrt": "tsx vrt/runVrt.ts",
+    "vrt:update": "tsx vrt/runVrt.ts --update",
+    "vrt:docker": "docker compose build vrt && docker compose run --rm vrt",
+    "vrt:docker:update": "docker compose build vrt-update && docker compose run --rm vrt-update",
+    "preview": "tsx preview/lib/previewPptx.ts",
+    "preview:docker": "docker compose build preview && docker compose run --rm preview",
+    "docs:images": "tsx scripts/docs-images/generateNodeImages.ts",
+    "docs:images:docker": "docker compose run --rm docs-images",
+    "docs:images:docker:update": "docker compose build docs-images && docker compose run --rm docs-images",
+    "docs:images:vrt": "tsx scripts/docs-images/generateNodeImages.ts --check",
+    "docs:images:vrt:docker": "docker compose build docs-images-vrt && docker compose run --rm docs-images-vrt",
+    "size": "size-limit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@size-limit/file": "^12.1.0",
+    "@types/node": "^25.6.2",
+    "@types/pngjs": "6.0.5",
+    "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/ui": "^2.1.0",
+    "lucide-static": "^1.14.0",
+    "pixelmatch": "7.1.0",
+    "pngjs": "7.0.0",
+    "size-limit": "^12.1.0",
+    "tsx": "4.21.0",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.59.2",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
+    "@slideglance/measure": "workspace:*",
+    "fast-xml-parser": "^5.7.3",
+    "image-size": "2.0.2",
+    "jszip": "^3.10.1",
+    "pptxgenjs": "4.0.1",
+    "yoga-layout": "3.2.1",
+    "zod": "^4.4.3"
+  }
+}

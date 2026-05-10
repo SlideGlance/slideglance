@@ -1,0 +1,141 @@
+{
+  "name": "@slideglance/vscode-extension",
+  "private": true,
+  "displayName": "Slide Builder",
+  "description": "Live preview for slideglance/builder XML presentations (slideglance/viewer-backed)",
+  "version": "0.1.0",
+  "publisher": "slideglance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "apps/vscode-extension"
+  },
+  "engines": {
+    "node": ">=20",
+    "vscode": "^1.85.0"
+  },
+  "icon": "icon.png",
+  "categories": [
+    "Visualization"
+  ],
+  "keywords": [
+    "presentation",
+    "powerpoint",
+    "pptx",
+    "preview"
+  ],
+  "galleryBanner": {
+    "color": "#7C3AED",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onLanguage:xml",
+    "onCustomEditor:slideBuilder.pptxViewer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "xml",
+        "extensions": [
+          ".sgx"
+        ],
+        "aliases": [
+          "SlideGlance XML"
+        ]
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "slideBuilder.pptxViewer",
+        "displayName": "Slide Builder PPTX Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.pptx"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "slideBuilder.openPreview",
+        "title": "Slide Builder: Open Preview",
+        "icon": {
+          "dark": "icons/preview-dark.svg",
+          "light": "icons/preview-light.svg"
+        }
+      },
+      {
+        "command": "slideBuilder.refreshPreview",
+        "title": "Slide Builder: Refresh Preview",
+        "icon": {
+          "dark": "icons/refresh-dark.svg",
+          "light": "icons/refresh-light.svg"
+        }
+      },
+      {
+        "command": "slideBuilder.exportPptx",
+        "title": "Slide Builder: Export PPTX",
+        "icon": {
+          "dark": "icons/export-dark.svg",
+          "light": "icons/export-light.svg"
+        }
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "slideBuilder.isActive",
+          "command": "slideBuilder.openPreview",
+          "group": "navigation"
+        },
+        {
+          "when": "slideBuilder.isActive",
+          "command": "slideBuilder.exportPptx",
+          "group": "navigation"
+        },
+        {
+          "when": "activeWebviewPanelId == 'slideBuilderPreview'",
+          "command": "slideBuilder.refreshPreview",
+          "group": "navigation"
+        },
+        {
+          "when": "activeWebviewPanelId == 'slideBuilderPreview'",
+          "command": "slideBuilder.exportPptx",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build:host": "node esbuild.mjs",
+    "build:webview": "vite build --config vite.webview.config.ts",
+    "build": "pnpm run build:webview && pnpm run build:host",
+    "watch:host": "node esbuild.mjs --watch",
+    "lint": "eslint",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@slideglance/builder": "workspace:*",
+    "@slideglance/core": "workspace:*",
+    "@slideglance/measure": "workspace:*",
+    "@slideglance/viewer": "workspace:*",
+    "@types/node": "^25",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/vscode": "^1.85.0",
+    "@vitejs/plugin-react": "catalog:",
+    "esbuild": "^0.28.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.58.0",
+    "vite": "catalog:",
+    "vite-plugin-top-level-await": "catalog:",
+    "vite-plugin-wasm": "catalog:"
+  }
+}
