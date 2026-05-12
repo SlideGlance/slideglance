@@ -8,6 +8,10 @@
  * recompute them.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   ALL_COMPILED_NODES,
   ALL_COMPILED_META,
@@ -18,6 +22,7 @@ import type {
   CoerceType,
 } from "../registry/defineNode.ts";
 import type { CompiledMetaDefinition } from "../registry/defineMeta.ts";
+import { SEE_ALSO, type SeeAlsoEntry } from "./seeAlso.ts";
 
 interface WalkedRegistry {
   readonly nodes: readonly CompiledNodeDefinition[];
@@ -96,4 +101,48 @@ export function coerceToXsdSimpleType(coerce: CoerceType): {
       // These are simple enums, emitted inline via the attribute's `enum` field.
       return { named: null, primitive: "xs:string" };
   }
+}
+
+/**
+ * Aggregate reference model consumed by the HTML emitter. Built on top of
+ * `walkRegistry()`, this adds metadata (namespace, package version), a
+ * pre-parsed see-also table, and placeholders for the reverse index +
+ * source locations populated by later tasks.
+ */
+export interface ReferenceModel {
+  readonly generatedAt: string;
+  readonly packageVersion: string;
+  readonly namespace: string;
+  readonly nodes: readonly CompiledNodeDefinition[];
+  readonly meta: readonly CompiledMetaDefinition[];
+  readonly usedBy: ReadonlyMap<
+    string,
+    ReadonlyArray<{ parent: string; cardinality: string }>
+  >;
+  readonly seeAlso: ReadonlyMap<string, ReadonlyArray<SeeAlsoEntry>>;
+  readonly sourceLocations: ReadonlyMap<string, { file: string; line: number }>;
+}
+
+const BUILDER_NS = "urn:slideglance:builder:v1";
+
+function readPackageVersion(): string {
+  const HERE = fileURLToPath(import.meta.url);
+  const pkgPath = resolve(HERE, "../../../package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { version: string };
+  return pkg.version;
+}
+
+export function buildReferenceModel(): ReferenceModel {
+  const r = walkRegistry();
+  return {
+    generatedAt: "",
+    packageVersion: readPackageVersion(),
+    namespace: BUILDER_NS,
+    nodes: r.nodes,
+    meta: r.meta,
+    // Populated by subsequent tasks (T4 usedBy, T5 sourceLocations).
+    usedBy: new Map(),
+    seeAlso: new Map(Object.entries(SEE_ALSO)),
+    sourceLocations: new Map(),
+  };
 }
