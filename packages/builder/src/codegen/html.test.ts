@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderElementPage } from "./html.ts";
+import { renderElementPage, renderIndexPage } from "./html.ts";
 import { buildReferenceModel } from "./walkRegistry.ts";
 
 describe("renderElementPage(Text)", () => {
@@ -8,7 +8,9 @@ describe("renderElementPage(Text)", () => {
   const html = renderElementPage(text, model);
 
   it("has the correct <title>", () => {
-    expect(html).toContain("<title>&lt;Text&gt; · Builder XML Reference</title>");
+    expect(html).toContain(
+      "<title>&lt;Text&gt; · Builder XML Reference</title>",
+    );
   });
 
   it("renders FOUC theme bootstrap script", () => {
@@ -23,7 +25,9 @@ describe("renderElementPage(Text)", () => {
   });
 
   it("wraps the sidebar in nav[aria-label]", () => {
-    expect(html).toContain(`<nav class="ref-sidebar" aria-label="Builder elements">`);
+    expect(html).toContain(
+      `<nav class="ref-sidebar" aria-label="Builder elements">`,
+    );
   });
 
   it("marks the current page with aria-current=page", () => {
@@ -59,7 +63,9 @@ describe("renderElementPage(Text)", () => {
   });
 
   it("renders Source section linking to compiled/index.ts", () => {
-    expect(html).toMatch(/blob\/main\/packages\/builder\/src\/registry\/compiled\/index\.ts#L\d+/);
+    expect(html).toMatch(
+      /blob\/main\/packages\/builder\/src\/registry\/compiled\/index\.ts#L\d+/,
+    );
   });
 });
 
@@ -74,5 +80,37 @@ describe("renderElementPage(SlideGlance) — empty usedBy branch", () => {
 
   it("omits See also section when no entry exists", () => {
     expect(html).not.toMatch(/<h2[^>]*>See also/);
+  });
+});
+
+describe("renderIndexPage", () => {
+  const model = buildReferenceModel();
+  const html = renderIndexPage(model);
+
+  it("renders 29 cards total (16 nodes + 13 meta)", () => {
+    const cards = html.match(/class="ref-card"/g) ?? [];
+    expect(cards).toHaveLength(29);
+  });
+
+  it("includes data-haystack on every card with lowercased content", () => {
+    const matches = [...html.matchAll(/data-haystack="([^"]+)"/g)];
+    expect(matches).toHaveLength(29);
+    for (const m of matches) {
+      const haystack = m[1];
+      expect(haystack).toBe(haystack.toLowerCase());
+    }
+  });
+
+  it("includes the filter input with id=ref-q", () => {
+    expect(html).toContain('id="ref-q"');
+  });
+
+  it("renders empty-state region with aria-live=polite", () => {
+    expect(html).toContain('aria-live="polite"');
+  });
+
+  it("includes both group headings", () => {
+    expect(html).toContain(">Visual nodes</h2>");
+    expect(html).toContain(">Meta &amp; composition</h2>");
   });
 });
