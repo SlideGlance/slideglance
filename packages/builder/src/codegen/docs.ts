@@ -1,6 +1,6 @@
 /**
- * Markdown docs generator — emits `docs/nodes.md` describing every node
- * and meta element from the compiled registry.
+ * Markdown docs generator — emits `reference.md` (at the package root)
+ * describing every node and meta element from the compiled registry.
  */
 
 import type {

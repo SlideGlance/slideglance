@@ -1,11 +1,15 @@
 # @slideglance/landing
 
-Static landing page for SlideGlance, hosted at
-<https://slideglance.github.io/slideglance/>. Pure HTML + CSS + a small
-Node build script — no framework, no bundler.
+Static landing page for SlideGlance, hosted at <https://slideglance.github.io/slideglance/>. Pure HTML + CSS + a small Node build script — no framework, no bundler.
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance)
-project. Private / not published.
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project. Private / not published.
+
+## What it does
+
+Renders the project's marketing page with an embedded iframe overlay
+that loads the production web playground. The page's only build
+dependency is Node — output is pure static files that GitHub Pages
+serves directly.
 
 ## Build
 
@@ -13,8 +17,8 @@ project. Private / not published.
 pnpm --filter @slideglance/landing build
 ```
 
-`build.mjs` stages `index.html`, `styles.css`, the SlideGlance icon, and
-the Chrome Web Store screenshots into `dist/`. The Pages workflow
+`build.mjs` stages `index.html`, `styles.css`, the SlideGlance icon,
+and the Chrome Web Store screenshots into `dist/`. The Pages workflow
 (`pages.yml`) then mirrors the production playground build into
 `dist/playground/` so the overlay iframe on the landing page has
 something to load.

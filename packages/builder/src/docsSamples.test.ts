@@ -6,7 +6,10 @@ import { buildPptx } from "./buildPptx.ts";
 import type { Diagnostic } from "./diagnostics.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const NODES_MD_PATH = resolve(__dirname, "../docs/nodes.md");
+const XML_REFERENCE_MD_PATH = resolve(
+  __dirname,
+  "../docs/en/xml-reference.md",
+);
 
 type Sample = { index: number; section: string; xml: string };
 
@@ -44,19 +47,9 @@ function extractXmlSamples(md: string): Sample[] {
 
 // Icon: requires @resvg/resvg-wasm which is not resolvable under tsx/vitest
 //       (the dist build path covers it; see issue #646 — out of scope).
-// Image: the sample fetches a real URL via prefetchImageSize, which would make
-//        the test depend on network availability. Skip to keep the test hermetic.
-// Slots for long or structured content / Conditionals & Iteration / File format:
-//        xml snippets here are intentionally partial (showing syntax only, not
-//        standalone docs). End-to-end coverage for the directives lives in
-//        `parseXml/templates.test.ts`.
-const SKIP_SECTIONS = new Set([
-  "Icon",
-  "Image",
-  "Slots for long or structured content",
-  "Conditionals & Iteration (`<If>`, `<Choose>`, `<Foreach>`)",
-  "File format",
-]);
+// Image: samples fetch real URLs via prefetchImageSize, which would make the
+//        test depend on network availability. Skip to keep the test hermetic.
+const SKIP_SECTIONS = new Set(["`<Icon>`", "`<Image>`"]);
 
 // Samples that use <Import src="..."/> require a caller-supplied resolver that
 // the test has no way to mock; skip them.
@@ -65,17 +58,48 @@ function usesImport(xml: string): boolean {
   return /<Import\b/.test(xml) || /^\s*<Fragment\b/.test(xml);
 }
 
-const md = readFileSync(NODES_MD_PATH, "utf8");
+// Samples that show syntax fragments (e.g. `<Style>`, `<Master>`, `<Slot>`,
+// `<Use>`, `<If>`, `<Foreach>`, `<Notes>`) outside a containing slide are
+// partial — they illustrate one element only, not a full standalone document.
+function isPartialSnippet(xml: string): boolean {
+  const trimmed = xml.trim();
+  if (!trimmed.startsWith("<")) return true;
+  const root = trimmed.slice(1).match(/^[A-Za-z]+/)?.[0];
+  if (!root) return true;
+  const STANDALONE_ROOTS = new Set([
+    "SlideGlance",
+    "VStack",
+    "HStack",
+    "Layer",
+    "Slide",
+    "Text",
+    "Ul",
+    "Ol",
+    "Image",
+    "Table",
+    "Shape",
+    "Chart",
+    "Line",
+    "Icon",
+    "Svg",
+  ]);
+  return !STANDALONE_ROOTS.has(root);
+}
+
+const md = readFileSync(XML_REFERENCE_MD_PATH, "utf8");
 const samples = extractXmlSamples(md);
 
-describe("docs/nodes.md xml samples", () => {
-  it("には少なくとも 1 つの xml サンプルが含まれる", () => {
+describe("docs/en/xml-reference.md xml samples", () => {
+  it("contains at least one xml sample", () => {
     expect(samples.length).toBeGreaterThan(0);
   });
 
   for (const sample of samples) {
-    const skip = SKIP_SECTIONS.has(sample.section) || usesImport(sample.xml);
-    const title = `[${sample.index}] ${sample.section} の xml サンプルが diagnostics なしで buildPptx できる`;
+    const skip =
+      SKIP_SECTIONS.has(sample.section) ||
+      usesImport(sample.xml) ||
+      isPartialSnippet(sample.xml);
+    const title = `[${sample.index}] ${sample.section} sample builds without diagnostics`;
     (skip ? it.skip : it)(title, async () => {
       const { diagnostics } = await buildPptx(sample.xml, { w: 1280, h: 720 });
       // Deprecation warnings from legacy attribute forms in samples are allowed.

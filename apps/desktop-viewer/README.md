@@ -1,13 +1,18 @@
 # @slideglance/desktop-viewer
 
-Tauri-based desktop application that opens `.pptx` files locally — no
-server, no upload — backed by [`@slideglance/viewer`](../../packages/viewer)
-and a native Rust renderer running inside the Tauri shell.
+Native desktop application that opens `.pptx` files locally — no server, no upload — built on Tauri 2 with [`@slideglance/viewer`](../../packages/viewer) inside.
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance)
-project. Private / not published.
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project. Private / not published.
 
-## Run locally
+## What it does
+
+Wraps the same React viewer shell as the Chrome extension and web
+playground, but runs it inside a native window with OS-level menubar
+integration, drag-drop, and recent-files state. The Rust core executes
+directly in the Tauri shell (rather than as WebAssembly inside a
+sandboxed tab), so heavier decks render with less memory pressure.
+
+## Develop
 
 ```sh
 # from the workspace root
@@ -26,7 +31,7 @@ pnpm --filter @slideglance/desktop-viewer tauri:build
 
 The CI workflow `tauri-build.yml` runs the same command across
 ubuntu-latest / macos-latest / windows-latest matrices and uploads the
-per-OS installers as artifacts.
+per-OS installers (`.dmg`, `.msi`, `.AppImage`) as artifacts.
 
 ## How it differs from the web playground
 

@@ -1,7 +1,19 @@
 # @slideglance/viewer
 
-Framework-agnostic `<pptx-viewer>` Web Component backed by
-[`@slideglance/core`](https://npmjs.com/package/@slideglance/core).
+Framework-agnostic `<pptx-viewer>` Web Component (with React entry points) backed by [`@slideglance/core`](https://npmjs.com/package/@slideglance/core).
+
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project — published to npm.
+
+## What it does
+
+A drop-in viewer for `.pptx` files that handles parsing, rendering,
+worker offloading, and the surrounding chrome (toolbar, thumbnails,
+zoom, search, theme, print, PDF export). The bundle registers a
+`<pptx-viewer>` Web Component and also exports a React component
+(`<PptxPresentation>`) for React hosts.
+
+All rendering is local — the package never uploads files or makes
+network requests beyond the initial wasm bundle fetch.
 
 ## Install
 
@@ -9,7 +21,7 @@ Framework-agnostic `<pptx-viewer>` Web Component backed by
 pnpm add @slideglance/viewer @slideglance/core lit
 ```
 
-## Use
+## Use (Web Component)
 
 ```html
 <pptx-viewer src="/decks/example.pptx" current-slide="1"></pptx-viewer>
@@ -20,7 +32,7 @@ pnpm add @slideglance/viewer @slideglance/core lit
 
 Or programmatically:
 
-```js
+```ts
 import "@slideglance/viewer";
 
 const viewer = document.querySelector("pptx-viewer");
@@ -28,6 +40,21 @@ viewer.setBuffer(uint8ArrayOfPptxBytes);
 viewer.addEventListener("slidechange", (ev) => {
   console.log(ev.detail.current, "/", ev.detail.total);
 });
+```
+
+## Use (React)
+
+```tsx
+import { PptxPresentation, createWorkerController } from "@slideglance/viewer";
+import { useEffect, useState } from "react";
+
+function App({ src }: { src: Uint8Array }) {
+  const [controller, setController] = useState(null);
+  useEffect(() => {
+    void createWorkerController().then(setController);
+  }, []);
+  return <PptxPresentation controller={controller} src={src} />;
+}
 ```
 
 ## Properties
@@ -51,8 +78,7 @@ viewer.addEventListener("slidechange", (ev) => {
 ## Events
 
 - `slidechange` — `{ current, previous, total }`
-- `loadprogress` — `{ phase, message? }` where `phase` is one of
-  `fetch / wasm-init / parse / render / done`.
+- `loadprogress` — `{ phase, message? }` where `phase` is one of `fetch / wasm-init / parse / render / done`.
 - `error` — `{ phase, message }`.
 
 ## Keyboard / mouse / touch
@@ -78,6 +104,10 @@ pptx-viewer {
 }
 ```
 
+## Status
+
+Pre-release — APIs may change before 1.0.
+
 ## License
 
-MIT.
+MIT — see [LICENSE](./LICENSE).

@@ -1,12 +1,10 @@
 # slideglance-renderer
 
-PPTX model → SVG renderer for SlideGlance. Deterministic, supports
-both text-mode and path-mode output.
+PPTX model → SVG renderer. Deterministic, supports both text-mode and path-mode output.
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance)
-Rust crate ecosystem.
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project — published to crates.io once stable.
 
-## Role
+## What it does
 
 Takes a `slideglance_model::Slide` (or full `Presentation`) and emits
 SVG bytes. The slide-level entry point `slide::render_slide_to_svg`

@@ -1,20 +1,17 @@
 # slideglance-emf
 
-EMF / WMF raster-embed extraction for SlideGlance — DIB → PNG conversion
-of bitmap-wrap metafiles.
+EMF / WMF raster-embed extraction — DIB → PNG conversion of bitmap-wrap metafiles.
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance)
-Rust crate ecosystem.
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project — published to crates.io once stable.
 
-## Role
+## What it does
 
 PowerPoint frequently wraps a single bitmap (a screenshot, an exported
 chart, a pasted picture) inside an EMF or WMF metafile. The metafile
 contains exactly one bitmap-bearing record:
 
-- EMF: `EMR_STRETCHDIBITS`, `EMR_BITBLT`, `EMR_STRETCHBLT`,
-  `EMR_SETDIBITSTODEVICE`, `EMR_TRANSPARENTBLT`
-- WMF: `META_DIBBITBLT`, `META_DIBSTRETCHBLT`, `META_STRETCHDIB`
+- **EMF**: `EMR_STRETCHDIBITS`, `EMR_BITBLT`, `EMR_STRETCHBLT`, `EMR_SETDIBITSTODEVICE`, `EMR_TRANSPARENTBLT`.
+- **WMF**: `META_DIBBITBLT`, `META_DIBSTRETCHBLT`, `META_STRETCHDIB`.
 
 The Device-Independent-Bitmap payload is reassembled into a standard
 `.bmp` file and converted to PNG.

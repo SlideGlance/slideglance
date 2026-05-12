@@ -16,3 +16,12 @@ runtime via `slideglance_font::bundled_font_licenses()`.
 The SIL OFL applies to the bundled font binaries only; it does not
 extend to the rest of this software, which is governed solely by the
 MIT License above.
+
+----------------------------------------------------------------------
+
+The `@slideglance/builder` package (packages/builder/) was originally
+derived from the `pom` library by Hiroki Sakabe
+(Copyright (c) 2025 hirokisakabe, MIT License). The package has since
+been substantially rewritten and is distributed under the project's
+MIT License. The original author is credited in
+packages/builder/LICENSE and packages/builder/package.json.

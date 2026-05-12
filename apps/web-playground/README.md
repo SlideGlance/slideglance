@@ -1,21 +1,14 @@
 # @slideglance/web-playground
 
-Drag-and-drop SPA for evaluating SlideGlance against arbitrary `.pptx`
-decks. Hosted at
-<https://slideglance.github.io/slideglance/playground/> via the Pages
-workflow.
+Drag-and-drop SPA for evaluating SlideGlance against arbitrary `.pptx` decks. Hosted at <https://slideglance.github.io/slideglance/playground/> via the Pages workflow.
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance)
-project. Private / not published.
+Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project. Private / not published.
 
-## What it demonstrates
+## What it does
 
-- The same Rust + WebAssembly core (`@slideglance/core`) that the
-  Chrome extension and desktop viewer use, exposed as a
-  drag-and-drop SPA.
+- Exposes the same Rust + WebAssembly core (`@slideglance/core`) that the Chrome extension and desktop viewer use, in a drag-and-drop SPA.
 - Runs entirely in the browser tab — no upload, no server, no account.
-- Fidelity benchmark: drag any `.pptx` and compare the rendered SVG
-  against PowerPoint / Keynote / Google Slides side-by-side.
+- Acts as a fidelity benchmark: drag any `.pptx` and compare the rendered SVG against PowerPoint / Keynote / Google Slides side-by-side.
 
 ## Develop
 
