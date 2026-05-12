@@ -335,19 +335,23 @@ console.log(diagnostics);</code></pre>
         </div>
 
         <p class="blocks-followup">
-          The full per-attribute table is the auto-generated
+          <a class="btn btn-secondary" href="./reference/"
+            >Browse the full XML reference <span aria-hidden="true">→</span></a
+          >
+          Every node, attribute, type, and child relation is generated from
+          the same
+          <a
+            href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts"
+            rel="noopener"
+            >compiled registry</a
+          >
+          that drives the parser, XSD, and JSON Schema. Prefer raw markdown?
           <a
             href="https://unpkg.com/@slideglance/builder@^0.1/reference.md"
             rel="noopener"
             ><code>reference.md</code></a
           >
-          (shipped alongside the XSD on every release). The hand-curated
-          patterns guide lives in
-          <a
-            href="https://github.com/SlideGlance/slideglance/tree/main/packages/builder/docs"
-            rel="noopener"
-            >packages/builder/docs</a
-          >.
+          still ships on every release.
         </p>
 
         <ul class="feature-grid">
