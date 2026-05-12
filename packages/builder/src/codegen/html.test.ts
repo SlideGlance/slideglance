@@ -94,14 +94,14 @@ describe("renderIndexPage", () => {
   const model = buildReferenceModel();
   const html = renderIndexPage(model);
 
-  it("renders 29 cards total (16 nodes + 13 meta)", () => {
+  it("renders 30 cards total (17 nodes + 13 meta)", () => {
     const cards = html.match(/class="ref-card"/g) ?? [];
-    expect(cards).toHaveLength(29);
+    expect(cards).toHaveLength(30);
   });
 
   it("includes data-haystack on every card with lowercased content", () => {
     const matches = [...html.matchAll(/data-haystack="([^"]+)"/g)];
-    expect(matches).toHaveLength(29);
+    expect(matches).toHaveLength(30);
     for (const m of matches) {
       const haystack = m[1];
       expect(haystack).toBe(haystack.toLowerCase());
@@ -125,13 +125,14 @@ describe("renderIndexPage", () => {
 describe("generateReferenceHtml", () => {
   const files = generateReferenceHtml();
 
-  it("produces 29 HTML files + styles.css + scripts/site.js", () => {
+  it("produces 30 HTML files + styles.css + scripts/site.js", () => {
     const html = [...files.keys()].filter((k) => k.endsWith(".html"));
     expect(html.sort()).toContain("index.html");
     expect(html).toContain("text/index.html");
     expect(html).toContain("slideglance/index.html");
     expect(html).toContain("document/index.html");
-    expect(html).toHaveLength(30);
+    expect(html).toContain("connector/index.html");
+    expect(html).toHaveLength(31);
   });
 
   it("produces styles.css and scripts/site.js", () => {

@@ -33,6 +33,9 @@
     },
     {
       "$ref": "#/$defs/Line"
+    },
+    {
+      "$ref": "#/$defs/Connector"
     }
   ],
   "$defs": {
@@ -378,6 +381,10 @@
               "pattern": "^\\d+%$"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
         "__nodeId": {
           "type": "number"
@@ -859,6 +866,10 @@
               "pattern": "^\\d+%$"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
         "__nodeId": {
           "type": "number"
@@ -1412,6 +1423,10 @@
               "pattern": "^\\d+%$"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
         "__nodeId": {
           "type": "number"
@@ -1990,6 +2005,10 @@
             }
           ]
         },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -2385,6 +2404,10 @@
               "pattern": "^\\d+%$"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
         "__nodeId": {
           "type": "number"
@@ -4700,6 +4723,10 @@
             }
           ]
         },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -5066,6 +5093,10 @@
               "pattern": "^\\d+%$"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
         "__nodeId": {
           "type": "number"
@@ -5740,6 +5771,10 @@
             }
           ]
         },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -6403,6 +6438,10 @@
             }
           ]
         },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -6868,6 +6907,10 @@
             }
           ]
         },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -6961,6 +7004,467 @@
         "y1",
         "x2",
         "y2"
+      ],
+      "additionalProperties": false
+    },
+    "Connector": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
+        },
+        "minW": {
+          "type": "number"
+        },
+        "maxW": {
+          "type": "number"
+        },
+        "minH": {
+          "type": "number"
+        },
+        "maxH": {
+          "type": "number"
+        },
+        "padding": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "top": {
+                  "type": "number"
+                },
+                "right": {
+                  "type": "number"
+                },
+                "bottom": {
+                  "type": "number"
+                },
+                "left": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "margin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "top": {
+                  "type": "number"
+                },
+                "right": {
+                  "type": "number"
+                },
+                "bottom": {
+                  "type": "number"
+                },
+                "left": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "backgroundImage": {
+          "type": "object",
+          "properties": {
+            "src": {
+              "type": "string"
+            },
+            "sizing": {
+              "type": "string",
+              "enum": [
+                "cover",
+                "contain"
+              ]
+            }
+          },
+          "required": [
+            "src"
+          ],
+          "additionalProperties": false
+        },
+        "border": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "zIndex": {
+          "type": "number"
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "relative",
+            "absolute"
+          ]
+        },
+        "top": {
+          "type": "number"
+        },
+        "right": {
+          "type": "number"
+        },
+        "bottom": {
+          "type": "number"
+        },
+        "left": {
+          "type": "number"
+        },
+        "alignSelf": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
+        },
+        "shadow": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "outer",
+                "inner"
+              ]
+            },
+            "opacity": {
+              "type": "number"
+            },
+            "blur": {
+              "type": "number"
+            },
+            "angle": {
+              "type": "number"
+            },
+            "offset": {
+              "type": "number"
+            },
+            "color": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "master": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "isDecorative": {
+          "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "__nodeId": {
+          "type": "number"
+        },
+        "type": {
+          "type": "string",
+          "const": "connector"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "elbow",
+            "curved"
+          ]
+        },
+        "fromSide": {
+          "type": "string",
+          "enum": [
+            "top",
+            "right",
+            "bottom",
+            "left"
+          ]
+        },
+        "toSide": {
+          "type": "string",
+          "enum": [
+            "top",
+            "right",
+            "bottom",
+            "left"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "lineWidth": {
+          "type": "number"
+        },
+        "dashType": {
+          "type": "string",
+          "enum": [
+            "solid",
+            "dash",
+            "dashDot",
+            "lgDash",
+            "lgDashDot",
+            "lgDashDotDot",
+            "sysDash",
+            "sysDot"
+          ]
+        },
+        "beginArrow": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "arrow",
+                    "triangle",
+                    "diamond",
+                    "oval",
+                    "stealth"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "endArrow": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "arrow",
+                    "triangle",
+                    "diamond",
+                    "oval",
+                    "stealth"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "from",
+        "to"
       ],
       "additionalProperties": false
     }

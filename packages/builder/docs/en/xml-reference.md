@@ -208,6 +208,30 @@ Straight line / arrow between two points.
 
 Coordinates are absolute within the parent container (slide-absolute when nested at the slide root).
 
+### `<Connector>`
+
+Smart line that binds to two shapes by their `id` and stays attached when the shapes move in PowerPoint. Compiles to a real PPTX `<p:cxnSp>` with `stCxn`/`endCxn` bindings, so dragging a shape in PowerPoint re-routes the connector automatically.
+
+```xml
+<HStack gap="80" padding="32">
+  <Shape id="A" shapeType="rect" w="120" h="60" fill.color="DBEAFE"/>
+  <Shape id="B" shapeType="rect" w="120" h="60" fill.color="DBEAFE"/>
+  <Connector from="A" to="B" kind="elbow" endArrow="true"/>
+</HStack>
+```
+
+| Attribute | Values | Notes |
+| --------- | ------ | ----- |
+| `from`, `to` | author `id` of another node | Required. The referenced ids must exist on the same slide. |
+| `kind` | `straight` (default), `elbow`, `curved` | Picks `straightConnector1` / `bentConnectorN` / `curvedConnectorN`; the segment count `N` follows the side pair. |
+| `fromSide`, `toSide` | `top` \| `right` \| `bottom` \| `left` | When omitted, the renderer auto-picks the dominant axis from the two shapes' bounding boxes. |
+| `color`, `lineWidth`, `dashType` | same vocabulary as `<Line>` | Visual style. |
+| `beginArrow`, `endArrow` | `true` / `false` / `{ type }` | `triangle` default when `true`. |
+
+Add `id="..."` to any node you want a Connector to attach to. `id` is XML-friendly (`[A-Za-z_][A-Za-z0-9_-]*`) and must be unique within a slide.
+
+The renderer drops connectors whose `from`/`to` cannot be resolved on the same slide and surfaces `UNKNOWN_CONNECTOR_ENDPOINT` (or `INVALID_CONNECTOR_SELF_REF` for `from === to`, `DUPLICATE_NODE_ID` for repeated ids) in the build diagnostics.
+
 ### `<Chart>`
 
 Native PowerPoint charts — bar, line, pie, area, doughnut, radar.

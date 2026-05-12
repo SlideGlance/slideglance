@@ -290,7 +290,7 @@ function renderPositionedTree(
     // decide whether the invisible hit-area is needed.
     let nodeSurfaceEmitted = false;
 
-    if (node.type !== "line") {
+    if (node.type !== "line" && node.type !== "connector") {
       if (
         isRoot &&
         applyRootBackground &&
@@ -633,7 +633,11 @@ export async function renderPptx(
   for (const data of pages) {
     const masterName = data.master ?? defaultMasterName;
     const slide = masterName ? pptx.addSlide({ masterName }) : pptx.addSlide();
-    const ctx: RenderContext = { slide, pptx, buildContext };
+    // Pre-walk this slide tree to gather author-id -> bbox so the
+    // Connector renderer can resolve from / to without re-walking. The
+    // index is rebuilt per slide; ids are slide-scoped.
+    const idIndex = buildSlideIdIndex(data);
+    const ctx: RenderContext = { slide, pptx, buildContext, idIndex };
     if (typeof data.notes === "string") {
       slide.addNotes(data.notes);
     }
@@ -645,4 +649,62 @@ export async function renderPptx(
   }
 
   return pptx;
+}
+
+/**
+ * Walk a positioned slide tree and collect `id -> bbox` entries. Skips
+ * Connector nodes (no bbox) and resolves duplicates first-wins (the
+ * parseXml pass already emitted a DUPLICATE_NODE_ID diagnostic in that
+ * case).
+ */
+function buildSlideIdIndex(
+  root: PositionedNode,
+): Map<string, import("./types.ts").SlideBBox> {
+  const map = new Map<string, import("./types.ts").SlideBBox>();
+  const walk = (node: PositionedNode): void => {
+    if (
+      node.id !== undefined &&
+      node.type !== "connector" &&
+      !map.has(node.id)
+    ) {
+      const prst =
+        node.type === "shape" ? node.shapeType : pseudoPrstFor(node.type);
+      map.set(node.id, {
+        x: node.x,
+        y: node.y,
+        w: node.w,
+        h: node.h,
+        prst,
+      });
+    }
+    const children = (node as { children?: PositionedNode[] }).children;
+    if (Array.isArray(children)) {
+      for (const child of children) walk(child);
+    }
+  };
+  walk(root);
+  return map;
+}
+
+/**
+ * Best-effort PPTX preset name for non-Shape positioned nodes. Used by
+ * the post-process step to pick the correct stCxn/endCxn idx. Text /
+ * Ul / Ol / Shape text bodies render as `<p:sp prstGeom prst="rect">`
+ * in pptxgenjs, so rect is the right default. Image / Table / Chart /
+ * Icon / Svg map to non-prstGeom carriers (`<p:pic>`, etc.) — return
+ * undefined and let the post-process pass surface the unknown-idx
+ * diagnostic and fall back to the default idx table.
+ */
+function pseudoPrstFor(type: PositionedNode["type"]): string | undefined {
+  switch (type) {
+    case "text":
+    case "ul":
+    case "ol":
+      return "rect";
+    case "line":
+    case "connector":
+      return undefined;
+    default:
+      return undefined;
+  }
 }

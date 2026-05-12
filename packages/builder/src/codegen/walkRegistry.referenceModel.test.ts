@@ -10,8 +10,8 @@ describe("buildReferenceModel", () => {
     expect(model.generatedAt).toBe("");
   });
 
-  it("preserves registry counts (16 nodes + 13 meta)", () => {
-    expect(model.nodes).toHaveLength(16);
+  it("preserves registry counts (17 nodes + 13 meta)", () => {
+    expect(model.nodes).toHaveLength(17);
     expect(model.meta).toHaveLength(13);
   });
 });

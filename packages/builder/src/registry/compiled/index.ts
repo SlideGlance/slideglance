@@ -25,6 +25,7 @@ import {
   shapeNodeSchema,
   chartNodeSchema,
   lineNodeSchema,
+  connectorNodeSchema,
 } from "../../types.ts";
 
 // ===== Shared attribute groups =====
@@ -105,6 +106,10 @@ const BASE_ATTRS: Record<string, AttributeSpec> = {
   flexBasis: {
     coerce: "length",
     doc: "Yoga flex-basis override (number, percentage, or 'max').",
+  },
+  id: {
+    coerce: "string",
+    doc: "Author-facing identifier for cross-references (e.g. <Connector from=\"...\" to=\"...\"/>). Must be unique within a slide; XML-friendly chars only (no colon).",
   },
 };
 
@@ -374,6 +379,49 @@ const lineCompiled = defineNode({
     beginArrow: { coerce: "lineArrow", dotNotation: true },
     endArrow: { coerce: "lineArrow", dotNotation: true },
   },
+});
+
+const connectorCompiled = defineNode({
+  tag: "Connector",
+  type: "connector",
+  description:
+    "Smart line that binds to two shapes by their `id`. Emits a real PPTX <p:cxnSp> with stCxn/endCxn so PowerPoint reroutes the line automatically when shapes move. The line never participates in flexbox layout — its endpoints are derived from the from/to shapes' positioned boxes.",
+  category: "leaf",
+  schema: connectorNodeSchema,
+  attributes: {
+    ...BASE_ATTRS,
+    from: {
+      coerce: "string",
+      required: true,
+      doc: "id of the source shape on the same slide.",
+    },
+    to: {
+      coerce: "string",
+      required: true,
+      doc: "id of the target shape on the same slide.",
+    },
+    kind: {
+      coerce: "string",
+      enum: ["straight", "elbow", "curved"],
+      doc: "Line geometry. straight = direct line, elbow = orthogonal bent line, curved = smooth bezier. Default is straight.",
+    },
+    fromSide: {
+      coerce: "string",
+      enum: ["top", "right", "bottom", "left"],
+      doc: "Which side of the source shape to attach to. When omitted, the renderer picks the side that points toward the target (auto).",
+    },
+    toSide: {
+      coerce: "string",
+      enum: ["top", "right", "bottom", "left"],
+      doc: "Which side of the target shape to attach to. When omitted, auto.",
+    },
+    color: { coerce: "color" },
+    lineWidth: { coerce: "number" },
+    dashType: { coerce: "borderDash" },
+    beginArrow: { coerce: "lineArrow", dotNotation: true },
+    endArrow: { coerce: "lineArrow", dotNotation: true },
+  },
+  example: `<Shape id="A" shapeType="rect" w="100" h="60"/>\n<Shape id="B" shapeType="rect" w="100" h="60"/>\n<Connector from="A" to="B" kind="elbow" endArrow="true"/>`,
 });
 
 // Container nodes — schema is recursive, so we omit `schema` for codegen
@@ -689,6 +737,7 @@ export const ALL_COMPILED_NODES: readonly CompiledNodeDefinition[] = [
   shapeCompiled,
   chartCompiled,
   lineCompiled,
+  connectorCompiled,
   vstackCompiled,
   hstackCompiled,
   layerCompiled,

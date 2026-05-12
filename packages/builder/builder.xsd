@@ -77,6 +77,7 @@
       <xs:element ref="b:Shape"/>
       <xs:element ref="b:Chart"/>
       <xs:element ref="b:Line"/>
+      <xs:element ref="b:Connector"/>
       <xs:element ref="b:VStack"/>
       <xs:element ref="b:HStack"/>
       <xs:element ref="b:Layer"/>
@@ -166,6 +167,11 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="highlight" type="b:Color" use="optional"/>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="italic" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
@@ -342,6 +348,11 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="highlight" type="b:Color" use="optional"/>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="italic" type="b:Boolean" use="optional"/>
     <xs:attribute name="items" type="xs:string" use="optional">
@@ -518,6 +529,11 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="highlight" type="b:Color" use="optional"/>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="italic" type="b:Boolean" use="optional"/>
     <xs:attribute name="items" type="xs:string" use="optional"/>
@@ -684,6 +700,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
     <xs:attribute name="margin" type="b:Padding" use="optional">
@@ -822,6 +843,11 @@
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
@@ -976,6 +1002,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
     <xs:attribute name="margin" type="b:Padding" use="optional">
@@ -1119,6 +1150,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
     <xs:attribute name="margin" type="b:Padding" use="optional">
@@ -1257,6 +1293,11 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="highlight" type="b:Color" use="optional"/>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="italic" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
@@ -1461,6 +1502,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
     <xs:attribute name="legendFontSize" type="xs:double" use="optional"/>
@@ -1621,6 +1667,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="left" type="xs:double" use="optional"/>
     <xs:attribute name="lineWidth" type="xs:double" use="optional"/>
@@ -1685,6 +1736,191 @@
     <xs:attribute name="class" type="xs:string" use="optional"/>
   </xs:complexType>
   <xs:element name="Line" type="b:Line"/>
+  <xs:complexType name="Connector">
+    <xs:annotation>
+      <xs:documentation>Smart line that binds to two shapes by their `id`. Emits a real PPTX &lt;p:cxnSp&gt; with stCxn/endCxn so PowerPoint reroutes the line automatically when shapes move. The line never participates in flexbox layout — its endpoints are derived from the from/to shapes' positioned boxes.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="alignSelf" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="auto"/>
+          <xs:enumeration value="start"/>
+          <xs:enumeration value="center"/>
+          <xs:enumeration value="end"/>
+          <xs:enumeration value="stretch"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="backgroundColor" type="b:Color" use="optional"/>
+    <xs:attribute name="backgroundImage" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Background image source/sizing.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="beginArrow" type="b:LineArrow" use="optional"/>
+    <xs:attribute name="border" type="b:BorderStyle" use="optional">
+      <xs:annotation>
+        <xs:documentation>Border style (color/width/dashType).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="borderBottom" type="b:BorderStyle" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bottom-only border (color/width/dashType). Composes additively with `border`.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="borderLeft" type="b:BorderStyle" use="optional">
+      <xs:annotation>
+        <xs:documentation>Left-only border (color/width/dashType). Composes additively with `border`.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="borderRadius" type="xs:double" use="optional"/>
+    <xs:attribute name="borderRight" type="b:BorderStyle" use="optional">
+      <xs:annotation>
+        <xs:documentation>Right-only border (color/width/dashType). Composes additively with `border`.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="borderTop" type="b:BorderStyle" use="optional">
+      <xs:annotation>
+        <xs:documentation>Top-only border (color/width/dashType). Composes additively with `border`.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="bottom" type="xs:double" use="optional"/>
+    <xs:attribute name="color" type="b:Color" use="optional"/>
+    <xs:attribute name="dashType" type="b:BorderDash" use="optional"/>
+    <xs:attribute name="endArrow" type="b:LineArrow" use="optional"/>
+    <xs:attribute name="flexBasis" type="b:Length" use="optional">
+      <xs:annotation>
+        <xs:documentation>Yoga flex-basis override (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="flexGrow" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Yoga flex-grow override (defaults to context-aware behavior).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="flexShrink" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>id of the source shape on the same slide.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="fromSide" use="optional">
+      <xs:annotation>
+        <xs:documentation>Which side of the source shape to attach to. When omitted, the renderer picks the side that points toward the target (auto).</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="right"/>
+          <xs:enumeration value="bottom"/>
+          <xs:enumeration value="left"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="h" type="b:Length" use="optional">
+      <xs:annotation>
+        <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
+    <xs:attribute name="kind" use="optional">
+      <xs:annotation>
+        <xs:documentation>Line geometry. straight = direct line, elbow = orthogonal bent line, curved = smooth bezier. Default is straight.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="straight"/>
+          <xs:enumeration value="elbow"/>
+          <xs:enumeration value="curved"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="left" type="xs:double" use="optional"/>
+    <xs:attribute name="lineWidth" type="xs:double" use="optional"/>
+    <xs:attribute name="margin" type="b:Padding" use="optional">
+      <xs:annotation>
+        <xs:documentation>Outer margin (number or per-side object).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="margin.top" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.right" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.bottom" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.left" type="xs:double" use="optional"/>
+    <xs:attribute name="maxH" type="xs:double" use="optional"/>
+    <xs:attribute name="maxW" type="xs:double" use="optional"/>
+    <xs:attribute name="minH" type="xs:double" use="optional"/>
+    <xs:attribute name="minW" type="xs:double" use="optional"/>
+    <xs:attribute name="opacity" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>0..1 opacity.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="padding" type="b:Padding" use="optional">
+      <xs:annotation>
+        <xs:documentation>Inner padding (number or per-side object).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="padding.top" type="xs:double" use="optional"/>
+    <xs:attribute name="padding.right" type="xs:double" use="optional"/>
+    <xs:attribute name="padding.bottom" type="xs:double" use="optional"/>
+    <xs:attribute name="padding.left" type="xs:double" use="optional"/>
+    <xs:attribute name="position" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="relative"/>
+          <xs:enumeration value="absolute"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="right" type="xs:double" use="optional"/>
+    <xs:attribute name="shadow" type="b:ShadowStyle" use="optional"/>
+    <xs:attribute name="to" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>id of the target shape on the same slide.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="toSide" use="optional">
+      <xs:annotation>
+        <xs:documentation>Which side of the target shape to attach to. When omitted, auto.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="right"/>
+          <xs:enumeration value="bottom"/>
+          <xs:enumeration value="left"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="top" type="xs:double" use="optional"/>
+    <xs:attribute name="w" type="b:Length" use="optional">
+      <xs:annotation>
+        <xs:documentation>Width (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="x" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Absolute x (used inside &lt;Layer&gt;).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="y" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Absolute y (used inside &lt;Layer&gt;).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="zIndex" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="Connector" type="b:Connector"/>
   <xs:complexType name="VStack">
     <xs:annotation>
       <xs:documentation>Flex column container — children stack vertically.</xs:documentation>
@@ -1774,6 +2010,11 @@
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
@@ -1938,6 +2179,11 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
     <xs:attribute name="justifyContent" use="optional">
       <xs:simpleType>
@@ -2078,6 +2324,11 @@
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="id" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>

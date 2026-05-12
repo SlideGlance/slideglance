@@ -88,6 +88,14 @@ const baseNodeSchema = z.object({
   flexGrow: z.number().min(0).optional(),
   flexShrink: z.number().min(0).optional(),
   flexBasis: lengthSchema.optional(),
+  // Author-facing identifier. Used by <Connector from="..." to="..."/>
+  // to bind PPTX connectors (`<p:cxnSp>`) to other shapes on the same
+  // slide. Unique per slide; XML-friendly chars only (no colon so the
+  // `sg-id:` sigil in cNvPr@name cannot collide).
+  id: z
+    .string()
+    .regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/)
+    .optional(),
   /**
    * Stable identifier assigned at parse time. Used to correlate a BuilderNode with
    * its originating source file + line via the parse result's `sourceMap`.
@@ -389,6 +397,32 @@ export const lineNodeSchema = baseNodeSchema.extend({
 export type LineArrow = z.infer<typeof lineArrowSchema>;
 export type LineNode = z.infer<typeof lineNodeSchema>;
 
+// ===== Connector Node =====
+// Author-facing element that emits a real PPTX <p:cxnSp> bound to two
+// shapes by their `id` (rather than absolute coordinates). The post-
+// process step rewrites the rendered placeholder line into <p:cxnSp>
+// with stCxn/endCxn, so PowerPoint auto-reroutes when shapes move.
+export const connectorKindSchema = z.enum(["straight", "elbow", "curved"]);
+export const connectorSideSchema = z.enum(["top", "right", "bottom", "left"]);
+
+export const connectorNodeSchema = baseNodeSchema.extend({
+  type: z.literal("connector"),
+  from: z.string(),
+  to: z.string(),
+  kind: connectorKindSchema.optional(),
+  fromSide: connectorSideSchema.optional(),
+  toSide: connectorSideSchema.optional(),
+  color: z.string().optional(),
+  lineWidth: z.number().optional(),
+  dashType: borderDashSchema.optional(),
+  beginArrow: lineArrowSchema.optional(),
+  endArrow: lineArrowSchema.optional(),
+});
+
+export type ConnectorKind = z.infer<typeof connectorKindSchema>;
+export type ConnectorSide = z.infer<typeof connectorSideSchema>;
+export type ConnectorNode = z.infer<typeof connectorNodeSchema>;
+
 // ===== Layer Node =====
 // LayerChild, LayerNode types are defined below after BuilderNode
 
@@ -435,6 +469,7 @@ export type BuilderNode =
   | ShapeNode
   | ChartNode
   | LineNode
+  | ConnectorNode
   | LayerNode
   | IconNode
   | SvgNode;
@@ -484,6 +519,7 @@ const nodeSchema: z.ZodType<BuilderNode> = z.lazy(() =>
     shapeNodeSchema,
     chartNodeSchema,
     lineNodeSchema,
+    connectorNodeSchema,
     layerNodeSchemaBase,
     iconNodeSchema,
     svgNodeSchema,
@@ -517,6 +553,9 @@ export type PositionedNode =
   | (ShapeNode & PositionedBase)
   | (ChartNode & PositionedBase)
   | (LineNode & PositionedBase)
+  // Connector is positioned with a zero-size bbox; render-time resolves
+  // the real geometry from the from/to shapes' positioned boxes.
+  | (ConnectorNode & PositionedBase)
   | (LayerNode & PositionedBase & { children: PositionedLayerChild[] })
   | (IconNode &
       PositionedBase & {
@@ -559,6 +598,7 @@ const positionedNodeSchema: z.ZodType<PositionedNode> = z.lazy(() =>
     shapeNodeSchema.merge(positionedBaseSchema),
     chartNodeSchema.merge(positionedBaseSchema),
     lineNodeSchema.merge(positionedBaseSchema),
+    connectorNodeSchema.merge(positionedBaseSchema),
     layerNodeSchemaBase.merge(positionedBaseSchema).extend({
       children: z.array(positionedLayerChildSchema),
     }),

@@ -9,8 +9,9 @@ const textCompiled = ALL_COMPILED_NODES.find((n) => n.tag === "Text");
 
 describe("compiled registry", () => {
   it("exposes every authored node + meta declaration", () => {
-    // POM node count + 3 document containers (SlideGlance/Slide/Fragment)
-    expect(ALL_COMPILED_NODES.length).toBe(16);
+    // POM node count (14 incl. Connector) + 3 document containers
+    // (SlideGlance/Slide/Fragment)
+    expect(ALL_COMPILED_NODES.length).toBe(17);
     // 13 meta tags: Document + Templates/Template/Use/Slot/Import/Styles/Style
     // + If/Choose/When/Otherwise/Foreach
     expect(ALL_COMPILED_META.length).toBe(13);

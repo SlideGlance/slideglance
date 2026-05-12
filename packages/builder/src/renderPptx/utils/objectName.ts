@@ -1,15 +1,27 @@
 /**
- * Build the pptxgenjs `objectName` string for a BuilderNode. This is serialized
- * into OOXML `<p:cNvPr name="node#N">` and later consumed by the SVG renderer
- * (e.g. @slideglance/core) to emit `data-node-id="N"` on the generated SVG
- * elements. Webview click delegation uses that id to look up the node's
- * source position and reveal the corresponding line in the user's editor.
+ * Build the pptxgenjs `objectName` string for a BuilderNode. This is
+ * serialized into OOXML `<p:cNvPr name="...">` and used for two
+ * orthogonal purposes:
  *
- * Returns undefined when the node has no `__nodeId` (e.g. parse ran without
- * `trackSourcePos`), in which case callers should omit the option entirely.
+ *   1. `node#N` token — consumed by the SVG renderer (e.g.
+ *      @slideglance/core) to emit `data-node-id="N"` so the webview's
+ *      click delegation can reveal the corresponding source line.
+ *
+ *   2. `sg-id:USER_ID` token — consumed by the connector post-process
+ *      pass (see `renderPptx/postProcess/`) to bind <p:cxnSp> stCxn /
+ *      endCxn back to author-facing ids before stripping the marker
+ *      out of the final PPTX.
+ *
+ * Returns undefined when the node carries neither id nor `__nodeId`,
+ * in which case callers should omit the option entirely so pptxgenjs
+ * lets the default `cNvPr name="Object N"` ship.
  */
 export function builderObjectName(node: {
   __nodeId?: number;
+  id?: string;
 }): string | undefined {
-  return node.__nodeId !== undefined ? `node#${node.__nodeId}` : undefined;
+  const parts: string[] = [];
+  if (node.id) parts.push(`sg-id:${node.id}`);
+  if (node.__nodeId !== undefined) parts.push(`node#${node.__nodeId}`);
+  return parts.length > 0 ? parts.join(":") : undefined;
 }

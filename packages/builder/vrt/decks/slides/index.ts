@@ -15,6 +15,7 @@ export {
 } from "./layout.js";
 export { page8CommonXml } from "./common.js";
 export { page15LineXml } from "./line.js";
+export { pageConnectorXml } from "./connector.js";
 export { page18OpacityXml } from "./opacity.js";
 export { page19ShadowXml, page26VStackHStackShadowXml } from "./shadow.js";
 export { page20BackgroundImageXml } from "./backgroundImage.js";

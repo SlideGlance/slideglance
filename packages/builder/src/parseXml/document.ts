@@ -36,6 +36,7 @@ import {
   expandTemplatesInNodes,
 } from "./templates.ts";
 import { appendSchemaErrors } from "./validation.ts";
+import { validateConnectorsInSlides } from "./validateConnectors.ts";
 import {
   type XmlElement,
   type XmlNode,
@@ -804,6 +805,12 @@ export function parseBuilderDocumentInner(
   if (errors.length > 0) {
     throw new ParseXmlError(errors);
   }
+  // Slide-scope id / connector validation for the bare-fragment path
+  // (no <SlideGlance> wrapper). Mirrors the SlideGlance branch so
+  // every entry point through parseBuilderDocumentInner emits the same
+  // diagnostics and the renderer never sees a dangling Connector.
+  validateConnectorsInSlides(nodes, diagnostics);
+
   const declaredStyles = new Set(Object.keys(styles));
   const referencedStyles = collectClassRefs(elementChildren);
   return {
@@ -954,6 +961,13 @@ function parseSlideGlance(
   if (errors.length > 0) {
     throw new ParseXmlError(errors);
   }
+
+  // Slide-scope id / connector validation. Runs after the slide trees
+  // are assembled so every author-id can be discovered, and emits
+  // non-fatal diagnostics for duplicates / dangling / self-referencing
+  // Connectors. Invalid Connectors are stripped from the trees so the
+  // renderer never has to defend against missing endpoints.
+  validateConnectorsInSlides(nodes, diagnostics);
 
   const declaredStyles = new Set(Object.keys(styles));
   const referencedStyles = collectClassRefs(rootChildren);

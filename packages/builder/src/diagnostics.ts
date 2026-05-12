@@ -11,6 +11,10 @@ export type DiagnosticCode =
   | "MASTER_PPTX_SIZE_LIMIT"
   | "TEMPLATES_NOT_AT_ROOT"
   | "INVALID_NUMBER_TYPE"
+  | "DUPLICATE_NODE_ID"
+  | "UNKNOWN_CONNECTOR_ENDPOINT"
+  | "INVALID_CONNECTOR_SELF_REF"
+  | "CONNECTOR_UNKNOWN_SHAPE_IDX"
   // --- lint codes (post-layout / post-parse) ---
   | "OUT_OF_PAGE"
   | "OUT_OF_PARENT"

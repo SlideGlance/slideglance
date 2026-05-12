@@ -15,6 +15,7 @@ import {
 } from "./parseXml/parseXml.ts";
 import { validateImageSrc } from "./renderPptx/nodes/image.ts";
 import { renderPptx } from "./renderPptx/renderPptx.ts";
+import { wrapPptxWriteWithConnectors } from "./renderPptx/postProcess/wrapWrite.ts";
 import { freeYogaTree } from "./shared/freeYogaTree.ts";
 import { toPositioned } from "./toPositioned/toPositioned.ts";
 import { mergeDefaultTextStyles } from "./defaultTextStyle.ts";
@@ -419,6 +420,16 @@ export async function buildPptx(
       : undefined,
     options?.docProps,
   );
+
+  // Install the connector post-process pass over pptx.write / pptx.writeFile.
+  // The wrapped write rewrites placeholder lines into real <p:cxnSp>
+  // elements with stCxn / endCxn bindings before user-visible bytes leave
+  // the builder. Strict mode still snapshots diagnostics at this point —
+  // any CONNECTOR_UNKNOWN_SHAPE_IDX records that surface during write
+  // join the BuildPptxResult.diagnostics list but do not retro-trigger
+  // strict-throw.
+  wrapPptxWriteWithConnectors(pptx, ctx.diagnostics);
+
   const diagnostics = ctx.diagnostics.items;
 
   if (options?.strict && diagnostics.length > 0) {

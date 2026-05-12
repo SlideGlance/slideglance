@@ -17,6 +17,7 @@ Document namespace: `urn:slideglance:builder:v1`. See [README](../README.md) for
   - [`<Shape>`](#shape)
   - [`<Chart>`](#chart)
   - [`<Line>`](#line)
+  - [`<Connector>`](#connector)
   - [`<VStack>`](#vstack)
   - [`<HStack>`](#hstack)
   - [`<Layer>`](#layer)
@@ -67,6 +68,7 @@ Renders a single piece of styled text. Supports inline styled runs via <B>, <I>,
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `left` | number |  |  |
@@ -128,6 +130,7 @@ Bulleted list. Items can be supplied via the JSON `items` attribute or via <Li> 
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `items` | json |  | Array of list items as JSON string. |
@@ -189,6 +192,7 @@ Numbered list. Items via JSON `items` attribute or <Li> children.
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `items` | json |  |  |
@@ -247,6 +251,7 @@ Embeds an image. `src` accepts http(s):// URL, data URI, or relative file path.
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
@@ -292,6 +297,7 @@ Renders a built-in icon by name. See docs for the icon catalog.
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
@@ -337,6 +343,7 @@ Embeds inline SVG. Supply the SVG via a <svg> child element.
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
@@ -387,6 +394,7 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
@@ -441,6 +449,7 @@ Renders a built-in PowerPoint shape (rect, ellipse, arrows, callouts, etc.).
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `left` | number |  |  |
@@ -500,6 +509,7 @@ Renders a native PowerPoint chart (bar/line/pie/area/doughnut/radar).
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `legendFontSize` | number |  |  |
@@ -561,6 +571,7 @@ Straight line connector with optional arrows on either end.
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `lineWidth` | number |  |  |
@@ -583,6 +594,65 @@ Straight line connector with optional arrows on either end.
 | `y1` | number | yes |  |
 | `y2` | number | yes |  |
 | `zIndex` | number |  |  |
+
+### `<Connector>`
+
+Smart line that binds to two shapes by their `id`. Emits a real PPTX <p:cxnSp> with stCxn/endCxn so PowerPoint reroutes the line automatically when shapes move. The line never participates in flexbox layout — its endpoints are derived from the from/to shapes' positioned boxes.
+
+**Attributes**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `alignSelf` | alignSelf (auto\|start\|center\|end\|stretch) |  |  |
+| `backgroundColor` | color |  |  |
+| `backgroundImage` | json |  | Background image source/sizing. |
+| `beginArrow` | lineArrow |  |  |
+| `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
+| `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
+| `bottom` | number |  |  |
+| `color` | color |  |  |
+| `dashType` | borderDash |  |  |
+| `endArrow` | lineArrow |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `from` | string | yes | id of the source shape on the same slide. |
+| `fromSide` | string (top\|right\|bottom\|left) |  | Which side of the source shape to attach to. When omitted, the renderer picks the side that points toward the target (auto). |
+| `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
+| `isDecorative` | boolean |  |  |
+| `kind` | string (straight\|elbow\|curved) |  | Line geometry. straight = direct line, elbow = orthogonal bent line, curved = smooth bezier. Default is straight. |
+| `left` | number |  |  |
+| `lineWidth` | number |  |  |
+| `margin` | padding |  | Outer margin (number or per-side object). |
+| `maxH` | number |  |  |
+| `maxW` | number |  |  |
+| `minH` | number |  |  |
+| `minW` | number |  |  |
+| `opacity` | number |  | 0..1 opacity. |
+| `padding` | padding |  | Inner padding (number or per-side object). |
+| `position` | string (relative\|absolute) |  |  |
+| `right` | number |  |  |
+| `shadow` | shadow |  |  |
+| `to` | string | yes | id of the target shape on the same slide. |
+| `top` | number |  |  |
+| `toSide` | string (top\|right\|bottom\|left) |  | Which side of the target shape to attach to. When omitted, auto. |
+| `w` | length |  | Width (number, percentage, or 'max'). |
+| `x` | number |  | Absolute x (used inside <Layer>). |
+| `y` | number |  | Absolute y (used inside <Layer>). |
+| `zIndex` | number |  |  |
+
+**Example**
+
+```xml
+<Shape id="A" shapeType="rect" w="100" h="60"/>
+<Shape id="B" shapeType="rect" w="100" h="60"/>
+<Connector from="A" to="B" kind="elbow" endArrow="true"/>
+```
 
 ### `<VStack>`
 
@@ -609,6 +679,7 @@ Flex column container — children stack vertically.
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `justifyContent` | justifyContent (start\|center\|end\|spaceBetween\|spaceAround\|spaceEvenly) |  |  |
 | `left` | number |  |  |
@@ -653,6 +724,7 @@ Flex row container — children stack horizontally.
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `justifyContent` | justifyContent (start\|center\|end\|spaceBetween\|spaceAround\|spaceEvenly) |  |  |
 | `left` | number |  |  |
@@ -694,6 +766,7 @@ Absolute-positioned container. Direct children must declare `x` and `y`.
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |

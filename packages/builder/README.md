@@ -58,7 +58,7 @@ await pptx.writeFile({ fileName: "review.pptx" });
 | Inline      | `<B>`, `<I>`, `<U>`, `<S>`, `<Mark>`, `<Span>`, `<A>`         |
 | Media       | `<Image>`, `<Icon>`, `<Svg>`                                  |
 | Tables      | `<Table>` (`<Col>`, `<Tr>`, `<Td>`)                           |
-| Graphics    | `<Shape>`, `<Line>`, `<Chart>`                                |
+| Graphics    | `<Shape>`, `<Line>`, `<Connector>`, `<Chart>`                 |
 | Document    | `<SlideGlance>`, `<Document>`, `<Slide>`, `<Fragment>`        |
 | Composition | `<Import>`, `<Templates>` / `<Template>` / `<Use>` / `<Slot>` |
 | Styling     | `<Styles>` / `<Style>`, `<Master>`                            |
