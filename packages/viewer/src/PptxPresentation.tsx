@@ -483,6 +483,45 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     });
   }, [externalSlideCount, name]);
 
+  // Reset transient deck state on file change for the src-driven path.
+  //
+  // The externalSlideCount-gated effect above handles file change for
+  // hosts that own deck loading. The src-driven auto-open path
+  // (vscode-extension preview, web-playground file picker) has no
+  // equivalent: useDeckLoader is designed around either in-place edits
+  // (incrementalUpdate=true preserves currentSlide / zoom / pan) or
+  // initial mount, neither of which clears stale state when the host
+  // points the viewer at a different file.
+  //
+  // Without this, switching files preserves currentSlide from the old
+  // deck. If the new deck has fewer slides, the active-slide effect
+  // immediately fires `renderSlide(stale_index)` against the worker,
+  // which returns "slide N not found" — visible as an empty preview
+  // or an error overlay. deckEpochRef also stays at 0 in this path,
+  // so the stale-resolution guards in useSlideCache silently no-op
+  // and in-flight renders from the old deck stamp their results into
+  // the new deck's cache.
+  useEffect(() => {
+    if (typeof externalSlideCount === "number") return;
+    deckEpochRef.current += 1;
+    setSlideCount(0);
+    setCurrentSlide(1);
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+    setAllSlidesReady(false);
+    setSelectedIds(new Set());
+    setTextEditId(null);
+    setRubberBand(null);
+    pendingRef.current.clear();
+    setSlideCache((prev) => {
+      for (const c of prev.values()) {
+        for (const u of c.blobUrls) URL.revokeObjectURL(u);
+      }
+      return new Map();
+    });
+  }, [name]);
+
   // Stage sizing.
   //
   // Re-attached whenever `slideshow` flips because we mount two

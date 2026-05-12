@@ -227,9 +227,18 @@ let coreModulePromise: Promise<CoreMod> | null = null;
 async function loadCore(): Promise<CoreMod> {
   if (coreModulePromise === null) {
     coreModulePromise = (async () => {
-      const mod = (await import(
-        /* @vite-ignore */ "@slideglance/core"
-      )) as unknown as CoreMod;
+      // No `/* @vite-ignore */` here: the viewer's own build already
+      // externalises `@slideglance/core` via `rollupOptions.external`
+      // (vite.config.ts), so the bare specifier survives into the
+      // published `dist/pptx-worker.js`. Consumer bundlers — the web
+      // playground's Vite, the vscode-extension webview's Vite, etc.
+      // — re-process this file and re-resolve the specifier against
+      // their own `node_modules`. Adding the ignore directive made
+      // Vite skip that re-resolution and the bare specifier leaked
+      // into the runtime worker chunk, surfacing as "Failed to
+      // resolve module specifier '@slideglance/core'" the first time
+      // a slide rendered in the playground.
+      const mod = (await import("@slideglance/core")) as unknown as CoreMod;
       if (typeof mod.default === "function") {
         try {
           await mod.default();
