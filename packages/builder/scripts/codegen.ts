@@ -19,17 +19,15 @@ import {
   readFileSync,
   writeFileSync,
   existsSync,
-  readdirSync,
-  rmSync,
-  rmdirSync,
 } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { generateXsd } from "../src/codegen/xsd.ts";
 import { generateJsonSchemaString } from "../src/codegen/jsonSchema.ts";
 import { generateNodesMd } from "../src/codegen/docs.ts";
 import { generateReferenceHtml } from "../src/codegen/html.ts";
+import { findOrphans, sweepOrphans } from "../src/codegen/orphanSweep.ts";
 import {
   buildHashRecord,
   sha256,
@@ -58,57 +56,6 @@ function buildOutputs(): Record<string, () => string> {
 }
 
 const OUTPUTS = buildOutputs();
-
-function findOrphans(
-  pkgRoot: string,
-  generated: Record<string, string>,
-): string[] {
-  const expected = new Set(
-    Object.keys(generated).map((k) => join(pkgRoot, k)),
-  );
-  const refRoot = join(pkgRoot, "reference-html");
-  if (!existsSync(refRoot)) return [];
-  const found: string[] = [];
-  const entries = readdirSync(refRoot, {
-    recursive: true,
-    withFileTypes: true,
-  });
-  for (const ent of entries) {
-    if (!ent.isFile()) continue;
-    const parent =
-      (ent as { parentPath?: string; path?: string }).parentPath ??
-      (ent as { path?: string }).path ??
-      refRoot;
-    const abs = join(parent, ent.name);
-    if (!expected.has(abs)) found.push(abs);
-  }
-  return found;
-}
-
-function sweepOrphans(
-  pkgRoot: string,
-  generated: Record<string, string>,
-): void {
-  for (const orphan of findOrphans(pkgRoot, generated)) {
-    rmSync(orphan);
-    console.log(`✔ swept orphan: ${orphan}`);
-  }
-  const refRoot = join(pkgRoot, "reference-html");
-  pruneEmptyDirsBounded(refRoot, refRoot);
-}
-
-function pruneEmptyDirsBounded(root: string, current: string): void {
-  if (!existsSync(current)) return;
-  const entries = readdirSync(current, { withFileTypes: true });
-  for (const ent of entries) {
-    if (ent.isDirectory()) pruneEmptyDirsBounded(root, join(current, ent.name));
-  }
-  // Never prune the root itself; only sub-directories within it.
-  if (relative(root, current) === "") return;
-  if (readdirSync(current).length === 0) {
-    rmdirSync(current);
-  }
-}
 
 function main(): void {
   const isCheck = process.argv.includes("--check");
