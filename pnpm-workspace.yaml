@@ -9,20 +9,20 @@ packages:
 # purpose — single-use deps stay in their package.json so we don't
 # bloat the root with one-shot tooling.
 catalog:
-  # React UI runtime (apps + viewer/react adapter)
-  react: ^18.3.0
-  react-dom: ^18.3.0
-  "@types/react": ^18.3.0
-  "@types/react-dom": ^18.3.0
+  # React UI runtime (apps + viewer)
+  react: ^19.2.0
+  react-dom: ^19.2.0
+  "@types/react": ^19.2.0
+  "@types/react-dom": ^19.2.0
 
   # Build tooling shared across every JS package
-  vite: ^5.4.0
-  typescript: ^5.6.0
-  vitest: ^2.1.0
-  "@vitejs/plugin-react": ^4.3.0
-  vite-plugin-wasm: ^3.3.0
-  vite-plugin-top-level-await: ^1.4.4
-  happy-dom: ^15.7.0
+  vite: ^8.0.0
+  typescript: ^6.0.0
+  vitest: ^4.1.0
+  "@vitejs/plugin-react": ^6.0.0
+  vite-plugin-wasm: ^3.6.0
+  vite-plugin-top-level-await: ^1.6.0
+  happy-dom: ^20.9.0
 
   # Iconography (viewer + chrome-extension)
   "@phosphor-icons/react": ^2.1.10

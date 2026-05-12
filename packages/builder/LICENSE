@@ -1,6 +1,25 @@
+SlideGlance — packages/builder
+==============================
+
+This package was originally derived from the `pom` library by Hiroki
+Sakabe (Copyright (c) 2025 hirokisakabe), released under the MIT
+License. The codebase has since been substantially rewritten as
+`@slideglance/builder` and is distributed under the SlideGlance
+project license below.
+
+The original author's contribution is acknowledged in:
+
+- `package.json` (`contributors` field)
+- The root `NOTICE` file
+
+Both the original work and the SlideGlance derivative are licensed
+under the MIT License, so the same terms apply to all versions.
+
+----------------------------------------------------------------------
+
 MIT License
 
-Copyright (c) 2025 hirokisakabe
+Copyright (c) 2026 SimpleCORE Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,12 +1,23 @@
 {
   "name": "@slideglance/measure",
   "version": "0.1.0",
-  "author": "Taehwan Kwag",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
   "description": "Deterministic OpenType text width / line-metrics measurement (WebAssembly).",
   "license": "MIT",
+  "homepage": "https://github.com/SlideGlance/slideglance#readme",
+  "bugs": {
+    "url": "https://github.com/SlideGlance/slideglance/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SlideGlance/slideglance.git"
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "packages/measure"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "files": [
@@ -14,7 +25,7 @@
     "dist/bundler/**",
     "dist/web/**",
     "README.md",
-    "LICENSE-MIT"
+    "LICENSE"
   ],
   "scripts": {},
   "main": "./dist/node/slideglance_measure_wasm.js",
