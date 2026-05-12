@@ -47,3 +47,22 @@ describe("ReferenceModel.usedBy", () => {
     expect((model.usedBy.get("Otherwise") ?? []).map((e) => e.parent)).toContain("Choose");
   });
 });
+
+describe("ReferenceModel.sourceLocations", () => {
+  const model = buildReferenceModel();
+
+  it("maps every node + meta tag to a source line", () => {
+    for (const n of [...model.nodes, ...model.meta]) {
+      const loc = model.sourceLocations.get(n.tag);
+      expect(loc, `missing location for ${n.tag}`).toBeDefined();
+      expect(loc!.file).toBe("src/registry/compiled/index.ts");
+      expect(loc!.line).toBeGreaterThan(0);
+    }
+  });
+
+  it("line numbers are monotonically increasing within the registry file", () => {
+    const tags = [...model.nodes, ...model.meta].map((n) => n.tag);
+    const lines = tags.map((t) => model.sourceLocations.get(t)!.line);
+    expect(lines.every((l, i, a) => i === 0 || l > a[i - 1])).toBe(true);
+  });
+});

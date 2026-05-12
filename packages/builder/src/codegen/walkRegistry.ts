@@ -143,9 +143,36 @@ export function buildReferenceModel(): ReferenceModel {
     meta: r.meta,
     usedBy: deriveUsedBy(r.nodes, r.meta),
     seeAlso: new Map(Object.entries(SEE_ALSO)),
-    // Populated by subsequent tasks (T5 sourceLocations).
-    sourceLocations: new Map(),
+    sourceLocations: deriveSourceLocations(),
   };
+}
+
+/**
+ * Scan `registry/compiled/index.ts` to associate each registered tag with the
+ * source line of its `defineNode(...)` / `defineMeta(...)` call. The HTML
+ * reference uses this to render "Defined at: <file>:<line>" footers.
+ *
+ * The registry uses the object form exclusively, with `tag:` on the line
+ * immediately following `defineNode({` / `defineMeta({`. The regex matches
+ * across the line break (`\s*` straddles whitespace including newlines);
+ * `matchAll` returns the match plus its index so the line number is derived
+ * by counting newlines in the prefix.
+ */
+function deriveSourceLocations(): Map<string, { file: string; line: number }> {
+  const HERE = fileURLToPath(import.meta.url);
+  const file = "src/registry/compiled/index.ts";
+  const abs = resolve(HERE, "../../registry/compiled/index.ts");
+  const content = readFileSync(abs, "utf8");
+  const result = new Map<string, { file: string; line: number }>();
+  const re = /define(?:Node|Meta)\(\s*\{\s*tag:\s*["'](\w+)["']/g;
+  for (const match of content.matchAll(re)) {
+    const tag = match[1];
+    if (tag === undefined) continue; // unreachable: \w+ always captures.
+    const idx = match.index ?? 0;
+    const line = content.slice(0, idx).split("\n").length;
+    result.set(tag, { file, line });
+  }
+  return result;
 }
 
 /**
