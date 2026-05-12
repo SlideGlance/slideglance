@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideGlance Builder — decks as code, compiled to .pptx</title>
+    <meta
+      name="description"
+      content="The SlideGlance builder: a tiny XML grammar compiled into deterministic PPTX. Templates, styles, masters, Foreach, autoFit, opentype text measurement, XSD + JSON Schema, and a 30-rule lint pass."
+    />
+    <link rel="icon" type="image/svg+xml" href="../icon.svg" />
+    <link rel="stylesheet" href="../styles.css" />
+    <script>
+      (() => {
+        const stored = localStorage.getItem("sg-theme");
+        if (stored === "light" || stored === "dark") {
+          document.documentElement.setAttribute("data-theme", stored);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../" aria-label="SlideGlance home">
+        <img src="../icon.svg" alt="" width="36" height="36" />
+        <span class="brand-name">SlideGlance</span>
+      </a>
+      <nav class="site-nav">
+        <a href="../view/" class="nav-link">View</a>
+        <a href="../build/" class="nav-link nav-link-active">Build</a>
+        <a href="../#install" class="nav-link">Install</a>
+        <a href="../playground/" class="nav-link" data-open-playground
+          >Playground</a
+        >
+        <a
+          href="https://github.com/SlideGlance/slideglance"
+          class="nav-link"
+          rel="noopener"
+          >GitHub</a
+        >
+        <button
+          type="button"
+          class="theme-toggle"
+          aria-label="Toggle dark / light theme"
+          data-theme-toggle
+        >
+          <svg
+            class="theme-icon theme-icon-sun"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4.5" />
+            <path
+              d="M12 3v2M12 19v2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M3 12h2M19 12h2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"
+            />
+          </svg>
+          <svg
+            class="theme-icon theme-icon-moon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.9 14.7A8 8 0 0 1 9.3 3.1a.6.6 0 0 0-.75-.78A10 10 0 1 0 21.7 15.5a.6.6 0 0 0-.78-.75Z"
+            />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <p class="eyebrow">Build</p>
+        <h1>Author <code>.sgx</code>, compile to <code>.pptx</code></h1>
+        <p class="lede">
+          <code>@slideglance/builder</code> compiles a tiny XML DSL into
+          deterministic PPTX. Layout, styling, and validation live in the
+          source file — diffable in git, reviewable on a pull request,
+          free of "I'll fix it in the GUI".
+        </p>
+        <div class="cta-row">
+          <a
+            class="btn btn-primary"
+            href="https://marketplace.visualstudio.com/items?itemName=slideglance.slide-builder"
+            rel="noopener"
+          >
+            <span>Get the VS Code extension</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="https://www.npmjs.com/package/@slideglance/builder"
+            rel="noopener"
+            >npm install @slideglance/builder</a
+          >
+        </div>
+      </section>
+
+      <section class="build" aria-labelledby="snippet-heading">
+        <h2 id="snippet-heading" class="visually-hidden">Example source</h2>
+        <div class="build-snippet" aria-label="Example .sgx source">
+          <pre><code><span class="tk-punct">&lt;</span><span class="tk-tag">SlideGlance</span> <span class="tk-attr">xmlns</span><span class="tk-punct">=</span><span class="tk-str">&quot;urn:slideglance:builder:v1&quot;</span>
+             <span class="tk-ns">xsi:</span><span class="tk-attr">schemaLocation</span><span class="tk-punct">=</span><span class="tk-str">&quot;urn:slideglance:builder:v1
+               https://unpkg.com/@slideglance/builder@^0.1/builder.xsd&quot;</span><span class="tk-punct">&gt;</span>
+  <span class="tk-punct">&lt;</span><span class="tk-tag">Document</span> <span class="tk-attr">size</span><span class="tk-punct">=</span><span class="tk-str">&quot;16:9&quot;</span> <span class="tk-punct">/&gt;</span>
+
+  <span class="tk-punct">&lt;</span><span class="tk-tag">Styles</span><span class="tk-punct">&gt;</span>
+    <span class="tk-punct">&lt;</span><span class="tk-tag">Style</span> <span class="tk-attr">name</span><span class="tk-punct">=</span><span class="tk-str">&quot;kicker&quot;</span>   <span class="tk-attr">fontSize</span><span class="tk-punct">=</span><span class="tk-str">&quot;14&quot;</span> <span class="tk-attr">bold</span><span class="tk-punct">=</span><span class="tk-str">&quot;true&quot;</span> <span class="tk-attr">color</span><span class="tk-punct">=</span><span class="tk-str">&quot;666&quot;</span> <span class="tk-punct">/&gt;</span>
+    <span class="tk-punct">&lt;</span><span class="tk-tag">Style</span> <span class="tk-attr">name</span><span class="tk-punct">=</span><span class="tk-str">&quot;title-md&quot;</span> <span class="tk-attr">fontSize</span><span class="tk-punct">=</span><span class="tk-str">&quot;32&quot;</span> <span class="tk-attr">bold</span><span class="tk-punct">=</span><span class="tk-str">&quot;true&quot;</span> <span class="tk-punct">/&gt;</span>
+  <span class="tk-punct">&lt;/</span><span class="tk-tag">Styles</span><span class="tk-punct">&gt;</span>
+
+  <span class="tk-punct">&lt;</span><span class="tk-tag">Slide</span><span class="tk-punct">&gt;</span>
+    <span class="tk-punct">&lt;</span><span class="tk-tag">VStack</span> <span class="tk-attr">padding</span><span class="tk-punct">=</span><span class="tk-str">&quot;64&quot;</span> <span class="tk-attr">gap</span><span class="tk-punct">=</span><span class="tk-str">&quot;24&quot;</span><span class="tk-punct">&gt;</span>
+      <span class="tk-punct">&lt;</span><span class="tk-tag">Text</span> <span class="tk-attr">class</span><span class="tk-punct">=</span><span class="tk-str">&quot;kicker&quot;</span><span class="tk-punct">&gt;</span>Q4 · UPDATE<span class="tk-punct">&lt;/</span><span class="tk-tag">Text</span><span class="tk-punct">&gt;</span>
+      <span class="tk-punct">&lt;</span><span class="tk-tag">Text</span> <span class="tk-attr">class</span><span class="tk-punct">=</span><span class="tk-str">&quot;title-md&quot;</span><span class="tk-punct">&gt;</span>Highlights<span class="tk-punct">&lt;/</span><span class="tk-tag">Text</span><span class="tk-punct">&gt;</span>
+      <span class="tk-punct">&lt;</span><span class="tk-tag">Foreach</span> <span class="tk-attr">items</span><span class="tk-punct">=</span><span class="tk-str">'[{&quot;label&quot;:&quot;MRR&quot;,&quot;value&quot;:&quot;$420K&quot;},
+                       {&quot;label&quot;:&quot;NRR&quot;,&quot;value&quot;:&quot;118%&quot;}]'</span> <span class="tk-attr">as</span><span class="tk-punct">=</span><span class="tk-str">&quot;m&quot;</span><span class="tk-punct">&gt;</span>
+        <span class="tk-punct">&lt;</span><span class="tk-tag">HStack</span> <span class="tk-attr">gap</span><span class="tk-punct">=</span><span class="tk-str">&quot;8&quot;</span><span class="tk-punct">&gt;</span>
+          <span class="tk-punct">&lt;</span><span class="tk-tag">Text</span> <span class="tk-attr">class</span><span class="tk-punct">=</span><span class="tk-str">&quot;kicker&quot;</span><span class="tk-punct">&gt;</span><span class="tk-interp">{m.label}</span><span class="tk-punct">&lt;/</span><span class="tk-tag">Text</span><span class="tk-punct">&gt;</span>
+          <span class="tk-punct">&lt;</span><span class="tk-tag">Text</span> <span class="tk-attr">fontSize</span><span class="tk-punct">=</span><span class="tk-str">&quot;28&quot;</span> <span class="tk-attr">bold</span><span class="tk-punct">=</span><span class="tk-str">&quot;true&quot;</span><span class="tk-punct">&gt;</span><span class="tk-interp">{m.value}</span><span class="tk-punct">&lt;/</span><span class="tk-tag">Text</span><span class="tk-punct">&gt;</span>
+        <span class="tk-punct">&lt;/</span><span class="tk-tag">HStack</span><span class="tk-punct">&gt;</span>
+      <span class="tk-punct">&lt;/</span><span class="tk-tag">Foreach</span><span class="tk-punct">&gt;</span>
+    <span class="tk-punct">&lt;/</span><span class="tk-tag">VStack</span><span class="tk-punct">&gt;</span>
+  <span class="tk-punct">&lt;/</span><span class="tk-tag">Slide</span><span class="tk-punct">&gt;</span>
+<span class="tk-punct">&lt;/</span><span class="tk-tag">SlideGlance</span><span class="tk-punct">&gt;</span></code></pre>
+        </div>
+
+        <div class="quickstart" aria-label="Quick start">
+          <div class="quickstart-step">
+            <span class="quickstart-eyebrow">1 · Install</span>
+            <pre><code data-lang="bash">npm install @slideglance/builder
+# or: pnpm add @slideglance/builder</code></pre>
+          </div>
+          <div class="quickstart-step">
+            <span class="quickstart-eyebrow">2 · Compile</span>
+            <pre><code data-lang="ts">import { buildPptx } from "@slideglance/builder";
+import { readFileSync, writeFileSync } from "node:fs";
+
+const xml = readFileSync("deck.sgx", "utf8");
+const { pptx, diagnostics } = await buildPptx(
+  xml,
+  { w: 1280, h: 720 },
+  { lint: { enabled: true } },
+);
+
+const bytes = await pptx.write({ outputType: "uint8array" });
+writeFileSync("deck.pptx", bytes);
+console.log(diagnostics);</code></pre>
+          </div>
+        </div>
+
+        <h2 id="blocks-heading" class="blocks-heading">Building blocks</h2>
+        <p class="section-lede">
+          The DSL surface fits on a postcard: six element families, each with a
+          job. Mix-and-match for any deck shape.
+        </p>
+        <div class="blocks-grid">
+          <article class="block-card">
+            <header>
+              <span class="block-num">01</span>
+              <h3><a href="./reference/slideglance/">Document &amp; Slides <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;Document size="16:9" defaultMaster="body" /&gt;
+&lt;Slide&gt;
+  &lt;VStack padding="64"&gt;
+    &lt;Text fontSize="32" bold="true"&gt;Hello&lt;/Text&gt;
+  &lt;/VStack&gt;
+&lt;/Slide&gt;</code></pre>
+            <p>
+              <code>&lt;Document&gt;</code> sets canvas size + default master.
+              Each <code>&lt;Slide&gt;</code> holds one root container.
+              <code>size</code> accepts <code>"16:9"</code>, <code>"4:3"</code>,
+              <code>"A4"</code>, or explicit <code>w/h</code>.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/slideglance/"><code>&lt;SlideGlance&gt;</code></a>,
+              <a href="./reference/document/"><code>&lt;Document&gt;</code></a>,
+              <a href="./reference/slide/"><code>&lt;Slide&gt;</code></a>,
+              <a href="./reference/fragment/"><code>&lt;Fragment&gt;</code></a>
+            </p>
+          </article>
+
+          <article class="block-card">
+            <header>
+              <span class="block-num">02</span>
+              <h3><a href="./reference/vstack/">Stacks &amp; layers <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;HStack gap="24" alignItems="center"&gt;
+  &lt;VStack gap="8" w="50%"&gt;
+    &lt;Text class="kicker"&gt;A&lt;/Text&gt;
+  &lt;/VStack&gt;
+  &lt;VStack gap="8" w="max"&gt;...&lt;/VStack&gt;
+&lt;/HStack&gt;
+&lt;Layer&gt;&lt;Image x="40" y="40" .../&gt;&lt;/Layer&gt;</code></pre>
+            <p>
+              <code>&lt;VStack&gt;</code> / <code>&lt;HStack&gt;</code> stack
+              along one axis with <code>gap</code>, <code>padding</code>,
+              <code>alignItems</code>. <code>w="max"</code> claims slack;
+              <code>&lt;Layer&gt;</code> opts into absolute positioning.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/vstack/"><code>&lt;VStack&gt;</code></a>,
+              <a href="./reference/hstack/"><code>&lt;HStack&gt;</code></a>,
+              <a href="./reference/layer/"><code>&lt;Layer&gt;</code></a>
+            </p>
+          </article>
+
+          <article class="block-card">
+            <header>
+              <span class="block-num">03</span>
+              <h3><a href="./reference/text/">Text &amp; inline formatting <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;Text fontSize="16" lineHeight="1.4"&gt;
+  Sales rose &lt;B&gt;23%&lt;/B&gt; in
+  &lt;Span color="00aa66"&gt;Q4 2025&lt;/Span&gt;.
+&lt;/Text&gt;
+&lt;Ul&gt;&lt;Li&gt;item&lt;/Li&gt;&lt;/Ul&gt;</code></pre>
+            <p>
+              <code>&lt;Text&gt;</code> supports
+              <code>&lt;B&gt;</code> / <code>&lt;I&gt;</code> /
+              <code>&lt;U&gt;</code> / <code>&lt;S&gt;</code> /
+              <code>&lt;Mark&gt;</code> / <code>&lt;Span&gt;</code> /
+              <code>&lt;A&gt;</code> for inline runs.
+              <code>&lt;Ul&gt;</code> / <code>&lt;Ol&gt;</code> handle bulleted
+              + numbered lists.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/text/"><code>&lt;Text&gt;</code></a>,
+              <a href="./reference/ul/"><code>&lt;Ul&gt;</code></a>,
+              <a href="./reference/ol/"><code>&lt;Ol&gt;</code></a>
+            </p>
+          </article>
+
+          <article class="block-card">
+            <header>
+              <span class="block-num">04</span>
+              <h3><a href="./reference/styles/">Styles — tokens <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;Styles&gt;
+  &lt;Style name="kicker" fontSize="14" bold="true"
+         color="666666" /&gt;
+  &lt;Style name="title"  fontSize="32" bold="true" /&gt;
+&lt;/Styles&gt;
+
+&lt;Text class="kicker"&gt;METRIC&lt;/Text&gt;
+&lt;Text class="title"&gt;$420K MRR&lt;/Text&gt;</code></pre>
+            <p>
+              Declare once in <code>&lt;Styles&gt;</code>, apply via
+              <code>class="..."</code>. Multiple classes combine
+              left-to-right; inline attrs always win.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/styles/"><code>&lt;Styles&gt;</code></a>,
+              <a href="./reference/style/"><code>&lt;Style&gt;</code></a>
+            </p>
+          </article>
+
+          <article class="block-card">
+            <header>
+              <span class="block-num">05</span>
+              <h3><a href="./reference/templates/">Templates &amp; Use <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;Template name="metric-card"&gt;
+  &lt;VStack class="card" padding="24" gap="8"&gt;
+    &lt;Text class="kicker"&gt;{label}&lt;/Text&gt;
+    &lt;Text class="title"&gt;{value}&lt;/Text&gt;
+    &lt;Slot name="default" /&gt;
+  &lt;/VStack&gt;
+&lt;/Template&gt;
+
+&lt;Use template="metric-card" label="MRR" value="$420K"&gt;
+  &lt;Text&gt;+12% QoQ&lt;/Text&gt;
+&lt;/Use&gt;</code></pre>
+            <p>
+              Extract a shape once, reuse with
+              <code>&lt;Use template="..."&gt;</code>. Parameters interpolate
+              via <code>{name}</code>; <code>&lt;Slot&gt;</code> carries
+              multi-element content.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/templates/"><code>&lt;Templates&gt;</code></a>,
+              <a href="./reference/template/"><code>&lt;Template&gt;</code></a>,
+              <a href="./reference/use/"><code>&lt;Use&gt;</code></a>,
+              <a href="./reference/slot/"><code>&lt;Slot&gt;</code></a>
+            </p>
+          </article>
+
+          <article class="block-card">
+            <header>
+              <span class="block-num">06</span>
+              <h3><a href="./reference/foreach/">Foreach, Import &amp; Master <span aria-hidden="true">→</span></a></h3>
+            </header>
+            <pre><code data-lang="xml">&lt;Import src="styles/typography.xml" /&gt;
+
+&lt;Master name="body"&gt;
+  &lt;MasterText x="48" y="36" fontSize="10"&gt;
+    Q4 · UPDATE
+  &lt;/MasterText&gt;
+&lt;/Master&gt;
+
+&lt;Foreach items='[
+  {"label":"MRR","value":"$420K"},
+  {"label":"NRR","value":"118%"}
+]' as="m"&gt;
+  &lt;Use template="metric-card"
+       label="{m.label}" value="{m.value}" /&gt;
+&lt;/Foreach&gt;</code></pre>
+            <p>
+              <code>&lt;Foreach&gt;</code> drives lists from JSON,
+              <code>&lt;Import&gt;</code> splits decks across files,
+              <code>&lt;Master&gt;</code> holds the chrome (header / footer /
+              page number) every slide shares.
+            </p>
+            <p class="block-card-more">
+              Reference:
+              <a href="./reference/foreach/"><code>&lt;Foreach&gt;</code></a>,
+              <a href="./reference/import/"><code>&lt;Import&gt;</code></a>,
+              <a href="./reference/document/"><code>&lt;Document&gt;</code></a>
+            </p>
+          </article>
+        </div>
+
+        <p class="blocks-followup">
+          The full per-attribute table is the auto-generated
+          <a
+            href="https://unpkg.com/@slideglance/builder@^0.1/reference.md"
+            rel="noopener"
+            ><code>reference.md</code></a
+          >
+          (shipped alongside the XSD on every release). The hand-curated
+          patterns guide lives in
+          <a
+            href="https://github.com/SlideGlance/slideglance/tree/main/packages/builder/docs"
+            rel="noopener"
+            >packages/builder/docs</a
+          >.
+        </p>
+
+        <ul class="feature-grid">
+          <li>
+            <h3>Flex-style layout primitives</h3>
+            <p>
+              <code>&lt;VStack&gt;</code>, <code>&lt;HStack&gt;</code>,
+              <code>&lt;Layer&gt;</code>, and a yoga-layout engine do the
+              positioning. Padding, gap, alignment, intrinsic sizing — all
+              CSS-flexbox-shaped without the CSS.
+            </p>
+          </li>
+          <li>
+            <h3>Templates + Foreach</h3>
+            <p>
+              Extract repeating shapes into <code>&lt;Template&gt;</code> and
+              call them with <code>&lt;Use&gt;</code>. Drive list-shaped slides
+              from a JSON array via <code>&lt;Foreach&gt;</code> — N
+              near-identical slides become one loop.
+            </p>
+          </li>
+          <li>
+            <h3>Master + Styles + Imports</h3>
+            <p>
+              Chrome lives in <code>&lt;Master&gt;</code>, type ramps in
+              <code>&lt;Styles&gt;</code>, and <code>&lt;Import&gt;</code> pulls
+              shared chapters across decks. Rebranding is a 60-second token
+              change.
+            </p>
+          </li>
+          <li>
+            <h3>autoFit + opentype measurement</h3>
+            <p>
+              Layout uses real font metrics (Pretendard / Noto Sans JP +
+              optional caller-supplied TTFs) so wrap decisions match the
+              renderer. Overflow triggers font / gap / scale fallbacks
+              automatically.
+            </p>
+          </li>
+          <li>
+            <h3>XSD + JSON Schema</h3>
+            <p>
+              Every node and attribute lives in a versioned schema at
+              <code>unpkg.com/@slideglance/builder@^0.1/builder.xsd</code>. Drop
+              it into the Red Hat XML extension for autocomplete and on-save
+              validation in any IDE.
+            </p>
+          </li>
+          <li>
+            <h3>30-rule lint pass</h3>
+            <p>
+              Catches horizontal / vertical overflow, low contrast, mixed
+              baselines in rows, unused styles, hardcoded hex, accessibility
+              gaps, and slide-count regressions. Runs on every build and on
+              save in the VS Code extension.
+            </p>
+          </li>
+        </ul>
+
+        <div class="lint-callout" aria-label="Example lint output">
+          <span class="lint-eyebrow">Sample lint output</span>
+          <pre><code><span class="lint-warn">[warn] TEXT_OVERFLOW_H</span>  Slide 6: &lt;Text&gt; natural single-line width ~547px exceeds box width 533px. Glyphs spill past the right edge.
+<span class="lint-error">[error] OUT_OF_PARENT</span> Slide 3: &lt;VStack&gt; overflows its hstack parent by 12px. Widen the parent or shrink the child.
+<span class="lint-info">[info] LOW_CONTRAST</span>   Slide 2: text #6E5A45 on #FFFBF5 → contrast 4.21, below WCAG AA 4.5.
+<span class="lint-info">[info] UNUSED_STYLE</span>   Deck declares &lt;Style name=&quot;callout-dim&quot; /&gt; but no element references it.</code></pre>
+        </div>
+
+        <div class="ide-row">
+          <div class="ide-card">
+            <h3>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  d="M17.5 1.4 6.2 12.7l-3.4-2.6-2.4 1.6 4.5 4.2L17.5 4.4Zm.6 5.4-7.4 7.4 3.7 3.7L24 8.2Zm-12.7.3L1 11.4l4.5 4.2v6.4l3.5-2.3v-3.6Z"
+                />
+              </svg>
+              VS Code extension
+            </h3>
+            <p>
+              <strong>Slide Builder</strong> registers the <code>.sgx</code>
+              schema, opens a live-preview pane next to the source, and runs
+              the same lint set on save. Click any shape in the preview to jump
+              back to the line that produced it.
+            </p>
+            <ul class="ide-points">
+              <li>Live PPTX preview (incremental — survives edit cycles).</li>
+              <li>Per-slide cache invalidation, fresh remount on file swap.</li>
+              <li>One-click <code>.pptx</code> export from the toolbar.</li>
+              <li>Schema-aware autocomplete via the Red Hat XML extension.</li>
+            </ul>
+            <a
+              class="ide-link"
+              href="https://marketplace.visualstudio.com/items?itemName=slideglance.slide-builder"
+              rel="noopener"
+              >Install from VS Code Marketplace →</a
+            >
+          </div>
+          <div class="ide-card">
+            <h3>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14" />
+              </svg>
+              Programmatic API
+            </h3>
+            <p>
+              <code>@slideglance/builder</code> on npm exposes
+              <code>buildPptx(xml, slideSize, options)</code> — pure async
+              TypeScript, no native deps, runs in Node and browsers. Wire it
+              into a CI step, a CMS publish hook, or a "render decks from a
+              spreadsheet" script.
+            </p>
+            <ul class="ide-points">
+              <li>Returns a pptxgenjs instance + structured diagnostics + source map.</li>
+              <li>Same lint catalog as the VS Code preview — fail your build on errors.</li>
+              <li>Inject custom fonts; render off the bundled Pretendard / Noto Sans JP.</li>
+            </ul>
+            <a
+              class="ide-link"
+              href="https://www.npmjs.com/package/@slideglance/builder"
+              rel="noopener"
+              >npm install @slideglance/builder →</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-band">
+        <h2>Start authoring</h2>
+        <p>
+          Install the VS Code extension for live preview, or pull
+          <code>@slideglance/builder</code> into a build script for batch
+          compilation.
+        </p>
+        <div class="cta-row">
+          <a
+            class="btn btn-primary"
+            href="https://marketplace.visualstudio.com/items?itemName=slideglance.slide-builder"
+            rel="noopener"
+          >
+            <span>Install Slide Builder for VS Code</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-secondary" href="../view/">See the viewer →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-row">
+        <div class="footer-brand">
+          <img src="../icon.svg" alt="" width="28" height="28" />
+          <span>SlideGlance</span>
+        </div>
+        <div class="footer-links">
+          <a href="../view/">View</a>
+          <a href="../build/">Build</a>
+          <a href="../playground/" data-open-playground>Playground</a>
+          <a href="https://github.com/SlideGlance/slideglance" rel="noopener"
+            >GitHub</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/issues"
+            rel="noopener"
+            >Issues</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/blob/main/LICENSE-MIT"
+            rel="noopener"
+            >MIT License</a
+          >
+        </div>
+      </div>
+      <p class="copy">
+        Copyright © 2026 SimpleCORE Inc. Released under the MIT License.
+      </p>
+    </footer>
+
+    <dialog
+      id="playground-dialog"
+      class="playground-dialog"
+      aria-labelledby="playground-dialog-title"
+      data-playground-url="../playground/"
+    >
+      <header class="playground-dialog-bar">
+        <h2 id="playground-dialog-title">
+          <img src="../icon.svg" alt="" width="22" height="22" />
+          <span>SlideGlance Playground</span>
+        </h2>
+        <div class="playground-dialog-actions">
+          <a
+            class="playground-dialog-link"
+            href="../playground/"
+            target="_blank"
+            rel="noopener"
+            title="Open the playground in a new tab"
+            >Open in new tab ↗</a
+          >
+          <button
+            type="button"
+            class="playground-dialog-close"
+            aria-label="Close playground"
+            data-close-playground
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <iframe
+        class="playground-dialog-frame"
+        title="SlideGlance Playground"
+        allow="clipboard-read; clipboard-write; fullscreen"
+      ></iframe>
+    </dialog>
+
+    <script src="../scripts/site.js"></script>
+  </body>
+</html>

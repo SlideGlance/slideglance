@@ -17,6 +17,9 @@ node_modules/
 .yarn/
 dist/
 build/
+# Landing site source pages — apps/landing/build/ holds the Build sub-page
+# source HTML, not a build output. Negate the broad `build/` rule for it.
+!apps/landing/build/
 .vite/
 .turbo/
 
