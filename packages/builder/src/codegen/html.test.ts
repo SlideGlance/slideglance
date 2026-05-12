@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { renderElementPage, renderIndexPage } from "./html.ts";
+import {
+  generateReferenceHtml,
+  renderElementPage,
+  renderIndexPage,
+} from "./html.ts";
 import { buildReferenceModel } from "./walkRegistry.ts";
 
 describe("renderElementPage(Text)", () => {
@@ -112,5 +116,36 @@ describe("renderIndexPage", () => {
   it("includes both group headings", () => {
     expect(html).toContain(">Visual nodes</h2>");
     expect(html).toContain(">Meta &amp; composition</h2>");
+  });
+});
+
+describe("generateReferenceHtml", () => {
+  const files = generateReferenceHtml();
+
+  it("produces 29 HTML files + styles.css + scripts/site.js", () => {
+    const html = [...files.keys()].filter((k) => k.endsWith(".html"));
+    expect(html.sort()).toContain("index.html");
+    expect(html).toContain("text/index.html");
+    expect(html).toContain("slideglance/index.html");
+    expect(html).toContain("document/index.html");
+    expect(html).toHaveLength(30);
+  });
+
+  it("produces styles.css and scripts/site.js", () => {
+    expect(files.has("styles.css")).toBe(true);
+    expect(files.has("scripts/site.js")).toBe(true);
+  });
+
+  it("styles.css mirrors landing palette tokens", () => {
+    const css = files.get("styles.css")!;
+    expect(css).toContain("--bg:");
+    expect(css).toContain("--accent:");
+    expect(css).toContain("[data-theme=\"dark\"]");
+  });
+
+  it("scripts/site.js gates / shortcut against editable surfaces", () => {
+    const js = files.get("scripts/site.js")!;
+    expect(js).toContain("contenteditable");
+    expect(js).toContain('role="textbox"');
   });
 });
