@@ -2,6 +2,9 @@
 name = "slideglance-vrt"
 version = "0.0.0"
 edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+authors = ["Taehwan Kwag <dev@simplecore.kr>"]
 publish = false
 description = "Visual regression test harness for slideglance (SVG byte-equivalence per fixture × slide)."
 

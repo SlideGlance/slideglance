@@ -33,25 +33,3 @@ services:
       # Mount the preview output dir back to the host.
       - ../vrt/preview/output:/app/packages/builder/vrt/preview/output
     command: pnpm run preview
-
-  docs-images:
-    build:
-      context: ../../..
-      dockerfile: packages/builder/docker/Dockerfile
-    image: slideglance-builder-vrt:latest
-    volumes:
-      # Mount the docs/images directory back to the host.
-      - ../docs/images:/app/packages/builder/docs/images
-    command: pnpm run docs:images
-
-  docs-images-vrt:
-    build:
-      context: ../../..
-      dockerfile: packages/builder/docker/Dockerfile
-    image: slideglance-builder-vrt:latest
-    volumes:
-      # Reference docs/images/*.png as baselines.
-      - ../docs/images:/app/packages/builder/docs/images:ro
-      # Write VRT output back to the host.
-      - ../docs/images/output:/app/packages/builder/docs/images/output
-    command: pnpm run docs:images:vrt

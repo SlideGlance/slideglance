@@ -53,7 +53,7 @@ describe("renderPptx masters", () => {
         },
       ] as never,
       { w: 1280, h: 720 },
-      createBuildContext("fallback"),
+      createBuildContext({ textMeasurementMode: "fallback" }),
       [
         { title: "PRIMARY", background: { color: "FFFFFF" } },
         {
@@ -98,7 +98,7 @@ describe("renderPptx masters", () => {
         },
       ] as never,
       { w: 1280, h: 720 },
-      createBuildContext("fallback"),
+      createBuildContext({ textMeasurementMode: "fallback" }),
     );
 
     expect(addSlide).toHaveBeenCalledTimes(1);
@@ -121,7 +121,7 @@ describe("renderPptx masters", () => {
         },
       ] as never,
       { w: 1280, h: 720 },
-      createBuildContext("fallback"),
+      createBuildContext({ textMeasurementMode: "fallback" }),
       [{ title: "PRIMARY" }],
       "PRIMARY",
       {
@@ -205,11 +205,14 @@ describe("renderPptx masters", () => {
         },
       ] as never,
       { w: 1280, h: 720 },
-      createBuildContext("fallback", {
-        fontFamily: "Pretendard",
-        fontSize: 20,
-        color: "334155",
-        bold: true,
+      createBuildContext({
+        textMeasurementMode: "fallback",
+        defaultTextStyle: {
+          fontFamily: "Pretendard",
+          fontSize: 20,
+          color: "334155",
+          bold: true,
+        },
       }),
       [
         {
@@ -281,7 +284,7 @@ describe("renderPptx masters", () => {
         },
       ] as never,
       { w: 1280, h: 720 },
-      createBuildContext("fallback"),
+      createBuildContext({ textMeasurementMode: "fallback" }),
       [{ title: "PRIMARY" }],
       "PRIMARY",
       {
@@ -364,7 +367,7 @@ describe("renderPptx masters", () => {
           },
         ] as never,
         { w: 1280, h: 720 },
-        createBuildContext("fallback"),
+        createBuildContext({ textMeasurementMode: "fallback" }),
         [{ title: "PRIMARY" }],
         "PRIMARY",
         {

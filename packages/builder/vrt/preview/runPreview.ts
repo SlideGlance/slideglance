@@ -2,7 +2,7 @@
 // rasterize it via the shared LibreOffice-backed converter, and write
 // `output/sample.png` so a developer (or Claude Code) can visually
 // inspect a layout / rendering change without maintaining an expected
-// baseline. Sister to vrt/decks/runVrt.ts and vrt/nodes/generateNodeImages.ts.
+// baseline. Sister to vrt/decks/runVrt.ts.
 
 import fs from "fs";
 import path from "path";

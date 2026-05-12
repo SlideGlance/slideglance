@@ -52,7 +52,8 @@ export async function buildSamplePptx(outputPath: string): Promise<void> {
 
 // CLI entry — `tsx vrt/preview/sample.ts [outPath]`.
 const invokedAsScript =
-  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (invokedAsScript) {
   const outputPath = process.argv[2] ?? "sample.pptx";
   buildSamplePptx(outputPath).catch((err) => {
