@@ -30,7 +30,13 @@ export function highlightXml(src: string): string {
   // correctly because `\s*\/?` cannot consume `&`.
   let out = safe.replace(
     /&lt;(\/?)([A-Za-z][\w]*)((?:\s+.+?)?)(\s*\/?)&gt;/g,
-    (_m, slash, tag, attrs, tail) => {
+    (
+      _m: string,
+      slash: string,
+      tag: string,
+      attrs: string,
+      tail: string,
+    ): string => {
       const inside = attrs ? highlightAttrs(attrs) : "";
       return (
         `<span class="tk-punct">&lt;${slash}</span>` +
@@ -52,7 +58,7 @@ function highlightAttrs(s: string): string {
   // appears as &quot; after escape).
   return s.replace(
     /\s+([\w.-]+)=(&quot;.*?&quot;)/g,
-    (_m, name, value) =>
+    (_m: string, name: string, value: string): string =>
       ` <span class="tk-attr">${name}</span>=` +
       `<span class="tk-str">${value}</span>`,
   );
