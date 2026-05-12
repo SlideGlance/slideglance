@@ -9,6 +9,7 @@ export default defineConfig([
       "dist/**",
       "coverage/**",
       "dist-schema/**",
+      "reference-html/**",
       "**/*.test.ts",
       "node_modules/**",
       "vrt/**",
