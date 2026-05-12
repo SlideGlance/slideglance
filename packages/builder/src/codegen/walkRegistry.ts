@@ -21,6 +21,7 @@ import type {
   CompiledNodeDefinition,
   CoerceType,
 } from "../registry/defineNode.ts";
+import type { NodeCategory } from "../registry/types.ts";
 import type { CompiledMetaDefinition } from "../registry/defineMeta.ts";
 import { SEE_ALSO, type SeeAlsoEntry } from "./seeAlso.ts";
 
@@ -147,8 +148,20 @@ export function buildReferenceModel(): ReferenceModel {
   };
 }
 
-/** Container categories that accept arbitrary builder-node children. */
-const CONTAINER_CATEGORIES = new Set(["multi-child", "absolute-child"]);
+/**
+ * Whether a `NodeCategory` represents a container that accepts arbitrary
+ * builder-node children. Switch is exhaustive against `NodeCategory` so adding
+ * a new category in `src/registry/types.ts` triggers a TypeScript error here.
+ */
+function isContainerCategory(c: NodeCategory): boolean {
+  switch (c) {
+    case "leaf":
+      return false;
+    case "multi-child":
+    case "absolute-child":
+      return true;
+  }
+}
 
 /**
  * Build the reverse parent-of index used by the HTML reference's "Used by"
@@ -205,7 +218,9 @@ function deriveUsedBy(
   // parents, not occurrence counts). Self-nesting is omitted for readability —
   // a VStack page does not list itself in "Used by".
   const containers = nodes.filter(
-    (n) => CONTAINER_CATEGORIES.has(n.category ?? "") || n.tag === "Slide",
+    (n) =>
+      (n.category !== undefined && isContainerCategory(n.category)) ||
+      n.tag === "Slide",
   );
   for (const container of containers) {
     for (const child of nodes) {
@@ -215,6 +230,12 @@ function deriveUsedBy(
       ensure(child.tag).push({ parent: container.tag, cardinality: "0..∞" });
     }
   }
+
+  // Pass D — Slide → SlideGlance is the document-root relationship that
+  // SlideGlance does not declare via `children` (SlideGlance is a root node
+  // without a `children` spec). Capture it explicitly so the Slide page does
+  // not render as "Top-level".
+  ensure("Slide").push({ parent: "SlideGlance", cardinality: "1..∞" });
 
   // Dedupe (parent, cardinality) tuples that could appear across passes.
   for (const [tag, entries] of result) {
