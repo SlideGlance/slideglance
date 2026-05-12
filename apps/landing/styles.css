@@ -1275,6 +1275,17 @@ pre code .tk-comment {
   border: 1px solid var(--border);
   font-size: 0.86em;
 }
+.block-card .block-card-more {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 12px 0 0;
+}
+.block-card-more a {
+  color: var(--fg-muted);
+}
+.block-card-more a:hover {
+  color: var(--accent);
+}
 .blocks-followup {
   margin-top: 28px;
   color: var(--fg-muted);
