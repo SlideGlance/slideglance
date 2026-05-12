@@ -1,6 +1,7 @@
 import { autoFitSlide } from "./autoFit/autoFit.ts";
 import { createBuildContext } from "./buildContext.ts";
 import { calcYogaLayout } from "./calcYogaLayout/calcYogaLayout.ts";
+import { lintDeck, type LintOptions, type LintReport } from "./lint/index.ts";
 import type { TextMeasurementMode } from "./calcYogaLayout/measureText.ts";
 import type { YogaNodeMap } from "./calcYogaLayout/types.ts";
 import { extractLayoutResults } from "./calcYogaLayout/types.ts";
@@ -35,6 +36,13 @@ export interface BuildPptxResult {
    * the source file/line for rendered pptxgenjs objects.
    */
   sourceMap?: BuilderSourceMap;
+  /**
+   * Structured lint report when `options.lint?.enabled` is true.
+   * Same diagnostics that get merged into `diagnostics`, plus per-deck
+   * summary counts and a generatedAt stamp suitable for tooling /
+   * LLM consumption.
+   */
+  lintReport?: LintReport;
 }
 
 export type { ImageSrcGuardOptions, MasterPptxLimits } from "./options.ts";
@@ -100,6 +108,31 @@ export interface BuildPptxOptions {
    * explicit `lang` attribute (e.g. `"en-US"`, `"ja-JP"`). Default: undefined.
    */
   defaultLang?: string;
+  /**
+   * Lint options. When `lint.enabled` is true, post-layout lint rules
+   * run after every slide is positioned and the resulting Diagnostics
+   * are merged into the BuildPptxResult.diagnostics list. The full
+   * structured `LintReport` is also returned for tooling / LLM input.
+   * See `packages/builder/docs/lint.md` for the rule catalog.
+   */
+  lint?: LintOptions;
+  /**
+   * TTF / OTF font buffers to register with the per-build text
+   * measurer alongside the bundled fonts (Noto Sans JP + Pretendard,
+   * Regular + Bold). When present, opentype measurement looks up the
+   * caller's families directly (no Noto/Pretendard substitution), so
+   * the wrap decision the builder commits to the PPTX matches the
+   * glyph metrics of the actual font the renderer will paint.
+   *
+   * Supply both weight variants (Regular and Bold) of any family that
+   * appears in `bold="true"` text — slideglance routes faces with
+   * `OS/2.usWeightClass >= 600` to the resolver's bold slot, so a
+   * single family lookup with `bold=true` reaches the Bold face.
+   *
+   * Pair with the viewer's `fontStylesheet` prop using the same TTFs
+   * (as `@font-face` data URIs) so layout-time wrap = render-time wrap.
+   */
+  fonts?: Uint8Array[];
 }
 
 const DEFAULT_MASTER_NAME = "SLIDEGLANCE_MASTER";
@@ -250,16 +283,17 @@ export async function buildPptx(
     equalize: options?.equalize,
   });
   const document = parseResult.document;
-  const ctx = createBuildContext(
-    options?.textMeasurement ?? "auto",
-    mergeDefaultTextStyles(
+  const ctx = createBuildContext({
+    textMeasurementMode: options?.textMeasurement ?? "auto",
+    defaultTextStyle: mergeDefaultTextStyles(
       document.defaultTextStyle,
       options?.defaultTextStyle,
     ),
-    options?.allowedHrefSchemes,
-    options?.imageSrcGuard,
-    options?.defaultLang,
-  );
+    allowedHrefSchemes: options?.allowedHrefSchemes,
+    imageSrcGuard: options?.imageSrcGuard,
+    defaultLang: options?.defaultLang,
+    fonts: options?.fonts,
+  });
   // T11.5: surface non-fatal parse-time diagnostics through the same
   // collector that gathers render-time diagnostics, so the final
   // BuildPptxResult exposes them via .diagnostics in arrival order.
@@ -354,6 +388,26 @@ export async function buildPptx(
     defaultMaster,
   );
 
+  // Post-layout lint pass. Runs over every positioned slide tree and
+  // merges its findings into the same diagnostic stream the renderer
+  // and parser write into — so callers get one unified list.
+  let lintReport: LintReport | undefined;
+  if (options?.lint?.enabled) {
+    const { diagnostics: lintDiags, report } = lintDeck(
+      positionedPages.map((root) => ({ root, slideSize: resolvedSlideSize })),
+      options.lint,
+      {
+        declaredStyles: document.declaredStyles,
+        referencedStyles: document.referencedStyles,
+        declaredTemplates: document.declaredTemplates,
+        referencedTemplates: document.referencedTemplates,
+        measurer: ctx.measurer,
+      },
+    );
+    for (const d of lintDiags) ctx.diagnostics.addLint(d);
+    lintReport = report;
+  }
+
   const pptx = await renderPptx(
     positionedPages,
     resolvedSlideSize,
@@ -375,5 +429,6 @@ export async function buildPptx(
     pptx,
     diagnostics,
     ...(document.sourceMap ? { sourceMap: document.sourceMap } : {}),
+    ...(lintReport ? { lintReport } : {}),
   };
 }
