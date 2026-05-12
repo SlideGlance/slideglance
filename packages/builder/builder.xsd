@@ -192,6 +192,18 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
+    <xs:attribute name="textVAlign" use="optional">
+      <xs:annotation>
+        <xs:documentation>Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="middle"/>
+          <xs:enumeration value="bottom"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
     <xs:attribute name="top" type="xs:double" use="optional"/>
     <xs:attribute name="underline" type="b:Underline" use="optional"/>
     <xs:attribute name="w" type="b:Length" use="optional">
@@ -316,6 +328,18 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
+    <xs:attribute name="textVAlign" use="optional">
+      <xs:annotation>
+        <xs:documentation>Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="middle"/>
+          <xs:enumeration value="bottom"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
     <xs:attribute name="top" type="xs:double" use="optional"/>
     <xs:attribute name="underline" type="b:Underline" use="optional"/>
     <xs:attribute name="w" type="b:Length" use="optional">
@@ -435,6 +459,18 @@
           <xs:enumeration value="left"/>
           <xs:enumeration value="center"/>
           <xs:enumeration value="right"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="textVAlign" use="optional">
+      <xs:annotation>
+        <xs:documentation>Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="middle"/>
+          <xs:enumeration value="bottom"/>
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>

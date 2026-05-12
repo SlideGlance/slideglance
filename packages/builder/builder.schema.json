@@ -375,6 +375,14 @@
         },
         "noWrap": {
           "type": "boolean"
+        },
+        "textVAlign": {
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ]
         }
       },
       "required": [
@@ -794,6 +802,14 @@
         },
         "noWrap": {
           "type": "boolean"
+        },
+        "textVAlign": {
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ]
         }
       },
       "required": [
@@ -1237,6 +1253,14 @@
         },
         "noWrap": {
           "type": "boolean"
+        },
+        "textVAlign": {
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ]
         }
       },
       "required": [

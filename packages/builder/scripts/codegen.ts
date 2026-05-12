@@ -2,11 +2,13 @@
 /**
  * Entry point for `pnpm run codegen`.
  *
- * Generates:
- *   dist-schema/builder.xsd          — XML Schema
- *   dist-schema/builder.schema.json  — JSON Schema for BuilderNode
- *   dist-schema/.codegen-hash.json   — content hashes for CI verify
- *   dist-schema/reference.md         — human-readable node reference
+ * Generates (at the package root so unpkg surfaces them at
+ * `unpkg.com/@slideglance/builder@^0.1/<file>`, matching the
+ * `schemaLocation` URL embedded in every `.sgx` template):
+ *   builder.xsd          — XML Schema
+ *   builder.schema.json  — JSON Schema for BuilderNode
+ *   reference.md         — human-readable node reference
+ *   .codegen-hash.json   — content hashes for CI verify
  *
  * Flags:
  *   --check    do not write; re-emit, hash, and exit non-zero on drift
@@ -30,12 +32,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const PKG = resolve(HERE, "..");
 
 const OUTPUTS = {
-  "dist-schema/builder.xsd": () => generateXsd(),
-  "dist-schema/builder.schema.json": () => generateJsonSchemaString(),
+  "builder.xsd": () => generateXsd(),
+  "builder.schema.json": () => generateJsonSchemaString(),
   // Generated reference published alongside the schema artifacts. The
-  // hand-curated `docs/nodes.md` (with rich XML samples) remains as the
-  // primary user-facing doc.
-  "dist-schema/reference.md": () => generateNodesMd(),
+  // hand-curated `docs/xml-reference.md` (with rich XML samples) remains
+  // as the primary user-facing doc.
+  "reference.md": () => generateNodesMd(),
 };
 
 function main(): void {
@@ -48,10 +50,10 @@ function main(): void {
   }
 
   if (isCheck) {
-    const hashPath = join(PKG, "dist-schema/.codegen-hash.json");
+    const hashPath = join(PKG, ".codegen-hash.json");
     if (!existsSync(hashPath)) {
       console.error(
-        "Codegen --check failed: dist-schema/.codegen-hash.json is missing. Run `pnpm run codegen` and commit.",
+        "Codegen --check failed: .codegen-hash.json is missing. Run `pnpm run codegen` and commit.",
       );
       process.exit(1);
     }
@@ -96,7 +98,7 @@ function main(): void {
   }
 
   // Write hash record
-  const hashRel = "dist-schema/.codegen-hash.json";
+  const hashRel = ".codegen-hash.json";
   const hashAbs = join(PKG, hashRel);
   const record = buildHashRecord(generated);
   // Strip generatedAt for stable diffs across runs.

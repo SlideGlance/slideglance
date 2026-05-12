@@ -13,7 +13,10 @@
   },
   "files": [
     "dist",
-    "dist-schema",
+    "builder.xsd",
+    "builder.schema.json",
+    "reference.md",
+    ".codegen-hash.json",
     "README.md",
     "LICENSE"
   ],
@@ -41,7 +44,7 @@
     "dsl",
     "slideglance"
   ],
-  "author": "slideglance",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
   "contributors": [
     "Hiroki Sakabe (original @slideglance/builder author)"
   ],
@@ -68,11 +71,6 @@
     "vrt:docker:update": "docker compose -f docker/docker-compose.yml build vrt-update && docker compose -f docker/docker-compose.yml run --rm vrt-update",
     "preview": "tsx vrt/preview/runPreview.ts",
     "preview:docker": "docker compose -f docker/docker-compose.yml build preview && docker compose -f docker/docker-compose.yml run --rm preview",
-    "docs:images": "tsx vrt/nodes/generateNodeImages.ts",
-    "docs:images:docker": "docker compose -f docker/docker-compose.yml run --rm docs-images",
-    "docs:images:docker:update": "docker compose -f docker/docker-compose.yml build docs-images && docker compose -f docker/docker-compose.yml run --rm docs-images",
-    "docs:images:vrt": "tsx vrt/nodes/generateNodeImages.ts --check",
-    "docs:images:vrt:docker": "docker compose -f docker/docker-compose.yml build docs-images-vrt && docker compose -f docker/docker-compose.yml run --rm docs-images-vrt",
     "tools:convert-font": "tsx scripts/convertFontToBase64.ts",
     "size": "size-limit"
   },
@@ -83,10 +81,10 @@
     "@size-limit/file": "^12.1.0",
     "@types/node": "^25.6.2",
     "@types/pngjs": "6.0.5",
-    "@vitest/coverage-v8": "^2.1.0",
-    "@vitest/ui": "^2.1.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/ui": "^4.1.0",
     "lucide-static": "^1.14.0",
-    "pixelmatch": "7.1.0",
+    "pixelmatch": "7.2.0",
     "pngjs": "7.0.0",
     "size-limit": "^12.1.0",
     "tsx": "4.21.0",

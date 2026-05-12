@@ -78,6 +78,7 @@ Renders a single piece of styled text. Supports inline styled runs via <B>, <I>,
 | `strike` | boolean |  |  |
 | `text` | string |  | Text content (or use element body). *(also accepted as element body text)* |
 | `textAlign` | textAlign (left\|center\|right) |  |  |
+| `textVAlign` | vAlign (top\|middle\|bottom) |  | Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box. |
 | `top` | number |  |  |
 | `underline` | underline |  |  |
 | `w` | length |  | Width (number, percentage, or 'max'). |
@@ -130,6 +131,7 @@ Bulleted list. Items can be supplied via the JSON `items` attribute or via <Li> 
 | `shadow` | shadow |  |  |
 | `strike` | boolean |  |  |
 | `textAlign` | textAlign (left\|center\|right) |  |  |
+| `textVAlign` | vAlign (top\|middle\|bottom) |  | Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box. |
 | `top` | number |  |  |
 | `underline` | underline |  |  |
 | `w` | length |  | Width (number, percentage, or 'max'). |
@@ -184,6 +186,7 @@ Numbered list. Items via JSON `items` attribute or <Li> children.
 | `shadow` | shadow |  |  |
 | `strike` | boolean |  |  |
 | `textAlign` | textAlign (left\|center\|right) |  |  |
+| `textVAlign` | vAlign (top\|middle\|bottom) |  | Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box. |
 | `top` | number |  |  |
 | `underline` | underline |  |  |
 | `w` | length |  | Width (number, percentage, or 'max'). |
