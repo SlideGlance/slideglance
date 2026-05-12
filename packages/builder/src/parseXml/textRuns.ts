@@ -37,6 +37,30 @@ type TextRunResult = {
   lang?: string;
 };
 
+/**
+ * Collapse the source-code whitespace that lives inside multi-line Text
+ * elements. Authors typically write
+ *
+ *   <Text>
+ *     a long paragraph that spans
+ *     two source lines.
+ *   </Text>
+ *
+ * and (because the XML parser is configured with `trimValues:false` to
+ * preserve intentional in-line whitespace inside e.g. monospace runs)
+ * would otherwise see those newlines and the leading indent show up as
+ * literal whitespace in the rendered slide.
+ *
+ * We collapse every run of (whitespace + newline + whitespace) to a
+ * single space, which gives HTML-like "normal" whitespace semantics
+ * for line-break source whitespace while leaving same-line indentation
+ * (used by `<Text class="code-text">  some code</Text>` etc.) intact.
+ */
+const SOURCE_NEWLINE_RUN_RE = /[ \t]*\n\s*/g;
+function collapseSourceNewlines(text: string): string {
+  return text.replace(SOURCE_NEWLINE_RUN_RE, " ");
+}
+
 function hasInlineFormatChildren(childElements: XmlElement[]): boolean {
   return (
     childElements.length > 0 &&
@@ -58,7 +82,12 @@ function extractTextRuns(
   const runs: TextRunResult[] = [];
   for (const child of children) {
     if (isTextNode(child)) {
-      const run: TextRunResult = { text: decodeTextEscapes(child["#text"]) };
+      // Order matters: collapse formatting newlines from the raw XML
+      // first, THEN decode user escapes. If we decoded first, the
+      // collapse would also eat author-inserted `\n` line breaks.
+      const run: TextRunResult = {
+        text: decodeTextEscapes(collapseSourceNewlines(child["#text"])),
+      };
       if (inheritBold) run.bold = true;
       if (inheritItalic) run.italic = true;
       if (inheritUnderline) run.underline = true;

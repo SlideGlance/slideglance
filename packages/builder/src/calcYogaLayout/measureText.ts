@@ -1,7 +1,7 @@
 import {
   measureTextWidth as measureTextWidthOpentype,
-  isBundledFont,
   pickBundledFontForText,
+  type TextMeasurer,
 } from "./fontLoader.ts";
 
 type MeasureOptions = {
@@ -9,6 +9,14 @@ type MeasureOptions = {
   fontSizePx: number;
   fontWeight?: "normal" | "bold" | number;
   lineHeight?: number;
+  /**
+   * Optional caller-supplied measurer. When set, opentype measurement
+   * routes through this measurer instead of the bundled-fonts singleton,
+   * letting consumers attach their own TTF/OTF buffers so the wrap
+   * decision uses the same font the renderer will actually paint.
+   * See `createMeasurer` in `fontLoader.ts`.
+   */
+  measurer?: TextMeasurer;
 };
 
 export type TextMeasurementMode = "opentype" | "fallback" | "auto";
@@ -53,13 +61,39 @@ function isCJKChar(char: string): boolean {
 /**
  * Fallback character-width estimate.
  * - CJK / wide character: 1em (= fontSizePx)
- * - Latin / narrow character: 0.5em
+ * - Latin / narrow character: per-character lookup, averages ~0.45em
+ *   over typical Latin text. The previous flat 0.5em over-estimated
+ *   width on modern sans-serifs and even most serifs (Inter/Georgia
+ *   average 0.43-0.49em), causing premature wrap and visually
+ *   misaligned cross-axis heights in sibling rows.
  */
+const LATIN_CHAR_EM_WIDTH: Record<string, number> = (() => {
+  const map: Record<string, number> = {};
+  for (const c of "ijlI|!.,:;'`") map[c] = 0.28; // very narrow
+  for (const c of "rtfJ-—–()[]{}") map[c] = 0.32; // narrow
+  for (const c of "abcdeghknopqsuvxyz") map[c] = 0.48; // default lowercase
+  for (const c of "mw") map[c] = 0.78; // wide lowercase
+  for (const c of "ABCDEFGHKLNOPQRSTUVXYZ") map[c] = 0.62; // default uppercase
+  for (const c of "MW") map[c] = 0.85; // wide uppercase
+  for (const c of "0123456789") map[c] = 0.55; // digits (often tabular)
+  map[" "] = 0.28;
+  map["?"] = 0.5;
+  map["%"] = 0.78;
+  map["@"] = 0.85;
+  map["#"] = 0.6;
+  map["&"] = 0.7;
+  map["$"] = 0.55;
+  map["·"] = 0.4;
+  return map;
+})();
+const LATIN_AVG_EM = 0.48;
+
 function estimateCharWidth(char: string, fontSizePx: number): number {
   if (isCJKChar(char)) {
-    return fontSizePx; // 1em
+    return fontSizePx;
   }
-  return fontSizePx * 0.5; // 0.5em
+  const emWidth = LATIN_CHAR_EM_WIDTH[char] ?? LATIN_AVG_EM;
+  return fontSizePx * emWidth;
 }
 
 /**
@@ -158,17 +192,15 @@ export function measureText(
 } {
   // Pick the measurement strategy:
   //   - "opentype" / "fallback": honour the explicit caller choice.
-  //   - "auto": use opentype for bundled families, fallback otherwise.
-  const shouldUseFallback = (() => {
-    switch (mode) {
-      case "opentype":
-        return false;
-      case "fallback":
-        return true;
-      case "auto":
-        return !isBundledFont(opts.fontFamily);
-    }
-  })();
+  //   - "auto": always use opentype. Non-bundled families route through
+  //     `pickBundledFontForText` for substitution (Pretendard for
+  //     Hangul-dominant text, Noto Sans JP for everything else), which
+  //     tracks the renderer's actual glyph widths far closer than the
+  //     per-char-em fallback heuristic ever did. The previous
+  //     bundled-only gating produced layout-vs-render mismatches that
+  //     surfaced as horizontal overflow (workshop deck) and vertical
+  //     overlap (editorial deck) when authors used Inter / Georgia.
+  const shouldUseFallback = mode === "fallback";
 
   if (shouldUseFallback) {
     return measureTextFallback(text, maxWidthPx, opts);
@@ -184,12 +216,23 @@ function measureTextWithOpentype(
   opts: MeasureOptions,
 ): { widthPx: number; heightPx: number } {
   const fontWeight = normalizeFontWeight(opts.fontWeight);
-  // Script-aware fallback: when the caller's family isn't bundled,
-  // pick Pretendard for Hangul-dominant text and the default
-  // (Noto Sans JP — covers CJK + Latin) otherwise.
-  const bundledFontFamily = pickBundledFontForText(opts.fontFamily, text);
+  // Resolve which family the measurer should look up. With a user-supplied
+  // measurer (carries the original TTF buffers via `createMeasurer`), the
+  // exact `fontFamily` resolves natively. Without one, fall back to the
+  // bundled-font substitution: Pretendard for Hangul-dominant text,
+  // Noto Sans JP otherwise. The substitution still tracks the renderer's
+  // glyph widths far closer than the per-char heuristic.
+  const lookupFamily = opts.measurer
+    ? opts.fontFamily
+    : pickBundledFontForText(opts.fontFamily, text);
   const lines = wrapText(text, maxWidthPx, (t) =>
-    measureTextWidthOpentype(t, bundledFontFamily, opts.fontSizePx, fontWeight),
+    measureTextWidthOpentype(
+      t,
+      lookupFamily,
+      opts.fontSizePx,
+      fontWeight,
+      opts.measurer,
+    ),
   );
   return calculateResult(lines, opts);
 }

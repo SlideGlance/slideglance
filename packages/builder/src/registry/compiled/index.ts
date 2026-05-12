@@ -91,6 +91,11 @@ const TEXT_STYLE_ATTRS: Record<string, AttributeSpec> = {
     coerce: "boolean",
     doc: "When true, the layout never wraps the text — it is always measured as a single line. Combined with `flexShrink=0` so a parent flex layout cannot squeeze it. The rendered text may overflow the box horizontally if it is longer than the box's width; if you need word-wrap, leave this off.",
   },
+  textVAlign: {
+    coerce: "vAlign",
+    enum: ["top", "middle", "bottom"],
+    doc: "Vertical alignment of the rendered text within its box. Defaults to `top` — useful when the box has been stretched by an HStack parent (so a smaller-fontSize sibling does not visually float at the top of the equalized row). `middle` centers the glyphs; `bottom` anchors them to the baseline of the box.",
+  },
 };
 
 // ===== Node declarations =====

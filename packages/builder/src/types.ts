@@ -111,6 +111,7 @@ export const textNodeSchema = baseNodeSchema.extend({
   fontFamily: z.string().optional(),
   lineHeight: z.number().optional(),
   noWrap: z.boolean().optional(),
+  textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
 });
 
 export const liNodeSchema = z.object({
@@ -141,6 +142,7 @@ export const ulNodeSchema = baseNodeSchema.extend({
   lineHeight: z.number().optional(),
   bulletIndent: z.number().optional(),
   noWrap: z.boolean().optional(),
+  textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
 });
 
 export const olNodeSchema = baseNodeSchema.extend({
@@ -160,6 +162,7 @@ export const olNodeSchema = baseNodeSchema.extend({
   numberStartAt: z.number().optional(),
   bulletIndent: z.number().optional(),
   noWrap: z.boolean().optional(),
+  textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
 });
 
 const imageSizingSchema = z.object({

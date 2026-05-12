@@ -70,6 +70,7 @@ export const textNodeDef: NodeDefinition = {
           fontSizePx,
           lineHeight,
           fontWeight,
+          measurer: ctx.measurer,
         },
         ctx.textMeasurementMode,
       );

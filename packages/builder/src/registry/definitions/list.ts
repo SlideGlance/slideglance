@@ -37,7 +37,11 @@ function applyListYogaStyle(
     1.0,
   );
 
-  const fontMetricsRatio = measureFontLineHeightRatio(fontFamily, fontWeight);
+  const fontMetricsRatio = measureFontLineHeightRatio(
+    fontFamily,
+    fontWeight,
+    ctx.measurer,
+  );
   const lineHeight = fontMetricsRatio * spacingMultiple;
 
   // Bullet/number indent width in px (consistent with fontSize/w/h). Default 19 px (~0.5 cm).
@@ -70,6 +74,7 @@ function applyListYogaStyle(
         fontSizePx,
         lineHeight,
         fontWeight,
+        measurer: ctx.measurer,
       },
       ctx.textMeasurementMode,
     );

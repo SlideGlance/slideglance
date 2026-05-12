@@ -149,14 +149,25 @@ export function getTextContent(node: XmlElement): string | undefined {
   }
   if (textParts.length === 0) return undefined;
   const joined = textParts.join("");
-  // Only strip surrounding whitespace when the content spans multiple lines —
-  // that whitespace originates from XML indentation. Single-line content
-  // (including " " or "  " used intentionally for spacing) is preserved.
-  const trimmed = joined.includes("\n")
-    ? joined.replace(/^[\s\uFEFF\u00A0]+|[\s\uFEFF\u00A0]+$/g, "")
+  // Normalize source-code whitespace from multi-line authored content.
+  // When the content spans multiple lines (i.e. contains a newline), the
+  // surrounding whitespace and every internal newline+indent run are XML
+  // indentation, not authored content. Strip the surrounding whitespace
+  // AND collapse internal newline+indent runs to a single space — this
+  // mirrors HTML's "normal" whitespace rule and matches the inline
+  // text-run handler in textRuns.ts (`collapseSourceNewlines`).
+  // Single-line content (including " " or "  " used intentionally for
+  // spacing, common in monospace runs) is preserved verbatim.
+  // Order matters: strip + collapse the raw XML newlines FIRST, then
+  // decode `\n` escapes. Doing the inverse would eat author-inserted
+  // line breaks that arrived as the `\n` escape sequence.
+  const normalized = joined.includes("\n")
+    ? joined
+        .replace(/^[\s\uFEFF\u00A0]+|[\s\uFEFF\u00A0]+$/g, "")
+        .replace(/[ \t]*\n\s*/g, " ")
     : joined;
-  if (trimmed.length === 0) return undefined;
-  return decodeTextEscapes(trimmed);
+  if (normalized.length === 0) return undefined;
+  return decodeTextEscapes(normalized);
 }
 
 export function getRawChildren(node: XmlElement): XmlNode[] {

@@ -10,6 +10,13 @@ export function renderIconNode(
   ctx: RenderContext,
 ): void {
   const objectName = builderObjectName(node);
+  // pptxgenjs uses `transparency` as percent-opaque-removed (0 = fully
+  // visible, 100 = invisible). Translate the builder's 0-1 opacity to
+  // that scale; `undefined` skips the attribute entirely so the default
+  // (opaque) path is unchanged for callers that don't specify opacity.
+  const transparency =
+    node.opacity !== undefined ? (1 - node.opacity) * 100 : undefined;
+
   // Draw background shape when variant is specified
   if (node.variant) {
     const isCircle = node.variant.startsWith("circle");
@@ -23,7 +30,12 @@ export function renderIconNode(
       y: pxToIn(node.bgY ?? node.y),
       w: pxToIn(node.bgW ?? node.w),
       h: pxToIn(node.bgH ?? node.h),
-      fill: isFilled ? { color: colorValue } : { type: "none" as const },
+      fill: isFilled
+        ? {
+            color: colorValue,
+            ...(transparency !== undefined ? { transparency } : {}),
+          }
+        : { type: "none" as const },
       line: isFilled ? undefined : { color: colorValue, width: 1.5 },
       rectRadius: isCircle ? undefined : 0.1,
       ...(objectName ? { objectName } : {}),
@@ -38,6 +50,7 @@ export function renderIconNode(
     y: pxToIn(node.iconY ?? node.y),
     w: pxToIn(node.iconW ?? node.w),
     h: pxToIn(node.iconH ?? node.h),
+    ...(transparency !== undefined ? { transparency } : {}),
     ...(objectName ? { objectName } : {}),
     ...(node.isDecorative
       ? { altText: "" }

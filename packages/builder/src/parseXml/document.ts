@@ -103,6 +103,16 @@ export interface ParsedBuilderDocument {
    * callers can rely on the field existing.
    */
   sourceMap?: BuilderSourceMap;
+  /**
+   * Names of `<Style name="…"/>` declared in the deck (drives UNUSED_STYLE lint).
+   */
+  declaredStyles?: Set<string>;
+  /** Style names referenced via class="…" anywhere in the deck. */
+  referencedStyles?: Set<string>;
+  /** Names of `<Template name="…"/>` declared in the deck. */
+  declaredTemplates?: Set<string>;
+  /** Names of templates actually invoked via `<Use template="…"/>`. */
+  referencedTemplates?: Set<string>;
 }
 
 const DOCUMENT_SIZE_PRESETS: Record<string, { w: number; h: number }> = {
@@ -772,7 +782,50 @@ export function parseBuilderDocumentInner(
   if (errors.length > 0) {
     throw new ParseXmlError(errors);
   }
-  return sourceMap ? { nodes, sourceMap } : { nodes };
+  const declaredStyles = new Set(Object.keys(styles));
+  const referencedStyles = collectClassRefs(elementChildren);
+  return {
+    nodes,
+    ...(sourceMap ? { sourceMap } : {}),
+    declaredStyles,
+    referencedStyles,
+  };
+}
+
+/**
+ * Recursively walk a list of XmlElements collecting every value
+ * appearing in `class=` / `className=` attributes. Splits on whitespace
+ * to match the runtime parser's behavior.
+ */
+function collectClassRefs(elements: XmlElement[]): Set<string> {
+  const out = new Set<string>();
+  function visit(el: XmlElement): void {
+    const attrs = getAttributes(el);
+    const raw = attrs.class ?? attrs.className;
+    if (raw) {
+      for (const name of raw.split(/\s+/)) if (name) out.add(name);
+    }
+    for (const child of getChildElements(el)) visit(child);
+  }
+  for (const el of elements) visit(el);
+  return out;
+}
+
+/**
+ * Recursively walk a list of XmlElements collecting every value
+ * appearing on `<Use template="…"/>` markers.
+ */
+function collectTemplateRefs(elements: XmlElement[]): Set<string> {
+  const out = new Set<string>();
+  function visit(el: XmlElement): void {
+    if (getTagName(el) === "Use") {
+      const t = getAttributes(el).template?.trim();
+      if (t) out.add(t);
+    }
+    for (const child of getChildElements(el)) visit(child);
+  }
+  for (const el of elements) visit(el);
+  return out;
 }
 
 function parseSlideGlance(
@@ -880,6 +933,14 @@ function parseSlideGlance(
     throw new ParseXmlError(errors);
   }
 
+  const declaredStyles = new Set(Object.keys(styles));
+  const referencedStyles = collectClassRefs(rootChildren);
+  const declaredTemplates = new Set(templateRegistry.keys());
+  // `referencedTemplates` is scanned on rootChildrenAll (pre-expansion)
+  // because `expandTemplatesInNodes` replaces `<Use>` markers with the
+  // template body — by the time we hold `rootChildren` (post-expansion)
+  // every <Use> is gone.
+  const referencedTemplates = collectTemplateRefs(rootChildrenAll);
   return {
     nodes,
     ...(sourceMap ? { sourceMap } : {}),
@@ -888,5 +949,9 @@ function parseSlideGlance(
     ...(Object.keys(masterContents).length > 0 ? { masterContents } : {}),
     ...(defaultMaster ? { defaultMaster } : {}),
     ...(defaultTextStyle ? { defaultTextStyle } : {}),
+    declaredStyles,
+    referencedStyles,
+    declaredTemplates,
+    referencedTemplates,
   };
 }

@@ -191,6 +191,27 @@ async function buildPomWithYogaTree(
 
   await applyStyleToYogaNode(node, yn, ctx);
 
+  // Detect whether any sibling has explicitly nominated itself to absorb
+  // main-axis slack via `w="max"` (HStack) or `h="max"` (VStack). When such
+  // a "growing sibling" exists, the other siblings stop participating in
+  // the equal-distribution heuristic below and pin to their intrinsic
+  // size: the growing sibling alone takes the slack and absorbs any
+  // overflow (its content wraps), preventing the regression where
+  // a long-title sibling collapsed short ones (e.g. `<Text>01</Text>`)
+  // down to single-character columns.
+  const hasGrowingSibling =
+    (parentNode?.type === "hstack" &&
+      (parentNode as { children: BuilderNode[] }).children.some(
+        (c) => c !== node && c.w === "max",
+      )) ||
+    (parentNode?.type === "vstack" &&
+      (parentNode as { children: BuilderNode[] }).children.some(
+        (c) => c !== node && c.h === "max",
+      ));
+  const isThisTheGrowingSibling =
+    (parentNode?.type === "hstack" && node.w === "max") ||
+    (parentNode?.type === "vstack" && node.h === "max");
+
   // Default HStack/VStack children to flexShrink=1 (matching CSS Flexbox).
   // Prevent overflow when main-axis %-size combines with gap.
   // Don't shrink an icon-only fixed-size content. Also pin children whose
@@ -209,18 +230,26 @@ async function buildPomWithYogaTree(
         node.type === "ol" ||
         node.type === "shape") &&
       node.noWrap === true;
-    const noShrink = node.type === "icon" || mainAxisIsFixed || isNoWrapText;
+    const noShrink =
+      node.type === "icon" ||
+      mainAxisIsFixed ||
+      isNoWrapText ||
+      (hasGrowingSibling && !isThisTheGrowingSibling);
     yn.setFlexShrink(noShrink ? 0 : 1);
   }
 
   // For HStack children with no explicit width, distribute the available width equally by default.
   // Skip table because setMeasureFunc returns the sum of column widths.
   // Skip icon-only fixed-size content.
+  // Skip when a sibling claims the slack via `w="max"`: equal distribution
+  // would re-stretch every column to share grow:1 with the max sibling,
+  // collapsing intrinsic-sized siblings to zero basis.
   if (
     parentNode?.type === "hstack" &&
     node.w === undefined &&
     node.type !== "table" &&
-    node.type !== "icon"
+    node.type !== "icon" &&
+    !hasGrowingSibling
   ) {
     yn.setFlexGrow(1);
     // Only apply flexBasis=0 equal-distribution when the HStack has a determinate width.

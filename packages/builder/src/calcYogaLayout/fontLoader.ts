@@ -43,7 +43,30 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 let cachedMeasurer: TextMeasurer | undefined;
+let cachedBundledFontBytes: Uint8Array[] | undefined;
 
+/**
+ * Decode the bundled-font base64 buffers exactly once. Both the default
+ * singleton and any per-build measurer created via {@link createMeasurer}
+ * reuse this array — re-decoding the base64 on every build added ~50ms
+ * of cold-start time per call in benchmarks.
+ */
+function getBundledFontBytes(): Uint8Array[] {
+  if (cachedBundledFontBytes) return cachedBundledFontBytes;
+  const fonts: Uint8Array[] = [];
+  for (const variants of Object.values(BUNDLED_FONTS)) {
+    fonts.push(base64ToUint8Array(variants.normal));
+    fonts.push(base64ToUint8Array(variants.bold));
+  }
+  cachedBundledFontBytes = fonts;
+  return fonts;
+}
+
+/**
+ * Default measurer singleton — bundled fonts only. Used when no caller
+ * supplies its own measurer via {@link createMeasurer}. Decoding bundled-font
+ * bytes is amortised across every build that hits this path.
+ */
 function getMeasurer(): TextMeasurer {
   if (cachedMeasurer) return cachedMeasurer;
   // Pass every variant under its natural family name (the .ttf's
@@ -51,13 +74,27 @@ function getMeasurer(): TextMeasurer {
   // The slideglance constructor inspects `OS/2.usWeightClass` and
   // routes Bold faces to the resolver's bold-variant slot, so a single
   // family lookup with `bold=true` reaches the Bold face directly.
-  const fonts: Uint8Array[] = [];
-  for (const variants of Object.values(BUNDLED_FONTS)) {
-    fonts.push(base64ToUint8Array(variants.normal));
-    fonts.push(base64ToUint8Array(variants.bold));
-  }
-  cachedMeasurer = new TextMeasurer(fonts, undefined);
+  cachedMeasurer = new TextMeasurer(getBundledFontBytes(), undefined);
   return cachedMeasurer;
+}
+
+/**
+ * Per-build measurer factory. Returns a fresh {@link TextMeasurer} that
+ * mounts the bundled fonts (Noto Sans JP, Pretendard) plus every
+ * caller-supplied TTF/OTF buffer in `extraFonts`. The slideglance
+ * constructor reads each face's `name` table for the family lookup and
+ * the `OS/2.usWeightClass` for the regular/bold split — supply both
+ * weight variants of each family for accurate bold measurement.
+ *
+ * When `extraFonts` is empty / undefined this is identical to
+ * {@link getMeasurer} but allocates a new instance instead of reusing
+ * the cached singleton; prefer {@link getMeasurer} on the no-extras
+ * path to avoid the allocation.
+ */
+export function createMeasurer(extraFonts?: Uint8Array[]): TextMeasurer {
+  if (!extraFonts || extraFonts.length === 0) return getMeasurer();
+  const fonts: Uint8Array[] = [...getBundledFontBytes(), ...extraFonts];
+  return new TextMeasurer(fonts, undefined);
 }
 
 const BUNDLED_FONT_NAMES = new Set(Object.keys(BUNDLED_FONTS));
@@ -116,9 +153,10 @@ export function measureTextWidth(
   fontFamily: string,
   fontSizePx: number,
   weight: FontWeight,
+  measurer?: TextMeasurer,
 ): number {
-  const measurer = getMeasurer();
-  return measurer.measureWidth(
+  const m = measurer ?? getMeasurer();
+  return m.measureWidth(
     text,
     fontSizePx * PT_PER_PX,
     weight === "bold",
@@ -138,8 +176,9 @@ export function measureTextWidth(
 export function measureFontLineHeightRatio(
   fontFamily: string,
   weight: FontWeight,
+  measurer?: TextMeasurer,
 ): number {
-  const measurer = getMeasurer();
+  const m = measurer ?? getMeasurer();
   const baseFamily = isBundledFont(fontFamily)
     ? fontFamily
     : DEFAULT_FONT_FAMILY;
@@ -152,5 +191,8 @@ export function measureFontLineHeightRatio(
   // fonts that ship `wght` already pick the right axis at measure
   // time inside slideglance.)
   void weight;
-  return measurer.lineHeightRatio(baseFamily, null);
+  return m.lineHeightRatio(baseFamily, null);
 }
+
+/** Re-export the {@link TextMeasurer} type so callers don't need to depend on `@slideglance/measure` directly. */
+export type { TextMeasurer };

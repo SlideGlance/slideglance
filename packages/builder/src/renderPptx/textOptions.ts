@@ -59,7 +59,14 @@ export function createTextOptions(
     fontSize: pxToPt(fontSizePx),
     fontFace: fontFamily,
     align: node.textAlign ?? "left",
-    valign: "top" as const,
+    // `textVAlign` controls glyph anchor inside the rendered text frame.
+    // Defaults to "top" — matches the previous hard-coded behavior. When
+    // an HStack stretches a smaller-fontSize sibling to the row's max
+    // height, setting `textVAlign="middle"` is what visually centers the
+    // glyphs (without it the glyphs float to the top of the equalized
+    // box, creating the optical misalignment that mixed-size text rows
+    // are known for).
+    valign: node.textVAlign ?? ("top" as const),
     margin: 0,
     lineSpacingMultiple: lineHeight,
     color: node.color ?? defaultTextStyle?.color,

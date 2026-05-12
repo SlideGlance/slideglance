@@ -91,42 +91,47 @@ export async function autoFitSlide(
   slideSize: { w: number; h: number },
   ctx: BuildContext,
 ): Promise<YogaNodeMap> {
-  // Phase 1: apply strategies in order until the slide fits.
+  // Phase 1: apply strategies in order until the slide fits. We keep
+  // the most recent measurement's layout map alive across iterations
+  // so the no-overflow path can return it directly — older revisions
+  // freed it eagerly and then re-ran `calcYogaLayout` from scratch in
+  // a separate `finalizeLayout` pass, paying for two extra full
+  // layout passes on every slide (≈ 20 ms × N slides). The map is
+  // freed eagerly only when a strategy mutated the node, which
+  // invalidates the layout — the next iteration (or the final phase
+  // below) re-measures from scratch.
+  let lastMap: YogaNodeMap | undefined;
   for (const strategy of strategies) {
     const result = await measureOverflow(node, slideSize, ctx);
-    freeYogaTree(result.map);
+    if (lastMap) freeYogaTree(lastMap);
+    lastMap = result.map;
 
     if (!result.isOverflowing) {
-      break;
+      // Slide fits — reuse this layout as the return value. Saves the
+      // legacy second `calcYogaLayout` pass.
+      return lastMap;
     }
 
     const changed = strategy(node, result.targetRatio);
-    if (!changed) {
-      continue;
+    if (changed) {
+      // The mutation invalidated the just-computed layout — drop it
+      // before the next iteration measures from scratch.
+      freeYogaTree(lastMap);
+      lastMap = undefined;
     }
   }
 
-  // Phase 2: produce the final layout and verify overflow.
-  return finalizeLayout(node, slideSize, ctx);
-}
-
-/**
- * Compute the final layout. Emit a warning diagnostic if overflow
- * remains after all adjustment strategies.
- */
-async function finalizeLayout(
-  node: BuilderNode,
-  slideSize: { w: number; h: number },
-  ctx: BuildContext,
-): Promise<YogaNodeMap> {
-  const result = await measureOverflow(node, slideSize, ctx);
-  if (result.isOverflowing) {
+  // Phase 2: ran out of strategies. Re-measure (the last strategy
+  // may have mutated the node after we freed `lastMap`) to determine
+  // whether the slide finally fits and to emit AUTOFIT_OVERFLOW with
+  // the post-adjustment content height when it doesn't.
+  if (lastMap) freeYogaTree(lastMap);
+  const finalResult = await measureOverflow(node, slideSize, ctx);
+  if (finalResult.isOverflowing) {
     ctx.diagnostics.add(
       "AUTOFIT_OVERFLOW",
-      `autoFit: content height (${Math.round(result.contentHeight)}px) exceeds slide height (${slideSize.h}px) after all adjustments.`,
+      `autoFit: content height (${Math.round(finalResult.contentHeight)}px) exceeds slide height (${slideSize.h}px) after all adjustments.`,
     );
   }
-  freeYogaTree(result.map);
-
-  return calcYogaLayout(node, slideSize, ctx);
+  return finalResult.map;
 }
