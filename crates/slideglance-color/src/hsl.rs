@@ -38,7 +38,7 @@ impl Hsl {
 
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
-        let l = (max + min) / 2.0;
+        let l = max.midpoint(min);
 
         if max == min {
             return Self { h: 0.0, s: 0.0, l };

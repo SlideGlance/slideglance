@@ -25,14 +25,17 @@ exclude = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+# Highest MSRV required by direct dependencies as of this writing:
+#   zip 8.6.0 → 1.88, image 0.25.10 → 1.88, resvg 0.47.0 → 1.87,
+#   tauri 2.11 → 1.77. Pinning to 1.88 keeps the declaration honest.
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/SlideGlance/slideglance"
 # Copyright holder: SimpleCORE Inc.  Lead developer: Taehwan Kwag.
 # The `authors` field is conventionally used for individual attribution
 # in Rust crates; the corporate copyright assignment lives in the
 # LICENSE files at the workspace root and the publishable crates.
-authors = ["Taehwan Kwag"]
+authors = ["Taehwan Kwag <dev@simplecore.kr>"]
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -88,7 +91,7 @@ slideglance-png = { path = "crates/slideglance-png", version = "0.1.0" }
 slideglance = { path = "crates/slideglance", version = "0.1.0" }
 
 # ZIP / XML
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
 quick-xml = { version = "0.37", features = ["serialize"] }
 regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
 base64 = { version = "0.22", default-features = false, features = ["std"] }

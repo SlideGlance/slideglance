@@ -60,10 +60,7 @@ pub fn render_segment(
     } else {
         let styles =
             build_style_attrs(props, font_scale, None, mapping, cjk_platform, script_fonts);
-        format!(
-            "<tspan {prefix}{styles}>{}</tspan>",
-            escape_xml_text(text)
-        )
+        format!("<tspan {prefix}{styles}>{}</tspan>", escape_xml_text(text))
     };
 
     if let Some(link) = &props.hyperlink {

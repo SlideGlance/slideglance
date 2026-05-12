@@ -76,7 +76,7 @@ pub fn strip_namespaces(xml: &str) -> Result<String, XmlError> {
             }
             Ok(Event::Text(t)) => {
                 let in_text_element = stack.last().is_some_and(|n| n.as_slice() == b"t");
-                let raw = t.as_ref();
+                let raw: &[u8] = t.as_ref();
                 if in_text_element && raw.contains(&0x20) {
                     // Substitute 0x20 with the Unicode PUA codepoint
                     // U+F0E1 so quick-xml-de's reader-level text trim

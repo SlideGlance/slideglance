@@ -1195,8 +1195,8 @@ pub fn preset_geometry_svg(preset: &str, w: f64, h: f64, adj: &Adj) -> String {
             let t = frac(adj, "adj1", 23520.0);
             let gap = t * h;
             let bar_h = t * h;
-            let y1 = (h - gap) / 2.0 - bar_h;
-            let y2 = (h + gap) / 2.0;
+            let y1 = h.midpoint(-gap) - bar_h;
+            let y2 = h.midpoint(gap);
             format!(
                 "<path d=\"M 0 {y1_n} L {w_n} {y1_n} L {w_n} {a1} L 0 {a1} Z M 0 {y2_n} L {w_n} {y2_n} L {w_n} {a2} L 0 {a2} Z\"/>",
                 y1_n = n(y1),
@@ -1210,8 +1210,8 @@ pub fn preset_geometry_svg(preset: &str, w: f64, h: f64, adj: &Adj) -> String {
             let t = frac(adj, "adj1", 23520.0);
             let gap = t * h;
             let bar_h = t * h;
-            let y1 = (h - gap) / 2.0 - bar_h;
-            let y2 = (h + gap) / 2.0;
+            let y1 = h.midpoint(-gap) - bar_h;
+            let y2 = h.midpoint(gap);
             let slash_w = w * 0.15;
             let sx = w / 2.0 - slash_w / 2.0;
             format!(

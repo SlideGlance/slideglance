@@ -416,7 +416,7 @@ fn parse_slide_with_layout(
         }
     }
 
-    let layout_show_master_sp = layout.map_or(true, |l| l.layout.show_master_sp);
+    let layout_show_master_sp = layout.is_none_or(|l| l.layout.show_master_sp);
     let layout_elements = layout
         .map(|l| l.layout.elements.clone())
         .unwrap_or_default();

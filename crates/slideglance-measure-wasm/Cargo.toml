@@ -6,10 +6,10 @@ name = "slideglance-measure-wasm"
 # the root `package.json` by `scripts/sync-versions.mjs`.
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/SlideGlance/slideglance"
-authors = ["Taehwan Kwag"]
+authors = ["Taehwan Kwag <dev@simplecore.kr>"]
 description = "Standalone wasm-bindgen entry point for slideglance text measurement"
 publish = false
 

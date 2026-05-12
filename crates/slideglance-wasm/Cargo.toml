@@ -10,10 +10,10 @@ name = "slideglance-wasm"
 # workspace by `scripts/sync-versions.mjs` (run on every prebuild).
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/SlideGlance/slideglance"
-authors = ["Taehwan Kwag"]
+authors = ["Taehwan Kwag <dev@simplecore.kr>"]
 description = "wasm-bindgen entry point for slideglance"
 publish = false
 

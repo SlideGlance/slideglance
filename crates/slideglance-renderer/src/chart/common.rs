@@ -37,7 +37,7 @@ pub(crate) struct ValueAxisLabelOptions {
 /// when `valueAxis` is unset (matches TS backwards-compatibility behavior).
 pub(crate) fn value_axis_options(chart: &ChartData, plot_w: f64) -> ValueAxisLabelOptions {
     let ax = chart.value_axis.as_ref();
-    let gridlines = ax.map_or(true, |a| a.major_gridlines.unwrap_or(false));
+    let gridlines = ax.is_none_or(|a| a.major_gridlines.unwrap_or(false));
     let tick_mark = ax.and_then(|a| a.major_tick_mark).unwrap_or(TickMark::Out);
     ValueAxisLabelOptions {
         plot_w: Some(plot_w),

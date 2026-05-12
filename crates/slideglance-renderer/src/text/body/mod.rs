@@ -216,11 +216,7 @@ pub fn render_text_body(
     // from y_start. After the loop, we add y_start to every rect's y.
     let mut current_baseline_offset = 0.0_f64;
     let measure_seg_width = |seg: &slideglance_font::LineSegment| -> f64 {
-        let pt = seg
-            .properties
-            .font_size
-            .map_or(default_font_size, Pt::raw)
-            * font_scale;
+        let pt = seg.properties.font_size.map_or(default_font_size, Pt::raw) * font_scale;
         let style = FontStyle {
             bold: seg.properties.bold,
             italic: seg.properties.italic,
@@ -236,12 +232,8 @@ pub fn render_text_body(
             seg.properties.font_family.as_deref(),
             seg.properties.font_family_ea.as_deref(),
         ];
-        let chain = super::font_family::build_font_family_value(
-            &pair,
-            mapping,
-            cjk_platform,
-            script_fonts,
-        );
+        let chain =
+            super::font_family::build_font_family_value(&pair, mapping, cjk_platform, script_fonts);
         measurer.measure_text_width_with_chain(
             &seg.text,
             pt,
@@ -401,18 +393,13 @@ pub fn render_text_body(
                         let line_widths: Vec<f64> =
                             line.segments.iter().map(measure_seg_width).collect();
                         let first_w = line_widths.first().copied().unwrap_or(0.0);
-                        let mut current_x =
-                            line_start_x(align.anchor, align.x_pos, first_w);
+                        let mut current_x = line_start_x(align.anchor, align.x_pos, first_w);
                         for (seg_idx, seg) in line.segments.iter().enumerate() {
                             let seg_w = line_widths[seg_idx];
-                            if let Some((color, alpha)) =
-                                highlight_color_for(&seg.properties)
-                            {
-                                let pt = seg
-                                    .properties
-                                    .font_size
-                                    .map_or(default_font_size, Pt::raw)
-                                    * font_scale;
+                            if let Some((color, alpha)) = highlight_color_for(&seg.properties) {
+                                let pt =
+                                    seg.properties.font_size.map_or(default_font_size, Pt::raw)
+                                        * font_scale;
                                 let font_size_px = pt * PX_PER_PT;
                                 highlight_rects.push(HighlightRect {
                                     x: current_x,
@@ -470,17 +457,13 @@ pub fn render_text_body(
                 if !is_first_line {
                     current_baseline_offset += line_height_pt * PX_PER_PT + line_gap_px;
                 }
-                let line_widths: Vec<f64> =
-                    line.segments.iter().map(measure_seg_width).collect();
+                let line_widths: Vec<f64> = line.segments.iter().map(measure_seg_width).collect();
                 let first_w = line_widths.first().copied().unwrap_or(0.0);
                 let mut current_x = line_start_x(align.anchor, align.x_pos, first_w);
                 for (seg_idx, seg) in line.segments.iter().enumerate() {
                     let seg_w = line_widths[seg_idx];
                     if let Some((color, alpha)) = highlight_color_for(&seg.properties) {
-                        let pt = seg
-                            .properties
-                            .font_size
-                            .map_or(default_font_size, Pt::raw)
+                        let pt = seg.properties.font_size.map_or(default_font_size, Pt::raw)
                             * font_scale;
                         let font_size_px = pt * PX_PER_PT;
                         highlight_rects.push(HighlightRect {
@@ -560,11 +543,7 @@ pub fn render_text_body(
                 .runs
                 .iter()
                 .map(|r| {
-                    let pt = r
-                        .properties
-                        .font_size
-                        .map_or(default_font_size, Pt::raw)
-                        * font_scale;
+                    let pt = r.properties.font_size.map_or(default_font_size, Pt::raw) * font_scale;
                     let style = FontStyle {
                         bold: r.properties.bold,
                         italic: r.properties.italic,
@@ -582,10 +561,8 @@ pub fn render_text_body(
                 .runs
                 .iter()
                 .position(|r| !r.text.is_empty())
-                .map(|i| nowrap_run_widths[i])
-                .unwrap_or(0.0);
-            let mut nowrap_current_x =
-                line_start_x(align.anchor, align.x_pos, nowrap_first_w);
+                .map_or(0.0, |i| nowrap_run_widths[i]);
+            let mut nowrap_current_x = line_start_x(align.anchor, align.x_pos, nowrap_first_w);
             // The baseline-y advance for the no-bullet branch happens
             // inside the loop below at first-run emission time. Track
             // whether we already advanced so we don't double-count.
@@ -622,8 +599,7 @@ pub fn render_text_body(
                     );
                     let dy = compute_dy(is_first_line, line_height_pt, paragraph_gap_px);
                     if !is_first_line && !nowrap_baseline_advanced {
-                        current_baseline_offset +=
-                            line_height_pt * PX_PER_PT + paragraph_gap_px;
+                        current_baseline_offset += line_height_pt * PX_PER_PT + paragraph_gap_px;
                         nowrap_baseline_advanced = true;
                     }
                     format!(
@@ -633,11 +609,8 @@ pub fn render_text_body(
                     )
                 };
                 if let Some((color, alpha)) = highlight_color_for(&run.properties) {
-                    let pt = run
-                        .properties
-                        .font_size
-                        .map_or(default_font_size, Pt::raw)
-                        * font_scale;
+                    let pt =
+                        run.properties.font_size.map_or(default_font_size, Pt::raw) * font_scale;
                     let font_size_px = pt * PX_PER_PT;
                     highlight_rects.push(HighlightRect {
                         x: nowrap_current_x,

@@ -152,8 +152,8 @@ fn parse_path_center(path: &RawGradPath) -> (f64, f64) {
     let t = parse_rect_attr(rect.t.as_deref());
     let r = parse_rect_attr(rect.r.as_deref());
     let b = parse_rect_attr(rect.b.as_deref());
-    let center_x = (l + (FRACTION_DIVISOR - r)) / 2.0 / FRACTION_DIVISOR;
-    let center_y = (t + (FRACTION_DIVISOR - b)) / 2.0 / FRACTION_DIVISOR;
+    let center_x = l.midpoint(FRACTION_DIVISOR - r) / FRACTION_DIVISOR;
+    let center_y = t.midpoint(FRACTION_DIVISOR - b) / FRACTION_DIVISOR;
     (center_x, center_y)
 }
 

@@ -117,7 +117,7 @@ pub fn render_shape(
         Some(Fill::Image(img))
             if img.tile.is_none()
                 && img.src_rect.is_none()
-                && img.stretch.as_ref().map_or(true, is_zero_stretch) =>
+                && img.stretch.as_ref().is_none_or(is_zero_stretch) =>
         {
             Some(img)
         }

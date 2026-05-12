@@ -99,7 +99,7 @@ pub fn render_table(
             // body so the row equalization step kicks in below — a
             // truly text-bearing cell must contribute at least one
             // non-empty run.
-            let cell_is_empty_visual = cell.text_body.as_ref().map_or(true, |tb| {
+            let cell_is_empty_visual = cell.text_body.as_ref().is_none_or(|tb| {
                 tb.paragraphs
                     .iter()
                     .all(|p| p.runs.iter().all(|r| r.text.is_empty()))
