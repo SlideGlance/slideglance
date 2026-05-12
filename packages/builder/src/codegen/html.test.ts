@@ -1,3 +1,6 @@
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   generateReferenceHtml,
@@ -148,4 +151,28 @@ describe("generateReferenceHtml", () => {
     expect(js).toContain("contenteditable");
     expect(js).toContain('role="textbox"');
   });
+});
+
+describe("golden snapshots", () => {
+  const HERE = fileURLToPath(import.meta.url);
+  const snapDir = resolve(HERE, "../__snapshots__");
+  const cases: Array<{ tag: string; file: string }> = [
+    { tag: "Text", file: "text-index.html" },
+    { tag: "SlideGlance", file: "slideglance-index.html" },
+    { tag: "VStack", file: "vstack-index.html" },
+    { tag: "Chart", file: "chart-index.html" },
+  ];
+  const files = generateReferenceHtml();
+  for (const { tag, file } of cases) {
+    it(`${tag} page matches snapshot`, () => {
+      const slug = tag.toLowerCase();
+      const generated = files.get(`${slug}/index.html`)!;
+      const snapPath = resolve(snapDir, file);
+      if (!existsSync(snapPath) || process.env.UPDATE_SNAPSHOTS === "1") {
+        writeFileSync(snapPath, generated);
+      }
+      const expected = readFileSync(snapPath, "utf8");
+      expect(generated).toBe(expected);
+    });
+  }
 });
