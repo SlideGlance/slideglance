@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { escapeHtml, highlightXml } from "./htmlTemplates.ts";
+import {
+  attrTable,
+  childrenTable,
+  escapeHtml,
+  highlightXml,
+  usedByList,
+} from "./htmlTemplates.ts";
 
 describe("escapeHtml", () => {
   it("escapes all five HTML-significant characters", () => {
@@ -41,5 +47,64 @@ describe("highlightXml", () => {
   it("escapes hostile content in attribute values", () => {
     const out = highlightXml(`<Foo a="&lt;evil&gt;" />`);
     expect(out).toContain(`&amp;lt;evil&amp;gt;`);
+  });
+});
+
+describe("attrTable", () => {
+  it("renders one row per attribute, alphabetically sorted", () => {
+    const html = attrTable({
+      zoo: { coerce: "number" } as never,
+      bar: { coerce: "string", required: true } as never,
+      apple: { coerce: "boolean" } as never,
+    });
+    const order = html.match(/<code>(\w+)<\/code>/g) ?? [];
+    expect(order.map((t) => t.replace(/<\/?code>/g, ""))).toEqual([
+      "apple",
+      "boolean",
+      "bar",
+      "string",
+      "zoo",
+      "number",
+    ]);
+  });
+
+  it("marks required attributes with attr-required class", () => {
+    const html = attrTable({
+      x: { coerce: "string", required: true } as never,
+    });
+    expect(html).toContain(`class="attr-required"`);
+  });
+
+  it("escapes attribute descriptions", () => {
+    const html = attrTable({
+      x: { coerce: "string", doc: 'Use <foo> & "bar".' } as never,
+    });
+    expect(html).toContain("&lt;foo&gt; &amp; &quot;bar&quot;");
+  });
+});
+
+describe("childrenTable", () => {
+  it("renders 'no children' when input is empty", () => {
+    expect(childrenTable({})).toContain("accepts no child elements");
+  });
+
+  it("renders a row per child with cardinality", () => {
+    const html = childrenTable({
+      Li: { element: "Li", min: 0, doc: "list item" } as never,
+    });
+    expect(html).toContain(`<code>&lt;Li&gt;</code>`);
+    expect(html).toContain("0..∞");
+  });
+});
+
+describe("usedByList", () => {
+  it("renders top-level fallback when entries empty", () => {
+    expect(usedByList([])).toContain("Top-level");
+  });
+
+  it("links each parent to its reference page", () => {
+    const html = usedByList([{ parent: "VStack", cardinality: "0..∞" }]);
+    expect(html).toContain(`href="../vstack/"`);
+    expect(html).toContain(`<code>&lt;VStack&gt;</code>`);
   });
 });

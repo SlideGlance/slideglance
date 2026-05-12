@@ -2,6 +2,10 @@
  * HTML rendering helpers for reference-html codegen. Pure functions —
  * no I/O, no DOM, no globals. See design §6.3 for the escape contract.
  */
+import type {
+  AttributeSpec,
+  ChildrenSpec,
+} from "../registry/defineNode.ts";
 
 const ESCAPE_MAP: Record<string, string> = {
   "&": "&amp;",
@@ -62,4 +66,76 @@ function highlightAttrs(s: string): string {
       ` <span class="tk-attr">${name}</span>=` +
       `<span class="tk-str">${value}</span>`,
   );
+}
+
+/** Render the Attributes table for one element page. */
+export function attrTable(attrs: Record<string, AttributeSpec>): string {
+  const rows = Object.entries(attrs)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, spec]) => attrRow(name, spec))
+    .join("\n");
+  return `<table class="attr-table">
+<thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+${rows}
+</tbody>
+</table>`;
+}
+
+function attrRow(name: string, spec: AttributeSpec): string {
+  const required = spec.required === true;
+  const cls = required ? ' class="attr-required"' : "";
+  const type = escapeHtml(spec.coerce);
+  const doc = escapeHtml(spec.doc ?? "");
+  const star = required ? '<span aria-label="required">*</span>' : "";
+  return `<tr${cls}><td><code>${name}</code></td><td><code>${type}</code></td><td>${star}</td><td>${doc}</td></tr>`;
+}
+
+/** Render the Allowed children block. */
+export function childrenTable(
+  children: Record<string, ChildrenSpec>,
+): string {
+  const entries = Object.entries(children);
+  if (entries.length === 0) {
+    return `<p class="ref-empty-children">This element accepts no child elements.</p>`;
+  }
+  const rows = entries
+    .map(([key, spec]) => {
+      const tag = spec.element ?? key;
+      const card = formatCardinality(spec.min ?? 0, spec.max);
+      const doc = escapeHtml(spec.doc ?? "");
+      return `<tr><td><a href="../${tag.toLowerCase()}/"><code>&lt;${tag}&gt;</code></a></td><td>${card}</td><td>${doc}</td></tr>`;
+    })
+    .join("\n");
+  return `<table class="children-table">
+<thead><tr><th>Element</th><th>Cardinality</th><th>Description</th></tr></thead>
+<tbody>
+${rows}
+</tbody>
+</table>`;
+}
+
+// Intentionally duplicated with walkRegistry.ts: dependency direction matters
+// (htmlTemplates must not depend on walkRegistry). The helper is tiny and
+// stable; see plan §Task 8 "Context" note.
+function formatCardinality(min: number, max: number | undefined): string {
+  if (max === undefined) return min === 0 ? "0..∞" : `${min}..∞`;
+  if (min === max) return String(min);
+  return `${min}..${max}`;
+}
+
+/** Render the Used by list. */
+export function usedByList(
+  entries: ReadonlyArray<{ parent: string; cardinality: string }>,
+): string {
+  if (entries.length === 0) {
+    return `<p class="ref-used-empty">Top-level — not nested under another element.</p>`;
+  }
+  const items = entries
+    .map((e) => {
+      const slug = e.parent.toLowerCase();
+      return `<li><a href="../${slug}/"><code>&lt;${e.parent}&gt;</code></a> <span class="ref-card-cardinality">(${e.cardinality})</span></li>`;
+    })
+    .join("\n");
+  return `<ul class="used-by">${items}</ul>`;
 }
