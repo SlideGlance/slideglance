@@ -2,10 +2,7 @@
  * HTML rendering helpers for reference-html codegen. Pure functions —
  * no I/O, no DOM, no globals. See design §6.3 for the escape contract.
  */
-import type {
-  AttributeSpec,
-  ChildrenSpec,
-} from "../registry/defineNode.ts";
+import type { AttributeSpec, ChildrenSpec } from "../registry/defineNode.ts";
 
 const ESCAPE_MAP: Record<string, string> = {
   "&": "&amp;",
@@ -91,9 +88,16 @@ function attrRow(name: string, spec: AttributeSpec): string {
   return `<tr${cls}><td><code>${name}</code></td><td><code>${type}</code></td><td>${star}</td><td>${doc}</td></tr>`;
 }
 
-/** Render the Allowed children block. */
+/**
+ * Render the Allowed children block. `pageTags` is the set of element tags
+ * that have their own reference page; entries whose tag is not in the set
+ * (e.g. child-only specs like <Li>, <Tr>, <Col>, <ChartSeries> that are
+ * declared via childAttributeSpecs.ts rather than defineNode) render as
+ * <code> without a link.
+ */
 export function childrenTable(
   children: Record<string, ChildrenSpec>,
+  pageTags?: ReadonlySet<string>,
 ): string {
   const entries = Object.entries(children);
   if (entries.length === 0) {
@@ -104,7 +108,11 @@ export function childrenTable(
       const tag = spec.element ?? key;
       const card = formatCardinality(spec.min ?? 0, spec.max);
       const doc = escapeHtml(spec.doc ?? "");
-      return `<tr><td><a href="../${tag.toLowerCase()}/"><code>&lt;${tag}&gt;</code></a></td><td>${card}</td><td>${doc}</td></tr>`;
+      const tagCell =
+        pageTags && !pageTags.has(tag)
+          ? `<code>&lt;${tag}&gt;</code>`
+          : `<a href="../${tag.toLowerCase()}/"><code>&lt;${tag}&gt;</code></a>`;
+      return `<tr><td>${tagCell}</td><td>${card}</td><td>${doc}</td></tr>`;
     })
     .join("\n");
   return `<table class="children-table">

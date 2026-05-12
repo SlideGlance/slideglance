@@ -32,6 +32,10 @@ export function renderElementPage(
   const usedBy = model.usedBy.get(tag) ?? [];
   const seeAlso = model.seeAlso.get(tag) ?? [];
   const loc = model.sourceLocations.get(tag);
+  const pageTags = new Set<string>([
+    ...model.nodes.map((n) => n.tag),
+    ...model.meta.map((m) => m.tag),
+  ]);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -52,7 +56,7 @@ ${renderSidebar(tag, model)}
 <h2>Attributes</h2>
 ${attrTable(node.attributes ?? {})}
 <h2>Allowed children</h2>
-${childrenTable(getChildrenSpec(node))}
+${childrenTable(getChildrenSpec(node), pageTags)}
 <h2>Used by</h2>
 ${usedByList(usedBy)}
 ${node.example ? `<h2>Example</h2>\n<pre class="xml-snippet"><code>${example}</code></pre>` : ""}

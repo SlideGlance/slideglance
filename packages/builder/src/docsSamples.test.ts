@@ -6,10 +6,7 @@ import { buildPptx } from "./buildPptx.ts";
 import type { Diagnostic } from "./diagnostics.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const XML_REFERENCE_MD_PATH = resolve(
-  __dirname,
-  "../docs/en/xml-reference.md",
-);
+const XML_REFERENCE_MD_PATH = resolve(__dirname, "../docs/en/xml-reference.md");
 
 type Sample = { index: number; section: string; xml: string };
 

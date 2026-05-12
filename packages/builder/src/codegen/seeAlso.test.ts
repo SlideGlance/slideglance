@@ -19,7 +19,10 @@ describe("SEE_ALSO curation", () => {
 
   it("every key matches an actual registry tag", () => {
     const r = walkRegistry();
-    const tags = new Set([...r.nodes.map((n) => n.tag), ...r.meta.map((m) => m.tag)]);
+    const tags = new Set([
+      ...r.nodes.map((n) => n.tag),
+      ...r.meta.map((m) => m.tag),
+    ]);
     for (const tag of Object.keys(SEE_ALSO)) {
       expect(tags.has(tag), `unknown SEE_ALSO tag: ${tag}`).toBe(true);
     }

@@ -37,9 +37,9 @@ describe("orphan sweep", () => {
   it("sweepOrphans removes orphan files and prunes empty dirs", () => {
     sweepOrphans(pkgRoot, { "reference-html/text/index.html": "fresh" });
     expect(existsSync(join(pkgRoot, "reference-html", "zombie"))).toBe(false);
-    expect(existsSync(join(pkgRoot, "reference-html", "text", "index.html"))).toBe(
-      true,
-    );
+    expect(
+      existsSync(join(pkgRoot, "reference-html", "text", "index.html")),
+    ).toBe(true);
   });
 
   it("sweepOrphans never deletes reference-html root itself", () => {

@@ -62,7 +62,9 @@ try {
 } catch (err) {
   if (err instanceof DiagnosticsError) {
     for (const d of err.diagnostics) {
-      console.error(`${d.code}: ${d.message} @ ${d.sourcePos?.line}:${d.sourcePos?.column}`);
+      console.error(
+        `${d.code}: ${d.message} @ ${d.sourcePos?.line}:${d.sourcePos?.column}`,
+      );
     }
     return;
   }

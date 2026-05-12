@@ -9,7 +9,7 @@ import {
 
 describe("escapeHtml", () => {
   it("escapes all five HTML-significant characters", () => {
-    expect(escapeHtml('& < > " \'')).toBe("&amp; &lt; &gt; &quot; &#39;");
+    expect(escapeHtml("& < > \" '")).toBe("&amp; &lt; &gt; &quot; &#39;");
   });
 
   it("double-encodes already-escaped entities (input must be raw text)", () => {

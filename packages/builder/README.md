@@ -79,7 +79,7 @@ The full attribute reference (auto-generated from the runtime schema) lives in [
 | [Text measurement](./docs/text-measurement.md)   | Bundled fonts, OpenType vs heuristic measurement, custom-font behavior.         |
 | [Security](./docs/security.md)                   | Hardening notes for processing untrusted XML.                                   |
 | [VS Code extension](./docs/vscode-extension.md)  | Live preview, click-to-source, PPTX export from `.sgx` files.                   |
-| [Schema reference](./reference.md)   | Auto-generated full attribute reference.                                        |
+| [Schema reference](./reference.md)               | Auto-generated full attribute reference.                                        |
 
 ## XML schema integration
 

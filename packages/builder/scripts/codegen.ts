@@ -14,12 +14,7 @@
  *   --check    do not write; re-emit, hash, and exit non-zero on drift
  */
 
-import {
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  existsSync,
-} from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -106,9 +101,7 @@ function main(): void {
     // reference-html/ that are no longer in OUTPUTS.
     const orphans = findOrphans(PKG, generated);
     if (orphans.length > 0) {
-      console.error(
-        "Codegen --check: orphan reference-html files detected:",
-      );
+      console.error("Codegen --check: orphan reference-html files detected:");
       for (const o of orphans) console.error(`  ${o}`);
       console.error("Re-run `pnpm run codegen` to remove them.");
       process.exit(1);

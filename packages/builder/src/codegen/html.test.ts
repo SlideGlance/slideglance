@@ -143,7 +143,7 @@ describe("generateReferenceHtml", () => {
     const css = files.get("styles.css")!;
     expect(css).toContain("--bg:");
     expect(css).toContain("--accent:");
-    expect(css).toContain("[data-theme=\"dark\"]");
+    expect(css).toContain('[data-theme="dark"]');
   });
 
   it("scripts/site.js gates / shortcut against editable surfaces", () => {

@@ -8,9 +8,7 @@ export function findOrphans(
   pkgRoot: string,
   generated: Record<string, unknown>,
 ): string[] {
-  const expected = new Set(
-    Object.keys(generated).map((k) => join(pkgRoot, k)),
-  );
+  const expected = new Set(Object.keys(generated).map((k) => join(pkgRoot, k)));
   const refRoot = join(pkgRoot, "reference-html");
   if (!existsSync(refRoot)) return [];
   const result: string[] = [];

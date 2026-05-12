@@ -43,8 +43,12 @@ describe("ReferenceModel.usedBy", () => {
   });
 
   it("When and Otherwise are used by Choose", () => {
-    expect((model.usedBy.get("When") ?? []).map((e) => e.parent)).toContain("Choose");
-    expect((model.usedBy.get("Otherwise") ?? []).map((e) => e.parent)).toContain("Choose");
+    expect((model.usedBy.get("When") ?? []).map((e) => e.parent)).toContain(
+      "Choose",
+    );
+    expect(
+      (model.usedBy.get("Otherwise") ?? []).map((e) => e.parent),
+    ).toContain("Choose");
   });
 });
 

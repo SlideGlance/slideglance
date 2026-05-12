@@ -15,6 +15,8 @@ import { copyFile, cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { verifyLinks } from "./scripts/verify-links.mjs";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..");
 const dist = join(here, "dist");
@@ -101,3 +103,14 @@ const playgroundNote =
 console.log(
   `[landing] built -> ${dist} (${shots.length} screenshots, 1 icon${playgroundNote})`,
 );
+
+// Post-build link verification — catches deep-links to non-existent
+// reference pages (e.g. when builder codegen was not run before this build).
+const failures = await verifyLinks(dist);
+if (failures.length > 0) {
+  console.error(`[landing] ${failures.length} broken relative link(s):`);
+  for (const f of failures) {
+    console.error(`  ${f.from} -> ${f.href} (expected ${f.resolved})`);
+  }
+  process.exit(1);
+}

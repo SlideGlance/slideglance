@@ -206,7 +206,10 @@ function deriveUsedBy(
   nodes: readonly CompiledNodeDefinition[],
   meta: readonly CompiledMetaDefinition[],
 ): Map<string, Array<{ parent: string; cardinality: string }>> {
-  const result = new Map<string, Array<{ parent: string; cardinality: string }>>();
+  const result = new Map<
+    string,
+    Array<{ parent: string; cardinality: string }>
+  >();
   const ensure = (tag: string) => {
     let arr = result.get(tag);
     if (!arr) {
