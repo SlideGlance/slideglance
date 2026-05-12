@@ -15,3 +15,35 @@ describe("buildReferenceModel", () => {
     expect(model.meta).toHaveLength(13);
   });
 });
+
+describe("ReferenceModel.usedBy", () => {
+  const model = buildReferenceModel();
+
+  it("Text is used by VStack, HStack, Layer", () => {
+    const entry = model.usedBy.get("Text") ?? [];
+    const parents = entry.map((e) => e.parent);
+    expect(parents).toContain("VStack");
+    expect(parents).toContain("HStack");
+    expect(parents).toContain("Layer");
+  });
+
+  it("SlideGlance is a root — has no parents", () => {
+    expect(model.usedBy.get("SlideGlance") ?? []).toEqual([]);
+  });
+
+  it("Li is used by Ul and Ol", () => {
+    const parents = (model.usedBy.get("Li") ?? []).map((e) => e.parent);
+    expect(parents).toContain("Ul");
+    expect(parents).toContain("Ol");
+  });
+
+  it("Template is used by Templates (meta children via allowedParents)", () => {
+    const parents = (model.usedBy.get("Template") ?? []).map((e) => e.parent);
+    expect(parents).toContain("Templates");
+  });
+
+  it("When and Otherwise are used by Choose", () => {
+    expect((model.usedBy.get("When") ?? []).map((e) => e.parent)).toContain("Choose");
+    expect((model.usedBy.get("Otherwise") ?? []).map((e) => e.parent)).toContain("Choose");
+  });
+});

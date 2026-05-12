@@ -140,9 +140,98 @@ export function buildReferenceModel(): ReferenceModel {
     namespace: BUILDER_NS,
     nodes: r.nodes,
     meta: r.meta,
-    // Populated by subsequent tasks (T4 usedBy, T5 sourceLocations).
-    usedBy: new Map(),
+    usedBy: deriveUsedBy(r.nodes, r.meta),
     seeAlso: new Map(Object.entries(SEE_ALSO)),
+    // Populated by subsequent tasks (T5 sourceLocations).
     sourceLocations: new Map(),
   };
+}
+
+/** Container categories that accept arbitrary builder-node children. */
+const CONTAINER_CATEGORIES = new Set(["multi-child", "absolute-child"]);
+
+/**
+ * Build the reverse parent-of index used by the HTML reference's "Used by"
+ * section. Three passes merge declarative + inferred relationships:
+ *
+ *   Pass A — visual nodes declare children forward (e.g. Ul → Li, Table → Tr).
+ *   Pass B — meta elements declare their parents via `allowedParents`.
+ *   Pass C — category-based container inference: `multi-child` /
+ *            `absolute-child` containers, plus `Slide`, accept any non-root
+ *            builder node as a child (these relationships are not declared
+ *            in `children` because the containers use polymorphic child
+ *            handling at runtime).
+ */
+function deriveUsedBy(
+  nodes: readonly CompiledNodeDefinition[],
+  meta: readonly CompiledMetaDefinition[],
+): Map<string, Array<{ parent: string; cardinality: string }>> {
+  const result = new Map<string, Array<{ parent: string; cardinality: string }>>();
+  const ensure = (tag: string) => {
+    let arr = result.get(tag);
+    if (!arr) {
+      arr = [];
+      result.set(tag, arr);
+    }
+    return arr;
+  };
+
+  // Pass A — visual nodes declare children forward (e.g. Ul → Li, Table → Tr).
+  for (const parent of nodes) {
+    for (const [key, spec] of Object.entries(parent.children ?? {})) {
+      const childTag = spec.element ?? key;
+      const min = spec.min ?? 0;
+      const max = spec.max;
+      ensure(childTag).push({
+        parent: parent.tag,
+        cardinality: formatCardinality(min, max),
+      });
+    }
+  }
+
+  // Pass B — meta elements declare their parents (allowedParents). Reverse
+  // direction: a meta tag M with allowedParents=[P1, P2] means P1 and P2
+  // are parents of M.
+  for (const m of meta) {
+    for (const parent of m.allowedParents) {
+      ensure(m.tag).push({ parent, cardinality: "0..∞" });
+    }
+  }
+
+  // Pass C — inferred container relationships. Nodes with container categories
+  // (`multi-child`, `absolute-child`) accept any non-root builder node as a
+  // child. `Slide` accepts a single body root and is treated the same way for
+  // usedBy purposes (cardinality reflects "0..∞" since the page lists possible
+  // parents, not occurrence counts). Self-nesting is omitted for readability —
+  // a VStack page does not list itself in "Used by".
+  const containers = nodes.filter(
+    (n) => CONTAINER_CATEGORIES.has(n.category ?? "") || n.tag === "Slide",
+  );
+  for (const container of containers) {
+    for (const child of nodes) {
+      if (child.tag === container.tag) continue; // skip self-nesting
+      if (child.root) continue; // SlideGlance/Fragment never appear as children
+      if (child.tag === "Slide") continue; // Slide is parent-only, never a child here
+      ensure(child.tag).push({ parent: container.tag, cardinality: "0..∞" });
+    }
+  }
+
+  // Dedupe (parent, cardinality) tuples that could appear across passes.
+  for (const [tag, entries] of result) {
+    const seen = new Set<string>();
+    const unique = entries.filter((e) => {
+      const key = `${e.parent}|${e.cardinality}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    result.set(tag, unique);
+  }
+  return result;
+}
+
+function formatCardinality(min: number, max: number | undefined): string {
+  if (max === undefined) return min === 0 ? "0..∞" : `${min}..∞`;
+  if (min === max) return String(min);
+  return `${min}..${max}`;
 }
