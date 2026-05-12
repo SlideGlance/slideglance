@@ -31,6 +31,12 @@ pnpm --filter @slideglance/landing preview
 
 Builds and serves on a local port via `serve.mjs`.
 
+> Before previewing locally, run
+> `pnpm --filter @slideglance/builder run codegen` once so
+> `dist/build/reference/` is populated with the generated XML reference
+> pages. CI deployment runs codegen before this build, so production
+> previews are always up-to-date.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
