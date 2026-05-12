@@ -51,10 +51,10 @@ jobs:
       - name: Build builder
         run: pnpm --filter @slideglance/builder run build
       - name: Format check
-        run: pnpm --filter @slideglance/vscode-extension run fmt:check
+        run: pnpm --filter slide-builder run fmt:check
       - name: Lint
-        run: pnpm --filter @slideglance/vscode-extension run lint
+        run: pnpm --filter slide-builder run lint
       - name: Type check
-        run: pnpm --filter @slideglance/vscode-extension run typecheck
+        run: pnpm --filter slide-builder run typecheck
       - name: Build
-        run: pnpm --filter @slideglance/vscode-extension run build
+        run: pnpm --filter slide-builder run build
