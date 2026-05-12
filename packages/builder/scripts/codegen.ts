@@ -83,14 +83,14 @@ function main(): void {
     }
     // Compare against on-disk content too — hashes alone don't catch a
     // committed-but-stale generated file.
-    for (const rel of Object.keys(generated)) {
+    for (const [rel, expected] of Object.entries(generated)) {
       const onDiskPath = join(PKG, rel);
       if (!existsSync(onDiskPath)) {
         console.error(`Codegen --check: missing on-disk file ${rel}`);
         process.exit(1);
       }
       const onDisk = readFileSync(onDiskPath, "utf8");
-      if (sha256(onDisk) !== sha256(generated[rel])) {
+      if (sha256(onDisk) !== sha256(expected)) {
         console.error(
           `Codegen --check: ${rel} on-disk content differs from regenerated.`,
         );

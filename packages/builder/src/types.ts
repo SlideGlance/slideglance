@@ -58,6 +58,16 @@ const baseNodeSchema = z.object({
   backgroundColor: z.string().optional(),
   backgroundImage: backgroundImageSchema.optional(),
   border: borderStyleSchema.optional(),
+  // Per-side borders. Each side carries an independent borderStyle. When
+  // a side-specific entry is present, it draws a 1-px-aligned line shape
+  // on that side after the base shape; `border` (uniform) and the per-
+  // side entries compose additively (uniform draws the rectangle outline,
+  // per-side overlays the side(s) the author wants emphasised or
+  // differently colored).
+  borderTop: borderStyleSchema.optional(),
+  borderRight: borderStyleSchema.optional(),
+  borderBottom: borderStyleSchema.optional(),
+  borderLeft: borderStyleSchema.optional(),
   borderRadius: z.number().optional(),
   opacity: z.number().min(0).max(1).optional(),
   zIndex: z.number().optional(),
@@ -71,6 +81,13 @@ const baseNodeSchema = z.object({
   master: z.string().optional(),
   notes: z.string().optional(),
   isDecorative: z.boolean().optional(),
+  // Yoga flex-* overrides. The default behavior (HStack children grow
+  // equally when no `w` is set; siblings of `w="max"` are pinned;
+  // explicit pixel-width children get `flexShrink=0`) still applies
+  // unless an explicit value below overrides it.
+  flexGrow: z.number().min(0).optional(),
+  flexShrink: z.number().min(0).optional(),
+  flexBasis: lengthSchema.optional(),
   /**
    * Stable identifier assigned at parse time. Used to correlate a BuilderNode with
    * its originating source file + line via the parse result's `sourceMap`.
@@ -110,6 +127,7 @@ export const textNodeSchema = baseNodeSchema.extend({
   highlight: z.string().optional(),
   fontFamily: z.string().optional(),
   lineHeight: z.number().optional(),
+  letterSpacing: z.number().optional(),
   noWrap: z.boolean().optional(),
   textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
 });
@@ -140,6 +158,7 @@ export const ulNodeSchema = baseNodeSchema.extend({
   highlight: z.string().optional(),
   fontFamily: z.string().optional(),
   lineHeight: z.number().optional(),
+  letterSpacing: z.number().optional(),
   bulletIndent: z.number().optional(),
   noWrap: z.boolean().optional(),
   textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
@@ -158,6 +177,7 @@ export const olNodeSchema = baseNodeSchema.extend({
   highlight: z.string().optional(),
   fontFamily: z.string().optional(),
   lineHeight: z.number().optional(),
+  letterSpacing: z.number().optional(),
   numberType: bulletNumberTypeSchema.optional(),
   numberStartAt: z.number().optional(),
   bulletIndent: z.number().optional(),
@@ -236,7 +256,14 @@ const tableCellSchema = z.object({
   backgroundColor: z.string().optional(),
   colspan: z.number().int().min(1).optional(),
   rowspan: z.number().int().min(1).optional(),
+  letterSpacing: z.number().optional(),
   margin: paddingSchema.optional(),
+  // CSS-familiar alias of `margin` for table cells. PPTX table cells have
+  // no concept of outer spacing — what PowerPoint calls cell `margin` is
+  // the cell inner padding. Accepting `padding` lets authors reach for
+  // the CSS-natural name; both decode to the same render-time value, and
+  // when both are present `padding` wins.
+  padding: paddingSchema.optional(),
 });
 
 const tableRowSchema = z.object({
@@ -275,6 +302,7 @@ export const shapeNodeSchema = baseNodeSchema.extend({
   highlight: z.string().optional(),
   fontFamily: z.string().optional(),
   lineHeight: z.number().optional(),
+  letterSpacing: z.number().optional(),
   textVAlign: z.enum(["top", "middle", "bottom"]).optional(),
   rotate: z.number().optional(),
   noWrap: z.boolean().optional(),
@@ -560,6 +588,12 @@ const masterTextObjectSchema = z.object({
   strike: z.boolean().optional(),
   highlight: z.string().optional(),
   textAlign: z.enum(["left", "center", "right"]).optional(),
+  // Unitless line-height multiplier (matches `<Text>` lineHeight). Maps
+  // to pptxgenjs `lineSpacingMultiple`.
+  lineHeight: z.number().optional(),
+  // em-unit tracking (matches `<Text>` letterSpacing). Maps to
+  // pptxgenjs `charSpacing` (1/100 em).
+  letterSpacing: z.number().optional(),
 });
 
 const masterImageObjectSchema = z.object({
@@ -579,10 +613,21 @@ const masterRectObjectSchema = z.object({
   h: z.number(),
   fill: fillStyleSchema.optional(),
   border: borderStyleSchema.optional(),
+  // px corner radius. Maps to pptxgenjs `rectRadius` (in inches).
+  borderRadius: z.number().min(0).optional(),
+  // 0..1 element opacity. Maps to fill `transparency = (1 - opacity) * 100`.
+  // `fill.transparency`, if also provided, takes precedence.
+  opacity: z.number().min(0).max(1).optional(),
 });
 
 const masterLineObjectSchema = z.object({
   type: z.literal("line"),
+  // After parser post-processing: a positioned-rect representation
+  // suitable for pptxgenjs's `line` shape. The author may write either
+  // (x, y, w, h) directly OR the endpoint-pair (x1, y1, x2, y2); the
+  // dispatcher folds the latter into the former (x = x1, y = y1,
+  // w = x2 - x1, h = y2 - y1), which lets `<MasterLine>` express
+  // non-axis-aligned hairlines.
   x: z.number(),
   y: z.number(),
   w: z.number(),
@@ -605,6 +650,7 @@ export const slideNumberOptionsSchema = z.object({
   fontSize: z.number().optional(),
   fontFamily: z.string().optional(),
   color: z.string().optional(),
+  textAlign: z.enum(["left", "center", "right"]).optional(),
 });
 
 const slideMasterBackgroundSchema = z.union([

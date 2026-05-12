@@ -29,6 +29,16 @@ function applyFlexProperties(
       case "stretch":
         yn.setAlignItems(yoga.ALIGN_STRETCH);
         break;
+      case "baseline":
+        // Yoga supports baseline alignment natively. Without a custom
+        // baseline function on the measure node, Yoga falls back to the
+        // bottom edge of each child's content box; for slideglance text
+        // rows that is close to the visual baseline at the leaf measure
+        // node's lineHeight=1.0 default. The mixed-size editorial row
+        // idiom (`textVAlign="middle" lineHeight="1.0"`) remains the
+        // pixel-perfect path; this enum value is the CSS-natural alias.
+        yn.setAlignItems(yoga.ALIGN_BASELINE);
+        break;
     }
   }
 

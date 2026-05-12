@@ -141,6 +141,11 @@ function convertMasterObject(
             strike: convertStrike(obj.strike),
             highlight: obj.highlight,
             align: obj.textAlign,
+            lineSpacingMultiple: obj.lineHeight,
+            charSpacing:
+              obj.letterSpacing !== undefined
+                ? obj.letterSpacing * 100
+                : undefined,
           },
         },
       };
@@ -159,31 +164,39 @@ function convertMasterObject(
       }
       return { image: imageProps };
     }
-    case "rect":
-      return {
-        rect: {
-          x: pxToIn(obj.x),
-          y: pxToIn(obj.y),
-          w: pxToIn(obj.w),
-          h: pxToIn(obj.h),
-          fill: obj.fill
-            ? {
-                color: obj.fill.color,
-                transparency:
-                  obj.fill.transparency !== undefined
-                    ? obj.fill.transparency * 100
-                    : undefined,
-              }
+    case "rect": {
+      const opacityTransparency =
+        obj.opacity !== undefined ? (1 - obj.opacity) * 100 : undefined;
+      const explicitTransparency =
+        obj.fill?.transparency !== undefined
+          ? obj.fill.transparency * 100
+          : undefined;
+      const rectProps: Record<string, unknown> = {
+        x: pxToIn(obj.x),
+        y: pxToIn(obj.y),
+        w: pxToIn(obj.w),
+        h: pxToIn(obj.h),
+        fill: obj.fill
+          ? {
+              color: obj.fill.color,
+              transparency: explicitTransparency ?? opacityTransparency,
+            }
+          : opacityTransparency !== undefined
+            ? { transparency: opacityTransparency }
             : undefined,
-          line: obj.border
-            ? {
-                color: obj.border.color,
-                width: obj.border.width,
-                dashType: obj.border.dashType,
-              }
-            : undefined,
-        },
+        line: obj.border
+          ? {
+              color: obj.border.color,
+              width: obj.border.width,
+              dashType: obj.border.dashType,
+            }
+          : undefined,
       };
+      if (obj.borderRadius !== undefined) {
+        rectProps.rectRadius = pxToIn(obj.borderRadius);
+      }
+      return { rect: rectProps };
+    }
     case "line":
       return {
         line: {
@@ -549,6 +562,7 @@ function defineSlideMasterFromOptions(
         buildContext.defaultTextStyle,
       ),
       color: master.slideNumber.color ?? buildContext.defaultTextStyle.color,
+      align: master.slideNumber.textAlign,
     };
   }
 

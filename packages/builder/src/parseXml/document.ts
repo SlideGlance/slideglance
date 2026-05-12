@@ -471,16 +471,38 @@ function parseMasterElement(
         type: "rect",
       };
     } else if (tag === "MasterLine") {
-      obj = {
-        ...coerceChildAttrs(
-          "Master",
-          tag,
-          getAttributes(child),
-          errors,
-          styles,
-        ),
-        type: "line",
-      };
+      const raw: Record<string, unknown> = coerceChildAttrs(
+        "Master",
+        tag,
+        getAttributes(child),
+        errors,
+        styles,
+      );
+      // Endpoint-pair → positioned-rect fold. (x1, y1) → (x, y),
+      // (x2 - x1, y2 - y1) → (w, h). pptxgenjs `line` shape accepts
+      // signed w/h offsets so diagonal lines work without explicit
+      // rotation. Direct (x, y, w, h) takes precedence when both forms
+      // are mixed.
+      if (
+        raw.x === undefined &&
+        raw.y === undefined &&
+        raw.w === undefined &&
+        raw.h === undefined &&
+        typeof raw.x1 === "number" &&
+        typeof raw.y1 === "number" &&
+        typeof raw.x2 === "number" &&
+        typeof raw.y2 === "number"
+      ) {
+        raw.x = raw.x1;
+        raw.y = raw.y1;
+        raw.w = raw.x2 - raw.x1;
+        raw.h = raw.y2 - raw.y1;
+      }
+      delete raw.x1;
+      delete raw.y1;
+      delete raw.x2;
+      delete raw.y2;
+      obj = { ...raw, type: "line" };
     } else {
       const converted = convertElement(child, errors, styles);
       if (converted) {

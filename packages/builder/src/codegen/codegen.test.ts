@@ -101,7 +101,7 @@ describe("verify hashes", () => {
     const rec = buildHashRecord(original);
     const v = verifyAgainstHashes({ "a.xml": "<a></a>" }, rec);
     expect(v.ok).toBe(false);
-    expect(v.diffs[0].file).toBe("a.xml");
+    expect(v.diffs[0]!.file).toBe("a.xml");
   });
 
   it("reports missing or new files", () => {

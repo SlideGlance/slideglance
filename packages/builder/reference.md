@@ -53,9 +53,16 @@ Renders a single piece of styled text. Supports inline styled runs via <B>, <I>,
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `bold` | boolean |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `color` | color |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -63,6 +70,7 @@ Renders a single piece of styled text. Supports inline styled runs via <B>, <I>,
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `left` | number |  |  |
+| `letterSpacing` | number |  | Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking. |
 | `lineHeight` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
 | `maxH` | number |  |  |
@@ -105,10 +113,17 @@ Bulleted list. Items can be supplied via the JSON `items` attribute or via <Li> 
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `bold` | boolean |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `bulletIndent` | number |  |  |
 | `color` | color |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -117,6 +132,7 @@ Bulleted list. Items can be supplied via the JSON `items` attribute or via <Li> 
 | `italic` | boolean |  |  |
 | `items` | json |  | Array of list items as JSON string. |
 | `left` | number |  |  |
+| `letterSpacing` | number |  | Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking. |
 | `lineHeight` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
 | `maxH` | number |  |  |
@@ -158,10 +174,17 @@ Numbered list. Items via JSON `items` attribute or <Li> children.
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `bold` | boolean |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `bulletIndent` | number |  |  |
 | `color` | color |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -170,6 +193,7 @@ Numbered list. Items via JSON `items` attribute or <Li> children.
 | `italic` | boolean |  |  |
 | `items` | json |  |  |
 | `left` | number |  |  |
+| `letterSpacing` | number |  | Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking. |
 | `lineHeight` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
 | `maxH` | number |  |  |
@@ -213,8 +237,15 @@ Embeds an image. `src` accepts http(s):// URL, data URI, or relative file path.
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -250,9 +281,16 @@ Renders a built-in icon by name. See docs for the icon catalog.
 | `backgroundColor` | iconColor |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `color` | iconColor |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -288,9 +326,16 @@ Embeds inline SVG. Supply the SVG via a <svg> child element.
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `color` | iconColor |  | Recolors monochrome SVGs. |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -328,12 +373,19 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `cellBorder` | border |  |  |
 | `cellMargin` | padding |  |  |
 | `columns` | json |  | Column definitions (array). |
 | `defaultRowHeight` | number |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -374,10 +426,17 @@ Renders a built-in PowerPoint shape (rect, ellipse, arrows, callouts, etc.).
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `bold` | boolean |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `color` | color |  |  |
 | `fill` | fill |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -385,6 +444,7 @@ Renders a built-in PowerPoint shape (rect, ellipse, arrows, callouts, etc.).
 | `isDecorative` | boolean |  |  |
 | `italic` | boolean |  |  |
 | `left` | number |  |  |
+| `letterSpacing` | number |  | Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking. |
 | `line` | border |  |  |
 | `lineHeight` | number |  |  |
 | `margin` | padding |  | Outer margin (number or per-side object). |
@@ -426,12 +486,19 @@ Renders a native PowerPoint chart (bar/line/pie/area/doughnut/radar).
 | `barGapWidthPct` | number |  |  |
 | `barGrouping` | string (clustered\|stacked\|percentStacked) |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `catAxisLabelFontSize` | number |  |  |
 | `chartColors` | json |  |  |
 | `chartType` | string (bar\|line\|pie\|area\|doughnut\|radar) | yes |  |
 | `data` | json |  | Series data (array of {name?, labels[], values[]}). |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -481,11 +548,18 @@ Straight line connector with optional arrows on either end.
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `beginArrow` | lineArrow |  |  |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `color` | color |  |  |
 | `dashType` | borderDash |  |  |
 | `endArrow` | lineArrow |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |
@@ -523,8 +597,15 @@ Flex column container — children stack vertically.
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -560,8 +641,15 @@ Flex row container — children stack horizontally.
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
 | `h` | length |  | Height (number, percentage, or 'max'). |
@@ -596,8 +684,15 @@ Absolute-positioned container. Direct children must declare `x` and `y`.
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
 | `border` | border |  | Border style (color/width/dashType). |
+| `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
+| `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
 | `borderRadius` | number |  |  |
+| `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
+| `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
+| `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
+| `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
+| `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `isDecorative` | boolean |  |  |
 | `left` | number |  |  |

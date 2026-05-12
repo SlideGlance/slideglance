@@ -60,7 +60,10 @@ export function renderTableNode(
   const defaultTextStyle = ctx.buildContext?.defaultTextStyle;
   const tableRows = node.rows.map((row) =>
     row.cells.map((cell) => {
-      const cellMarginPt = resolveCellMarginPt(cell.margin, node.cellMargin);
+      const cellMarginPt = resolveCellMarginPt(
+        cell.padding ?? cell.margin,
+        node.cellMargin,
+      );
       const cellOptions: Record<string, unknown> = {
         fontSize: pxToPt(
           resolveTextStyleValue(cell.fontSize, defaultTextStyle?.fontSize, 18),
@@ -80,6 +83,10 @@ export function renderTableNode(
         colspan: cell.colspan,
         rowspan: cell.rowspan,
         margin: cellMarginPt,
+        charSpacing:
+          cell.letterSpacing !== undefined
+            ? cell.letterSpacing * 100
+            : undefined,
       };
 
       if (cell.runs && cell.runs.length > 0) {
@@ -108,6 +115,10 @@ export function renderTableNode(
               underline: convertUnderline(run.underline ?? cell.underline),
               strike: convertStrike(run.strike ?? cell.strike),
               highlight: run.highlight ?? cell.highlight,
+              charSpacing:
+                cell.letterSpacing !== undefined
+                  ? cell.letterSpacing * 100
+                  : undefined,
               ...(validatedHref ? { hyperlink: { url: validatedHref } } : {}),
             },
           };
@@ -123,6 +134,10 @@ export function renderTableNode(
             colspan: cell.colspan,
             rowspan: cell.rowspan,
             margin: cellMarginPt,
+            charSpacing:
+              cell.letterSpacing !== undefined
+                ? cell.letterSpacing * 100
+                : undefined,
           },
         };
       }

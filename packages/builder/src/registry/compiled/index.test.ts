@@ -22,9 +22,9 @@ describe("compiled registry", () => {
 
   it("text node has expected attribute and schema wired up", () => {
     expect(textCompiled).toBeDefined();
-    expect(textCompiled?.attributes.text.bodyAlias).toBe(true);
-    expect(textCompiled?.attributes.fontSize.coerce).toBe("number");
-    expect(textCompiled?.schema).toBeDefined();
+    expect(textCompiled!.attributes.text!.bodyAlias).toBe(true);
+    expect(textCompiled!.attributes.fontSize!.coerce).toBe("number");
+    expect(textCompiled!.schema).toBeDefined();
   });
 
   it("every node carries a description and category (or root flag for containers)", () => {

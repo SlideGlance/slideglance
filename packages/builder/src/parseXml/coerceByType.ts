@@ -174,16 +174,45 @@ function coerceObjectShape(
 }
 
 /**
- * Padding union: number OR object{top,right,bottom,left}. Numbers are
- * preserved as-is (the box-shorthand expansion happens at the dispatcher
- * layer for shorthand-vs-dot conflicts).
+ * Padding union: number OR CSS-style 2/3/4-value shorthand OR
+ * object{top,right,bottom,left}.
+ *
+ * Shorthand decomposition matches CSS:
+ *   `"V"`       → { top: V, right: V, bottom: V, left: V }
+ *   `"V H"`     → { top: V, right: H, bottom: V, left: H }
+ *   `"T H B"`   → { top: T, right: H, bottom: B, left: H }
+ *   `"T R B L"` → { top: T, right: R, bottom: B, left: L }
+ *
+ * Numbers in object form are preserved as-is; the box-shorthand
+ * expansion happens at the dispatcher layer for shorthand-vs-dot
+ * conflicts.
  */
 function coercePadding(value: string): CoerceResult {
   if (LENGTH_NUM_RE.test(value)) return { value: Number(value), error: null };
-  // Otherwise treat as object
+  // Object form (JSON, from preprocessed dot notation).
   if (value.startsWith("{") || value.startsWith("[")) {
     const result = coerceObjectShape(value, STRUCTURED_SHAPES.padding!);
     return result;
+  }
+  // CSS shorthand: 2, 3, or 4 whitespace-separated numbers.
+  const parts = value.trim().split(/\s+/);
+  if (
+    (parts.length === 2 || parts.length === 3 || parts.length === 4) &&
+    parts.every((p) => LENGTH_NUM_RE.test(p))
+  ) {
+    const nums = parts.map(Number);
+    let top: number, right: number, bottom: number, left: number;
+    if (nums.length === 2) {
+      [top, right] = nums as [number, number];
+      bottom = top;
+      left = right;
+    } else if (nums.length === 3) {
+      [top, right, bottom] = nums as [number, number, number];
+      left = right;
+    } else {
+      [top, right, bottom, left] = nums as [number, number, number, number];
+    }
+    return { value: { top, right, bottom, left }, error: null };
   }
   return {
     value: undefined,

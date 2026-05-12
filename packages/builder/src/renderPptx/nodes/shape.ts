@@ -96,6 +96,10 @@ export function renderShapeNode(
         defaultTextStyle?.lineHeight,
         1.0,
       ),
+      charSpacing:
+        node.letterSpacing !== undefined
+          ? node.letterSpacing * 100
+          : undefined,
       margin: resolveShapeTextInsetPt(node.padding),
     });
   } else {

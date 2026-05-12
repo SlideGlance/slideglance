@@ -60,6 +60,26 @@ const BASE_ATTRS: Record<string, AttributeSpec> = {
     dotNotation: true,
     doc: "Border style (color/width/dashType).",
   },
+  borderTop: {
+    coerce: "border",
+    dotNotation: true,
+    doc: "Top-only border (color/width/dashType). Composes additively with `border`.",
+  },
+  borderRight: {
+    coerce: "border",
+    dotNotation: true,
+    doc: "Right-only border (color/width/dashType). Composes additively with `border`.",
+  },
+  borderBottom: {
+    coerce: "border",
+    dotNotation: true,
+    doc: "Bottom-only border (color/width/dashType). Composes additively with `border`.",
+  },
+  borderLeft: {
+    coerce: "border",
+    dotNotation: true,
+    doc: "Left-only border (color/width/dashType). Composes additively with `border`.",
+  },
   borderRadius: { coerce: "number" },
   opacity: { coerce: "number", doc: "0..1 opacity." },
   zIndex: { coerce: "number" },
@@ -74,6 +94,18 @@ const BASE_ATTRS: Record<string, AttributeSpec> = {
   },
   shadow: { coerce: "shadow", dotNotation: true },
   isDecorative: { coerce: "boolean" },
+  flexGrow: {
+    coerce: "number",
+    doc: "Yoga flex-grow override (defaults to context-aware behavior).",
+  },
+  flexShrink: {
+    coerce: "number",
+    doc: "Yoga flex-shrink override (defaults to 1 inside stacks).",
+  },
+  flexBasis: {
+    coerce: "length",
+    doc: "Yoga flex-basis override (number, percentage, or 'max').",
+  },
 };
 
 const TEXT_STYLE_ATTRS: Record<string, AttributeSpec> = {
@@ -87,6 +119,10 @@ const TEXT_STYLE_ATTRS: Record<string, AttributeSpec> = {
   highlight: { coerce: "color" },
   fontFamily: { coerce: "string" },
   lineHeight: { coerce: "number" },
+  letterSpacing: {
+    coerce: "number",
+    doc: "Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking.",
+  },
   noWrap: {
     coerce: "boolean",
     doc: "When true, the layout never wraps the text — it is always measured as a single line. Combined with `flexShrink=0` so a parent flex layout cannot squeeze it. The rendered text may overflow the box horizontally if it is longer than the box's width; if you need word-wrap, leave this off.",

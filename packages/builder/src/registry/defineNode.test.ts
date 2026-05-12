@@ -20,8 +20,8 @@ describe("defineNode", () => {
     expect(def.kind).toBe("node");
     expect(def.tag).toBe("Text");
     expect(def.type).toBe("text");
-    expect(def.attributes.text.bodyAlias).toBe(true);
-    expect(def.attributes.fontSize.coerce).toBe("number");
+    expect(def.attributes.text!.bodyAlias).toBe(true);
+    expect(def.attributes.fontSize!.coerce).toBe("number");
     expect(def.root).toBe(false);
     expect(def.children).toEqual({});
   });

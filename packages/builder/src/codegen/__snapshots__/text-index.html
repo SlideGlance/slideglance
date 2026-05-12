@@ -32,9 +32,16 @@
 <tr><td><code>backgroundImage</code></td><td><code>json</code></td><td></td><td>Background image source/sizing.</td></tr>
 <tr><td><code>bold</code></td><td><code>boolean</code></td><td></td><td></td></tr>
 <tr><td><code>border</code></td><td><code>border</code></td><td></td><td>Border style (color/width/dashType).</td></tr>
+<tr><td><code>borderBottom</code></td><td><code>border</code></td><td></td><td>Bottom-only border (color/width/dashType). Composes additively with `border`.</td></tr>
+<tr><td><code>borderLeft</code></td><td><code>border</code></td><td></td><td>Left-only border (color/width/dashType). Composes additively with `border`.</td></tr>
 <tr><td><code>borderRadius</code></td><td><code>number</code></td><td></td><td></td></tr>
+<tr><td><code>borderRight</code></td><td><code>border</code></td><td></td><td>Right-only border (color/width/dashType). Composes additively with `border`.</td></tr>
+<tr><td><code>borderTop</code></td><td><code>border</code></td><td></td><td>Top-only border (color/width/dashType). Composes additively with `border`.</td></tr>
 <tr><td><code>bottom</code></td><td><code>number</code></td><td></td><td></td></tr>
 <tr><td><code>color</code></td><td><code>color</code></td><td></td><td></td></tr>
+<tr><td><code>flexBasis</code></td><td><code>length</code></td><td></td><td>Yoga flex-basis override (number, percentage, or &#39;max&#39;).</td></tr>
+<tr><td><code>flexGrow</code></td><td><code>number</code></td><td></td><td>Yoga flex-grow override (defaults to context-aware behavior).</td></tr>
+<tr><td><code>flexShrink</code></td><td><code>number</code></td><td></td><td>Yoga flex-shrink override (defaults to 1 inside stacks).</td></tr>
 <tr><td><code>fontFamily</code></td><td><code>string</code></td><td></td><td></td></tr>
 <tr><td><code>fontSize</code></td><td><code>number</code></td><td></td><td></td></tr>
 <tr><td><code>h</code></td><td><code>length</code></td><td></td><td>Height (number, percentage, or &#39;max&#39;).</td></tr>
@@ -42,6 +49,7 @@
 <tr><td><code>isDecorative</code></td><td><code>boolean</code></td><td></td><td></td></tr>
 <tr><td><code>italic</code></td><td><code>boolean</code></td><td></td><td></td></tr>
 <tr><td><code>left</code></td><td><code>number</code></td><td></td><td></td></tr>
+<tr><td><code>letterSpacing</code></td><td><code>number</code></td><td></td><td>Letter spacing in em units (e.g. -0.02 for tight display, 0.18 for wide small-caps eyebrows). Maps to pptxgenjs `charSpacing` (units of 1/100 em). Note: the WASM text measurer treats letterSpacing as 0 when measuring widths, so autofit may underestimate wrapping width by a small amount on lines with large absolute tracking.</td></tr>
 <tr><td><code>lineHeight</code></td><td><code>number</code></td><td></td><td></td></tr>
 <tr><td><code>margin</code></td><td><code>padding</code></td><td></td><td>Outer margin (number or per-side object).</td></tr>
 <tr><td><code>maxH</code></td><td><code>number</code></td><td></td><td></td></tr>
@@ -78,7 +86,7 @@
 <h2>See also</h2>
 <ul class="see-also"><li><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/docs/en/xml-reference.md">Inline formatting (B, I, U, S, Mark, Span, A)</a></li><li><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/docs/en/text-measurement.md">Text measurement (opentype vs fallback)</a></li></ul>
 <h2>Source</h2>
-<p><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts#L103"><code>src/registry/compiled/index.ts</code> · line 103</a></p>
+<p><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts#L139"><code>src/registry/compiled/index.ts</code> · line 139</a></p>
 </main>
 </div>
 <script src="../scripts/site.js" defer></script>

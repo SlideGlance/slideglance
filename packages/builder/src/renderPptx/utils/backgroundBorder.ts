@@ -1,8 +1,88 @@
-import type { PositionedNode, ShadowStyle } from "../../types.ts";
+import type {
+  BorderStyle,
+  PositionedNode,
+  ShadowStyle,
+} from "../../types.ts";
 import { getImageData } from "../../shared/measureImage.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn, pxToPt } from "../units.ts";
 import { validateImageSrc } from "../nodes/image.ts";
+
+function isMeaningfulBorder(b: BorderStyle | undefined): b is BorderStyle {
+  return (
+    b !== undefined &&
+    (b.color !== undefined ||
+      b.width !== undefined ||
+      b.dashType !== undefined)
+  );
+}
+
+/**
+ * Emit per-side border overlays as positioned 1-px-aligned line shapes.
+ * Called after the base shape (and any uniform border) has been drawn,
+ * so the per-side line sits on top of the rectangle outline at the
+ * author-specified width/color/dashType.
+ *
+ * pptxgenjs `line` shape geometry: `(x, y)` is the start endpoint,
+ * `(w, h)` are signed offsets to the end endpoint (NOT a bounding box).
+ * We use h=0 for horizontal sides and w=0 for vertical sides.
+ */
+export function renderPerSideBorders(
+  node: PositionedNode,
+  ctx: RenderContext,
+): void {
+  const sides: Array<{
+    name: "top" | "right" | "bottom" | "left";
+    style: BorderStyle | undefined;
+  }> = [
+    { name: "top", style: node.borderTop },
+    { name: "right", style: node.borderRight },
+    { name: "bottom", style: node.borderBottom },
+    { name: "left", style: node.borderLeft },
+  ];
+  for (const { name, style } of sides) {
+    if (!isMeaningfulBorder(style)) continue;
+    const line = {
+      color: style.color ?? "000000",
+      width: style.width !== undefined ? pxToPt(style.width) : undefined,
+      dashType: style.dashType,
+    };
+    let x: number, y: number, w: number, h: number;
+    switch (name) {
+      case "top":
+        x = node.x;
+        y = node.y;
+        w = node.w;
+        h = 0;
+        break;
+      case "right":
+        x = node.x + node.w;
+        y = node.y;
+        w = 0;
+        h = node.h;
+        break;
+      case "bottom":
+        x = node.x;
+        y = node.y + node.h;
+        w = node.w;
+        h = 0;
+        break;
+      case "left":
+        x = node.x;
+        y = node.y;
+        w = 0;
+        h = node.h;
+        break;
+    }
+    ctx.slide.addShape(ctx.pptx.ShapeType.line, {
+      x: pxToIn(x),
+      y: pxToIn(y),
+      w: pxToIn(w),
+      h: pxToIn(h),
+      line,
+    });
+  }
+}
 
 /**
  * Returns true when a text node's background/border/borderRadius/shadow should be
@@ -58,7 +138,30 @@ export function renderBackgroundAndBorder(
   );
   const hasShadow = Boolean(shadow);
 
-  if (!hasBackground && !hasBackgroundImage && !hasBorder && !hasShadow) {
+  const hasPerSideBorder =
+    isMeaningfulBorder(node.borderTop) ||
+    isMeaningfulBorder(node.borderRight) ||
+    isMeaningfulBorder(node.borderBottom) ||
+    isMeaningfulBorder(node.borderLeft);
+
+  if (
+    !hasBackground &&
+    !hasBackgroundImage &&
+    !hasBorder &&
+    !hasShadow &&
+    !hasPerSideBorder
+  ) {
+    return;
+  }
+
+  if (
+    !hasBackground &&
+    !hasBackgroundImage &&
+    !hasBorder &&
+    !hasShadow &&
+    hasPerSideBorder
+  ) {
+    renderPerSideBorders(node, ctx);
     return;
   }
 
@@ -100,6 +203,7 @@ export function renderBackgroundAndBorder(
       rectRadius,
       shadow: shadow ? convertShadow(shadow) : undefined,
     });
+    renderPerSideBorders(node, ctx);
     return;
   }
 
@@ -183,4 +287,7 @@ export function renderBackgroundAndBorder(
       shadow: shadow ? convertShadow(shadow) : undefined,
     });
   }
+
+  // 4. Per-side border overlays.
+  renderPerSideBorders(node, ctx);
 }

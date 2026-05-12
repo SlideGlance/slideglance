@@ -40,6 +40,8 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     strike: { coerce: "boolean" },
     highlight: { coerce: "color" },
     textAlign: { coerce: "string" },
+    lineHeight: { coerce: "number" },
+    letterSpacing: { coerce: "number" },
   },
   MasterImage: {
     src: { coerce: "string" },
@@ -55,12 +57,21 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     h: { coerce: "number" },
     fill: { coerce: "fill", dotNotation: true },
     border: { coerce: "border", dotNotation: true },
+    borderRadius: { coerce: "number" },
+    opacity: { coerce: "number" },
   },
   MasterLine: {
     x: { coerce: "number" },
     y: { coerce: "number" },
     w: { coerce: "number" },
     h: { coerce: "number" },
+    // Endpoint-pair alternative to (x, y, w, h). When all four are
+    // provided the dispatcher folds them into the positioned-rect form
+    // (x = x1, y = y1, w = x2 - x1, h = y2 - y1).
+    x1: { coerce: "number" },
+    y1: { coerce: "number" },
+    x2: { coerce: "number" },
+    y2: { coerce: "number" },
     line: { coerce: "border", dotNotation: true },
   },
   SlideNumber: {
@@ -71,6 +82,7 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     fontSize: { coerce: "number" },
     fontFamily: { coerce: "string" },
     color: { coerce: "color" },
+    textAlign: { coerce: "string" },
   },
   Col: {
     w: { coerce: "length" },
@@ -90,7 +102,9 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     backgroundColor: { coerce: "color" },
     colspan: { coerce: "number" },
     rowspan: { coerce: "number" },
+    letterSpacing: { coerce: "number" },
     margin: { coerce: "padding", dotNotation: true },
+    padding: { coerce: "padding", dotNotation: true },
   },
   Li: {
     text: { coerce: "string" },
@@ -102,6 +116,7 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     color: { coerce: "color" },
     fontSize: { coerce: "number" },
     fontFamily: { coerce: "string" },
+    letterSpacing: { coerce: "number" },
   },
   B: {},
   I: {},

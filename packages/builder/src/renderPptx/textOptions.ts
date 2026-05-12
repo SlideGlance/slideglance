@@ -75,5 +75,9 @@ export function createTextOptions(
     underline: convertUnderline(node.underline),
     strike: convertStrike(node.strike),
     highlight: node.highlight,
+    charSpacing:
+      node.letterSpacing !== undefined
+        ? node.letterSpacing * 100
+        : undefined,
   };
 }

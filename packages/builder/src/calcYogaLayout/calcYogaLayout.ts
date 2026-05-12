@@ -261,6 +261,27 @@ async function buildPomWithYogaTree(
     }
   }
 
+  // Explicit flex-* overrides (always win over the context-aware defaults
+  // above). Applied last so authors can pin a column with flexShrink=0 or
+  // claim slack with flexGrow=2 even inside HStack/VStack defaults.
+  if (node.flexGrow !== undefined) {
+    yn.setFlexGrow(node.flexGrow);
+  }
+  if (node.flexShrink !== undefined) {
+    yn.setFlexShrink(node.flexShrink);
+  }
+  if (node.flexBasis !== undefined) {
+    if (typeof node.flexBasis === "number") {
+      yn.setFlexBasis(node.flexBasis);
+    } else if (node.flexBasis === "max") {
+      // "max" on flexBasis is treated as flex-basis: auto so the node
+      // sizes to its content first, then participates in grow.
+      yn.setFlexBasisAuto();
+    } else if (node.flexBasis.endsWith("%")) {
+      yn.setFlexBasisPercent(parseFloat(node.flexBasis));
+    }
+  }
+
   parentYoga.insertChild(yn, parentYoga.getChildCount());
 
   const def = getNodeDef(node.type);

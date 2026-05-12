@@ -156,6 +156,10 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
+      charSpacing:
+        node.letterSpacing !== undefined
+          ? node.letterSpacing * 100
+          : undefined,
       ...(objectName ? { objectName } : {}),
     });
   } else {
@@ -172,6 +176,10 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
+      charSpacing:
+        node.letterSpacing !== undefined
+          ? node.letterSpacing * 100
+          : undefined,
       color: node.color ?? defaultTextStyle?.color,
       bold: node.bold ?? defaultTextStyle?.bold,
       italic: node.italic ?? defaultTextStyle?.italic,
@@ -229,6 +237,10 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
+      charSpacing:
+        node.letterSpacing !== undefined
+          ? node.letterSpacing * 100
+          : undefined,
       ...(objectName ? { objectName } : {}),
     });
   } else {
@@ -245,6 +257,10 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
+      charSpacing:
+        node.letterSpacing !== undefined
+          ? node.letterSpacing * 100
+          : undefined,
       color: node.color ?? defaultTextStyle?.color,
       bold: node.bold ?? defaultTextStyle?.bold,
       italic: node.italic ?? defaultTextStyle?.italic,

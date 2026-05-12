@@ -4,7 +4,13 @@
 
 import { z } from "zod";
 
-export const alignItemsSchema = z.enum(["start", "center", "end", "stretch"]);
+export const alignItemsSchema = z.enum([
+  "start",
+  "center",
+  "end",
+  "stretch",
+  "baseline",
+]);
 
 export const alignSelfSchema = z.enum([
   "auto",

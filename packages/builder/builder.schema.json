@@ -179,6 +179,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -255,6 +355,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -371,6 +494,9 @@
           "type": "string"
         },
         "lineHeight": {
+          "type": "number"
+        },
+        "letterSpacing": {
           "type": "number"
         },
         "noWrap": {
@@ -534,6 +660,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -610,6 +836,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -797,6 +1046,9 @@
         "lineHeight": {
           "type": "number"
         },
+        "letterSpacing": {
+          "type": "number"
+        },
         "bulletIndent": {
           "type": "number"
         },
@@ -961,6 +1213,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -1037,6 +1389,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -1222,6 +1597,9 @@
           "type": "string"
         },
         "lineHeight": {
+          "type": "number"
+        },
+        "letterSpacing": {
           "type": "number"
         },
         "numberType": {
@@ -1412,6 +1790,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -1488,6 +1966,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -1685,6 +2186,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -1761,6 +2362,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -3876,6 +4500,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -3952,6 +4676,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -4120,6 +4867,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -4196,6 +5043,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -4381,7 +5251,35 @@
                       "minimum": 1,
                       "maximum": 9007199254740991
                     },
+                    "letterSpacing": {
+                      "type": "number"
+                    },
                     "margin": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "top": {
+                              "type": "number"
+                            },
+                            "right": {
+                              "type": "number"
+                            },
+                            "bottom": {
+                              "type": "number"
+                            },
+                            "left": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "padding": {
                       "anyOf": [
                         {
                           "type": "number"
@@ -4642,6 +5540,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -4718,6 +5716,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -5015,6 +6036,9 @@
         "lineHeight": {
           "type": "number"
         },
+        "letterSpacing": {
+          "type": "number"
+        },
         "textVAlign": {
           "type": "string",
           "enum": [
@@ -5179,6 +6203,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -5255,6 +6379,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
@@ -5521,6 +6668,106 @@
           },
           "additionalProperties": false
         },
+        "borderTop": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderRight": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderBottom": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "borderLeft": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "dashType": {
+              "type": "string",
+              "enum": [
+                "solid",
+                "dash",
+                "dashDot",
+                "lgDash",
+                "lgDashDot",
+                "lgDashDotDot",
+                "sysDash",
+                "sysDot"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "borderRadius": {
           "type": "number"
         },
@@ -5597,6 +6844,29 @@
         },
         "isDecorative": {
           "type": "boolean"
+        },
+        "flexGrow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexShrink": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flexBasis": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "max"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+%$"
+            }
+          ]
         },
         "__nodeId": {
           "type": "number"
