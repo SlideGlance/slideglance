@@ -16,6 +16,7 @@
     "builder.xsd",
     "builder.schema.json",
     "reference.md",
+    "reference-html",
     ".codegen-hash.json",
     "README.md",
     "LICENSE"
