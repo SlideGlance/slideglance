@@ -3,7 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "author": "Taehwan Kwag",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
+  "description": "Tauri 2 desktop app for the slideglance viewer.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "apps/desktop-viewer"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --port 5174",

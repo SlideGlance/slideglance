@@ -93,6 +93,36 @@ const resvgModulePlugin = {
   },
 };
 
+// Copies @slideglance/builder's `builder.xsd` next to the bundle and
+// writes an OASIS XML catalog redirecting the unpkg URL (and the
+// `urn:slideglance:builder:v1` namespace) to the local copy. The
+// extension's activate() registers this catalog with the RedHat XML
+// extension so `.sgx` files validate without depending on a published
+// npm package.
+const xmlCatalogPlugin = {
+  name: "xml-catalog-copy",
+  setup(build) {
+    const builderXsdSrc = path.resolve(
+      import.meta.dirname,
+      "../../packages/builder/builder.xsd",
+    );
+    build.onEnd(() => {
+      const outdir = path.dirname(build.initialOptions.outfile);
+      fs.mkdirSync(outdir, { recursive: true });
+      fs.copyFileSync(builderXsdSrc, path.join(outdir, "builder.xsd"));
+      const catalog = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">',
+        '  <uri name="urn:slideglance:builder:v1" uri="./builder.xsd"/>',
+        '  <system systemId="https://unpkg.com/@slideglance/builder@^0.1/builder.xsd" uri="./builder.xsd"/>',
+        "</catalog>",
+        "",
+      ].join("\n");
+      fs.writeFileSync(path.join(outdir, "xml-catalog.xml"), catalog);
+    });
+  },
+};
+
 // CJS bundles set `import.meta.url` to an empty string, which breaks
 // downstream calls like `createRequire(import.meta.url)`. Rewrite to
 // `__filename` so those calls resolve relative to the bundle output.
@@ -126,6 +156,7 @@ const buildOptions = {
     slideglanceMeasureWasmPlugin,
     resvgWasmPlugin,
     resvgModulePlugin,
+    xmlCatalogPlugin,
     importMetaPlugin,
   ],
 };

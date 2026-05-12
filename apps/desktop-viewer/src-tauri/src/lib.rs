@@ -193,8 +193,7 @@ fn chrono_now() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis().to_string())
-        .unwrap_or_else(|_| "?".to_string())
+        .map_or_else(|_| "?".to_string(), |d| d.as_millis().to_string())
 }
 
 /// Resolve the route key (`slide` / `media`) and remainder from a

@@ -4,9 +4,15 @@
  *
  * Protocol (host ⇄ webview)
  * -------------------------
- *  - host → webview  `{ type: 'pptx', bytes: Uint8Array, name?: string }`
- *      Replace the deck the viewer is showing. Triggers a remount via
- *      `key={openCount}` so the worker controller fully resets state.
+ *  - host → webview  `{ type: 'pptx', bytes: Uint8Array, name?: string, deckGeneration: number, invalidatedSlides?: number[] }`
+ *      Replace the deck the viewer is showing. `deckGeneration` is a
+ *      monotonic id the host bumps when the deck identity changes
+ *      (different document, or explicit refresh). When the webview
+ *      sees a higher value than the one it currently holds, it
+ *      remounts `<PptxPresentation>` (via React `key`) and spins up a
+ *      fresh worker controller — fully resetting slide index, zoom,
+ *      pan, search state, and worker-side slide caches. Repeats of the
+ *      same `deckGeneration` are edit cycles and stay incremental.
  *
  *  - host → webview  `{ type: 'error', message: string }`
  *      Show an error overlay (e.g. parse / build failure). Clears the
@@ -125,15 +131,19 @@ async function createSameOriginWorker(srcUrl: string): Promise<Worker> {
     //                             export { x } from "./name"
     //   3. bare side-effect:      import "./name"
     //
+    // All three quote styles (`"`, `'`, `` ` ``) must be matched —
+    // Vite emits backtick-quoted dynamic imports in minified worker
+    // chunks (e.g. `import(\`./slideglance_wasm-XXX.js\`)`).
+    //
     // String literals that look like `./name` but appear elsewhere
     // (object keys, regex strings, comments, …) are NOT module loads
     // and must be left untouched. The wasm-bindgen bundler shim ships
     // an imports map keyed by `"./slideglance_wasm_bg.js"` — matching
     // that as an import would 404 on `fetch` of a file that doesn't
     // exist on disk.
-    const DYN_RE = /\bimport\s*\(\s*(["'])\.\/([^"']+)\1\s*\)/g;
-    const FROM_RE = /\bfrom\s+(["'])\.\/([^"']+)\1/g;
-    const BARE_RE = /\bimport\s+(["'])\.\/([^"']+)\1/g;
+    const DYN_RE = /\bimport\s*\(\s*(["'`])\.\/([^"'`]+)\1\s*\)/g;
+    const FROM_RE = /\bfrom\s+(["'`])\.\/([^"'`]+)\1/g;
+    const BARE_RE = /\bimport\s+(["'`])\.\/([^"'`]+)\1/g;
 
     const relPaths = new Set<string>();
     for (const re of [DYN_RE, FROM_RE, BARE_RE]) {
@@ -154,15 +164,18 @@ async function createSameOriginWorker(srcUrl: string): Promise<Worker> {
       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       rewritten = rewritten
         .replace(
-          new RegExp(`\\bimport\\s*\\(\\s*(["'])\\./${escaped}\\1\\s*\\)`, "g"),
+          new RegExp(
+            `\\bimport\\s*\\(\\s*(["'\`])\\./${escaped}\\1\\s*\\)`,
+            "g",
+          ),
           (_m, q: string) => `import(${q}${blobUrl}${q})`,
         )
         .replace(
-          new RegExp(`\\bfrom\\s+(["'])\\./${escaped}\\1`, "g"),
+          new RegExp(`\\bfrom\\s+(["'\`])\\./${escaped}\\1`, "g"),
           (_m, q: string) => `from ${q}${blobUrl}${q}`,
         )
         .replace(
-          new RegExp(`\\bimport\\s+(["'])\\./${escaped}\\1`, "g"),
+          new RegExp(`\\bimport\\s+(["'\`])\\./${escaped}\\1`, "g"),
           (_m, q: string) => `import ${q}${blobUrl}${q}`,
         );
     }
@@ -184,7 +197,7 @@ async function createSameOriginWorker(srcUrl: string): Promise<Worker> {
     // We only handle assets explicitly authored as `new URL("name",
     // import.meta.url)` so plain string literals are unaffected.
     const ASSET_URL_RE =
-      /\bnew\s+URL\s*\(\s*(["'])([^"']+)\1\s*,\s*import\.meta\.url\s*\)/g;
+      /\bnew\s+URL\s*\(\s*(["'`])([^"'`]+)\1\s*,\s*import\.meta\.url\s*\)/g;
     const assetMatches: { fullMatch: string; name: string }[] = [];
     {
       let match: RegExpExecArray | null;
@@ -245,6 +258,20 @@ function App(): JSX.Element {
   const [invalidatedSlides, setInvalidatedSlides] = useState<
     number[] | undefined
   >(undefined);
+  // Host-driven deck identity. Bumped when the host swaps to a
+  // different document or issues a refresh; used as a React `key` on
+  // `<PptxPresentation>` to force a full unmount/remount that wipes
+  // currentSlide / zoom / pan / search / dialog state. The worker
+  // controller is intentionally NOT torn down on key change — the
+  // viewer's `open(bytes)` already replaces the loaded deck inside
+  // the worker, so a single long-lived worker is enough to fully
+  // reinitialize visible state. Re-creating the worker here would
+  // also race with React's commit/effect ordering: the old <Pptx…>
+  // would briefly mount with the new src under the soon-to-be-closed
+  // controller, transferring the ArrayBuffer to a dying worker and
+  // surfacing as "Failed to execute 'postMessage' on 'Worker':
+  // ArrayBuffer at index 0 is already detached."
+  const [deckGeneration, setDeckGeneration] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -293,6 +320,7 @@ function App(): JSX.Element {
             bytes: ArrayBuffer | Uint8Array;
             name?: string;
             invalidatedSlides?: number[];
+            deckGeneration?: number;
           }
         | { type: "error"; message: string };
       if (!msg || typeof msg !== "object") return;
@@ -305,6 +333,13 @@ function App(): JSX.Element {
         setName(msg.name ?? null);
         setSrc(bytes);
         setInvalidatedSlides(msg.invalidatedSlides);
+        // Functional update: a stale `deckGeneration` captured in
+        // this closure would compare against the wrong value when
+        // multiple messages arrive between renders.
+        if (typeof msg.deckGeneration === "number") {
+          const incoming = msg.deckGeneration;
+          setDeckGeneration((prev) => (incoming > prev ? incoming : prev));
+        }
       } else if (msg.type === "error") {
         setErrorMsg(msg.message);
       }
@@ -353,14 +388,17 @@ function App(): JSX.Element {
   }
 
   return (
-    // No `key` prop here — every edit cycle replaces `src` with fresh
-    // PPTX bytes, and re-keying would unmount the viewer (losing the
-    // user's current slide / zoom / scroll). `incrementalUpdate`
-    // instead tells slideglance's deck loader to reuse the existing
-    // viewer instance: it still hands the new bytes to the worker so
-    // the visible slide picks up edits, but it skips the
-    // setCurrentSlide(1) / setZoom(1) / setPan(0) reset block.
+    // `key={deckGeneration}` only changes when the host signals a deck
+    // identity swap (new document, refresh) — those cases unmount and
+    // remount `<PptxPresentation>`, wiping currentSlide / zoom / pan /
+    // search / dialog state that would otherwise leak from the previous
+    // deck. Edit cycles on the same document keep the same key, so
+    // `incrementalUpdate` continues to preserve UI state across the
+    // setSrc → buildPptx → re-render sequence (the deck loader's
+    // setCurrentSlide(1) / setZoom(1) / setPan(0) reset block stays
+    // skipped within a generation).
     <PptxPresentation
+      key={deckGeneration}
       controller={controller}
       name={name}
       src={src}

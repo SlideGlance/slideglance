@@ -2,7 +2,7 @@
 <SlideGlance
     xmlns="urn:slideglance:builder:v1"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:slideglance:builder:v1 ../../packages/builder/dist-schema/builder.xsd">
+    xsi:schemaLocation="urn:slideglance:builder:v1 https://unpkg.com/@slideglance/builder@^0.1/builder.xsd">
   <!-- Document-level settings live in their own element, not on the root. -->
   <Document size="A4" />
   <!--

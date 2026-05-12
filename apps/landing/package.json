@@ -2,8 +2,14 @@
   "name": "@slideglance/landing",
   "version": "0.1.0",
   "license": "MIT",
-  "author": "Taehwan Kwag",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
+  "description": "Static landing page for slideglance, deployed to GitHub Pages.",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "apps/landing"
+  },
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

@@ -13,10 +13,53 @@ function refreshActiveContext(editor: vscode.TextEditor | undefined): void {
   void vscode.commands.executeCommand("setContext", ACTIVE_CONTEXT, active);
 }
 
+// Public API surface of the RedHat vscode-xml extension. Only the
+// catalog methods we use are typed here; the upstream interface has
+// more.
+interface XMLExtensionApi {
+  addXMLCatalogs(catalogs: string[]): void;
+  removeXMLCatalogs?(catalogs: string[]): void;
+}
+
+// Registers an OASIS XML catalog (written next to dist/extension.js by
+// esbuild's xmlCatalogPlugin) so RedHat's vscode-xml resolves the
+// `urn:slideglance:builder:v1` namespace and the unpkg schemaLocation
+// URL to the bundled `builder.xsd`, even when @slideglance/builder is
+// not yet published to npm.
+async function registerXmlCatalog(
+  context: vscode.ExtensionContext,
+): Promise<void> {
+  const xmlExtension = vscode.extensions.getExtension("redhat.vscode-xml");
+  if (!xmlExtension) {
+    // Listed in extensionDependencies, so absence is an environment
+    // anomaly worth surfacing rather than failing silently.
+    return;
+  }
+  const api = (await xmlExtension.activate()) as XMLExtensionApi | undefined;
+  if (!api || typeof api.addXMLCatalogs !== "function") {
+    return;
+  }
+  const catalogPath = path.join(
+    context.extensionPath,
+    "dist",
+    "xml-catalog.xml",
+  );
+  api.addXMLCatalogs([catalogPath]);
+  context.subscriptions.push({
+    dispose: () => {
+      if (typeof api.removeXMLCatalogs === "function") {
+        api.removeXMLCatalogs([catalogPath]);
+      }
+    },
+  });
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel("Slide Builder");
   context.subscriptions.push(outputChannel);
   PreviewPanel.setOutputChannel(outputChannel);
+
+  void registerXmlCatalog(context);
 
   const diagnosticCollection =
     vscode.languages.createDiagnosticCollection("slidebuilder");

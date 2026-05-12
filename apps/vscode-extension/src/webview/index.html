@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Slide Builder Preview</title>
     <style>
+      /* VS Code injects these at runtime when this HTML is hosted in a
+         webview. Declared as `initial` here so static analyzers find
+         them in scope; outside a webview the `var(..., fallback)`
+         defaults below kick in. */
+      :root {
+        --vscode-editor-background: initial;
+        --vscode-editor-foreground: initial;
+        --vscode-font-family: initial;
+      }
       html,
       body,
       #app {
@@ -13,7 +22,7 @@
         height: 100%;
         background: var(--vscode-editor-background, #1e1e1e);
         color: var(--vscode-editor-foreground, #e0e0e0);
-        font-family: var(--vscode-font-family, sans-serif);
+        font-family: var(--vscode-font-family, sans-serif), sans-serif;
         overflow: hidden;
       }
     </style>

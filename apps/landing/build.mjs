@@ -1,8 +1,15 @@
 #!/usr/bin/env node
-// Stage the static landing page into ./dist by copying index.html,
-// styles.css, the SlideGlance icon, and the chrome-extension store
-// screenshots side-by-side. The same layout the GitHub Pages workflow
-// publishes so a developer can preview locally before deploying.
+// Stage the static landing site into ./dist:
+//   - root index.html (the slim landing)
+//   - view/index.html (viewer-focused sub-page)
+//   - build/index.html (builder-focused sub-page)
+//   - styles.css (shared)
+//   - scripts/site.js (shared client behaviour: theme toggle,
+//     playground iframe overlay, screenshot lightbox)
+//   - icon.svg (workspace asset)
+//   - screenshots/*.png (sourced from apps/chrome-extension/store-assets)
+// Matches the layout the GitHub Pages workflow publishes so a developer
+// can preview locally before deploying.
 
 import { copyFile, cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -14,9 +21,21 @@ const dist = join(here, "dist");
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(join(dist, "screenshots"), { recursive: true });
+await mkdir(join(dist, "scripts"), { recursive: true });
+await mkdir(join(dist, "view"), { recursive: true });
+await mkdir(join(dist, "build"), { recursive: true });
 
 await copyFile(join(here, "index.html"), join(dist, "index.html"));
+await copyFile(join(here, "view", "index.html"), join(dist, "view", "index.html"));
+await copyFile(
+  join(here, "build", "index.html"),
+  join(dist, "build", "index.html"),
+);
 await copyFile(join(here, "styles.css"), join(dist, "styles.css"));
+await copyFile(
+  join(here, "scripts", "site.js"),
+  join(dist, "scripts", "site.js"),
+);
 await copyFile(
   join(repoRoot, "assets", "icon", "source.svg"),
   join(dist, "icon.svg"),

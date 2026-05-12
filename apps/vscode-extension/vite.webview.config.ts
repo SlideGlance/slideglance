@@ -26,11 +26,39 @@
 // inline content, we add the nonce on the host side by post-processing
 // the emitted index.html in `preview.ts`.
 
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from "node:path";
+
+// Strip `/* @vite-ignore */` from @slideglance/viewer's pre-built worker
+// chunk. The directive exists so viewer's OWN vite build leaves
+// `import("@slideglance/core")` external (its rollupOptions.external
+// handles the actual externalization; the comment suppresses Vite's
+// static-import warning). For us — the consumer — leaving the
+// directive in would cause Vite to skip resolution, ship a bare
+// specifier into the worker chunk, and produce
+// "Failed to resolve module specifier '@slideglance/core'" at runtime
+// inside the VS Code webview blob worker.
+function stripViteIgnoreFromViewerWorker(): Plugin {
+  return {
+    name: "strip-vite-ignore-from-viewer-worker",
+    enforce: "pre",
+    transform(code, id) {
+      const cleanId = id.split("?")[0];
+      const matchesViewerWorker =
+        cleanId.endsWith("/viewer/dist/pptx-worker.js") &&
+        code.includes("@vite-ignore") &&
+        code.includes("@slideglance/core");
+      if (!matchesViewerWorker) return null;
+      return {
+        code: code.replace(/\/\*\s*@vite-ignore\s*\*\//g, ""),
+        map: null,
+      };
+    },
+  };
+}
 
 // `root` points at `src/webview/` so Vite emits `dist/webview/index.html`
 // at the top level (rather than nested under `src/webview/index.html`,
@@ -48,10 +76,14 @@ export default defineConfig({
   // Relative `./assets/...` resolves against `import.meta.url` of the
   // loaded chunk, which is the webview URI VS Code already serves.
   base: "./",
-  plugins: [react(), wasm(), topLevelAwait()],
+  plugins: [stripViteIgnoreFromViewerWorker(), react(), wasm(), topLevelAwait()],
   worker: {
     format: "es",
-    plugins: () => [wasm(), topLevelAwait()],
+    plugins: () => [
+      stripViteIgnoreFromViewerWorker(),
+      wasm(),
+      topLevelAwait(),
+    ],
   },
   build: {
     target: "es2022",

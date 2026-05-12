@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideGlance Viewer — render .pptx in your browser</title>
+    <meta
+      name="description"
+      content="The SlideGlance viewer: a Rust + WebAssembly PPTX renderer that opens decks entirely inside the tab. Selectable SVG, deterministic output, offline-capable, multi-surface."
+    />
+    <link rel="icon" type="image/svg+xml" href="../icon.svg" />
+    <link rel="stylesheet" href="../styles.css" />
+    <script>
+      (() => {
+        const stored = localStorage.getItem("sg-theme");
+        if (stored === "light" || stored === "dark") {
+          document.documentElement.setAttribute("data-theme", stored);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../" aria-label="SlideGlance home">
+        <img src="../icon.svg" alt="" width="36" height="36" />
+        <span class="brand-name">SlideGlance</span>
+      </a>
+      <nav class="site-nav">
+        <a href="../view/" class="nav-link nav-link-active">View</a>
+        <a href="../build/" class="nav-link">Build</a>
+        <a href="../#install" class="nav-link">Install</a>
+        <a href="../playground/" class="nav-link" data-open-playground
+          >Playground</a
+        >
+        <a
+          href="https://github.com/SlideGlance/slideglance"
+          class="nav-link"
+          rel="noopener"
+          >GitHub</a
+        >
+        <button
+          type="button"
+          class="theme-toggle"
+          aria-label="Toggle dark / light theme"
+          data-theme-toggle
+        >
+          <svg
+            class="theme-icon theme-icon-sun"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4.5" />
+            <path
+              d="M12 3v2M12 19v2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M3 12h2M19 12h2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"
+            />
+          </svg>
+          <svg
+            class="theme-icon theme-icon-moon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.9 14.7A8 8 0 0 1 9.3 3.1a.6.6 0 0 0-.75-.78A10 10 0 1 0 21.7 15.5a.6.6 0 0 0-.78-.75Z"
+            />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <p class="eyebrow">View</p>
+        <h1>Open any <code>.pptx</code>, right in the browser</h1>
+        <p class="lede">
+          A Rust + WebAssembly renderer that opens PowerPoint decks entirely
+          inside the tab. SVG with selectable text and a fallback path-mode for
+          PNG. Same core powers the Chrome extension, desktop app, web
+          playground, and the embeddable React / Vue / Web Component.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="../playground/" data-open-playground>
+            <span>Try the playground</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-secondary" href="../#install">Install options</a>
+        </div>
+      </section>
+
+      <section class="features" aria-labelledby="features-heading">
+        <h2 id="features-heading">Viewer — why use it</h2>
+        <ul class="feature-grid">
+          <li>
+            <h3>Local-first</h3>
+            <p>
+              Files never leave your tab, process, or worker. No upload, no
+              server, no telemetry path for the deck contents.
+            </p>
+          </li>
+          <li>
+            <h3>Deterministic</h3>
+            <p>
+              Same input plus pinned fonts produce byte-identical SVG and
+              pixel-identical PNG across machines.
+            </p>
+          </li>
+          <li>
+            <h3>Offline-capable</h3>
+            <p>
+              Once the WebAssembly bundle is loaded, the viewer needs zero
+              network access — open decks on a plane.
+            </p>
+          </li>
+          <li>
+            <h3>Selectable text</h3>
+            <p>
+              Text-mode SVG keeps copy / search / accessibility intact;
+              path-mode glyphs are available for resvg-rasterized PNG.
+            </p>
+          </li>
+          <li>
+            <h3>Wide PPTX coverage</h3>
+            <p>
+              Theme inheritance, tables, charts, gradients, EMF-wrapped
+              bitmaps, WordArt warps, transitions, notes, sections, embedded
+              fonts.
+            </p>
+          </li>
+          <li>
+            <h3>Multi-surface</h3>
+            <p>
+              Same Rust + WASM core powers the Chrome extension, web
+              playground, desktop viewer, embeddable React / Vue / Web
+              Component, and a native CLI.
+            </p>
+          </li>
+          <li>
+            <h3>Font fallback chain</h3>
+            <p>
+              Authored fonts are matched against installed faces; every
+              substitution is surfaced in the UI so silent visual drift never
+              ships unnoticed.
+            </p>
+          </li>
+          <li>
+            <h3>Embeddable</h3>
+            <p>
+              <code>@slideglance/viewer</code> is a React shell that drops
+              into any page, Storybook story, or doc site. Same component
+              the playground and Chrome extension mount.
+            </p>
+          </li>
+          <li>
+            <h3>Native CLI</h3>
+            <p>
+              <code>slideglance convert deck.pptx --output out/</code> for
+              batch SVG / PNG export from a build pipeline. Deterministic, no
+              Node runtime needed.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="screenshots" aria-labelledby="screenshots-heading">
+        <h2 id="screenshots-heading">Screenshots</h2>
+        <p class="section-lede">
+          Captures from the Chrome extension surface — the same React viewer
+          the desktop app, web playground, and embeddable component all use.
+        </p>
+        <div class="shot-grid">
+          <figure>
+            <a
+              href="../screenshots/01-empty-state.png"
+              data-lightbox
+              data-caption="Empty state — drag a .pptx or click Open file. Nothing leaves the tab."
+            >
+              <img
+                src="../screenshots/01-empty-state.png"
+                alt="Empty state — drag a .pptx or click Open file"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Empty state</strong> — drag a <code>.pptx</code> or click
+              <em>Open file</em>. Nothing leaves the tab.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="../screenshots/04-presentation-viewer.png"
+              data-lightbox
+              data-caption="Presentation viewer — thumbnails, ruler, slideshow, print, PDF export."
+            >
+              <img
+                src="../screenshots/04-presentation-viewer.png"
+                alt="Presentation viewer with thumbnails, ruler, slideshow controls"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Presentation viewer</strong> — thumbnails, ruler,
+              slideshow, print, PDF export.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="../screenshots/06-grid-view.png"
+              data-lightbox
+              data-caption="Grid view for scanning large decks at a glance."
+            >
+              <img
+                src="../screenshots/06-grid-view.png"
+                alt="Grid view of slides for scanning large decks"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Grid view</strong> for scanning large decks at a glance.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="../screenshots/05-font-mapping-popover.png"
+              data-lightbox
+              data-caption="Font mapping — every authored-font → installed-font substitution surfaced."
+            >
+              <img
+                src="../screenshots/05-font-mapping-popover.png"
+                alt="Font mapping popover showing authored-to-installed font substitutions"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Font mapping</strong> — every authored-font →
+              installed-font substitution surfaced.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="../screenshots/02-settings-appearance.png"
+              data-lightbox
+              data-caption="Settings — theme + 8 interface languages, ruler / units."
+            >
+              <img
+                src="../screenshots/02-settings-appearance.png"
+                alt="Settings panel with theme and language options"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>Settings</strong> — theme + 8 interface languages, ruler
+              / units.
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              href="../screenshots/03-settings-about.png"
+              data-lightbox
+              data-caption="About — browser-only WebAssembly engine, offline-capable, MIT licensed."
+            >
+              <img
+                src="../screenshots/03-settings-about.png"
+                alt="About panel describing the WebAssembly engine"
+                loading="lazy"
+              />
+            </a>
+            <figcaption>
+              <strong>About</strong> — browser-only WebAssembly engine,
+              offline-capable, MIT licensed.
+            </figcaption>
+          </figure>
+        </div>
+        <p class="screenshots-credit">
+          Sample deck used for the screenshots:
+          <a
+            href="https://www.slidescarnival.com/template/business-infographic-presentation/19319"
+            rel="noopener"
+            ><em>Business Infographic Presentation</em></a
+          >
+          by SlidesCarnival.
+        </p>
+      </section>
+
+      <section class="cta-band">
+        <h2>Render a deck right now</h2>
+        <p>
+          Drop any <code>.pptx</code> on the playground — every byte stays
+          inside your tab.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="../playground/" data-open-playground>
+            <span>Open Web Playground</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-secondary" href="../build/">See the builder →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-row">
+        <div class="footer-brand">
+          <img src="../icon.svg" alt="" width="28" height="28" />
+          <span>SlideGlance</span>
+        </div>
+        <div class="footer-links">
+          <a href="../view/">View</a>
+          <a href="../build/">Build</a>
+          <a href="../playground/" data-open-playground>Playground</a>
+          <a href="https://github.com/SlideGlance/slideglance" rel="noopener"
+            >GitHub</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/issues"
+            rel="noopener"
+            >Issues</a
+          >
+          <a
+            href="https://github.com/SlideGlance/slideglance/blob/main/LICENSE-MIT"
+            rel="noopener"
+            >MIT License</a
+          >
+        </div>
+      </div>
+      <p class="copy">
+        Copyright © 2026 SimpleCORE Inc. Released under the MIT License.
+      </p>
+    </footer>
+
+    <dialog
+      id="lightbox-dialog"
+      class="lightbox-dialog"
+      aria-label="Screenshot preview"
+    >
+      <button
+        type="button"
+        class="lightbox-close"
+        aria-label="Close screenshot preview"
+        data-close-lightbox
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav-prev"
+        aria-label="Previous screenshot"
+        data-lightbox-nav="-1"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 6l-6 6 6 6" />
+        </svg>
+      </button>
+      <figure class="lightbox-figure">
+        <img class="lightbox-image" alt="" />
+        <figcaption class="lightbox-caption"></figcaption>
+      </figure>
+      <button
+        type="button"
+        class="lightbox-nav lightbox-nav-next"
+        aria-label="Next screenshot"
+        data-lightbox-nav="1"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+    </dialog>
+
+    <dialog
+      id="playground-dialog"
+      class="playground-dialog"
+      aria-labelledby="playground-dialog-title"
+      data-playground-url="../playground/"
+    >
+      <header class="playground-dialog-bar">
+        <h2 id="playground-dialog-title">
+          <img src="../icon.svg" alt="" width="22" height="22" />
+          <span>SlideGlance Playground</span>
+        </h2>
+        <div class="playground-dialog-actions">
+          <a
+            class="playground-dialog-link"
+            href="../playground/"
+            target="_blank"
+            rel="noopener"
+            title="Open the playground in a new tab"
+            >Open in new tab ↗</a
+          >
+          <button
+            type="button"
+            class="playground-dialog-close"
+            aria-label="Close playground"
+            data-close-playground
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <iframe
+        class="playground-dialog-frame"
+        title="SlideGlance Playground"
+        allow="clipboard-read; clipboard-write; fullscreen"
+      ></iframe>
+    </dialog>
+
+    <script src="../scripts/site.js"></script>
+  </body>
+</html>

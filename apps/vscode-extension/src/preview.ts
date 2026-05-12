@@ -39,6 +39,7 @@ const DEFAULT_SLIDE_WIDTH = 1280;
 const DEFAULT_SLIDE_HEIGHT = 720;
 
 const SEVERITY_MAP: Record<DiagnosticCode, vscode.DiagnosticSeverity> = {
+  // Parse / render diagnostics
   IMAGE_MEASURE_FAILED: vscode.DiagnosticSeverity.Error,
   IMAGE_NOT_PREFETCHED: vscode.DiagnosticSeverity.Error,
   AUTOFIT_OVERFLOW: vscode.DiagnosticSeverity.Warning,
@@ -50,6 +51,37 @@ const SEVERITY_MAP: Record<DiagnosticCode, vscode.DiagnosticSeverity> = {
   MASTER_PPTX_SIZE_LIMIT: vscode.DiagnosticSeverity.Warning,
   TEMPLATES_NOT_AT_ROOT: vscode.DiagnosticSeverity.Warning,
   INVALID_NUMBER_TYPE: vscode.DiagnosticSeverity.Warning,
+  // Lint — Phase A (overflow / dimension)
+  OUT_OF_PAGE: vscode.DiagnosticSeverity.Error,
+  OUT_OF_PARENT: vscode.DiagnosticSeverity.Error,
+  NEGATIVE_DIM: vscode.DiagnosticSeverity.Error,
+  ZERO_DIM: vscode.DiagnosticSeverity.Warning,
+  TEXT_OVERFLOW_V: vscode.DiagnosticSeverity.Warning,
+  TEXT_OVERFLOW_H: vscode.DiagnosticSeverity.Warning,
+  TEXT_WRAP_TO_1CH: vscode.DiagnosticSeverity.Error,
+  LINE_OVER_PARENT: vscode.DiagnosticSeverity.Warning,
+  IMAGE_MISSING: vscode.DiagnosticSeverity.Error,
+  // Lint — Phase B (visual coherence)
+  BASELINE_MIX_IN_ROW: vscode.DiagnosticSeverity.Warning,
+  INFLATED_LINE_HEIGHT_IN_ROW: vscode.DiagnosticSeverity.Warning,
+  ANCHOR_INCONSISTENT: vscode.DiagnosticSeverity.Warning,
+  OVERLAP_LAYER: vscode.DiagnosticSeverity.Information,
+  LOW_CONTRAST: vscode.DiagnosticSeverity.Information,
+  // Lint — Phase C (design system)
+  UNUSED_STYLE: vscode.DiagnosticSeverity.Information,
+  UNUSED_TEMPLATE: vscode.DiagnosticSeverity.Information,
+  HARDCODED_COLOR: vscode.DiagnosticSeverity.Information,
+  INCONSISTENT_FONT: vscode.DiagnosticSeverity.Information,
+  MASTER_COLLISION: vscode.DiagnosticSeverity.Warning,
+  // Lint — Phase D (accessibility)
+  IMG_NO_ALT: vscode.DiagnosticSeverity.Warning,
+  READING_ORDER_AMBIGUOUS: vscode.DiagnosticSeverity.Information,
+  ICON_NO_LABEL: vscode.DiagnosticSeverity.Information,
+  TINY_FONT: vscode.DiagnosticSeverity.Information,
+  // Lint — Phase E (performance)
+  LARGE_IMAGE_INLINED: vscode.DiagnosticSeverity.Information,
+  EXCESS_NODES: vscode.DiagnosticSeverity.Information,
+  SLIDE_FONT_COUNT: vscode.DiagnosticSeverity.Information,
 };
 
 function toVsDiagnostics(items: Diagnostic[]): vscode.Diagnostic[] {
@@ -258,9 +290,24 @@ export class PreviewPanel {
   private documentUri: vscode.Uri;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
   private renderGeneration = 0;
+  /**
+   * Monotonic counter the webview uses as a React `key` on the viewer
+   * shell. Bumped only when the *deck identity* changes (new document
+   * via `createOrShow`, or an explicit `forceRefresh`) — NOT on edit
+   * cycles for the same document, which must remain incremental. The
+   * webview remounts `<PptxPresentation>` whenever this value changes,
+   * which clears the viewer's slide index, zoom, pan, search, and any
+   * stale UI state from the previous deck.
+   */
+  private deckGeneration = 0;
   private webviewReady = false;
   private pendingPayload:
-    | { bytes: Uint8Array; name: string; invalidatedSlides?: number[] }
+    | {
+        bytes: Uint8Array;
+        name: string;
+        invalidatedSlides?: number[];
+        deckGeneration: number;
+      }
     | { error: string }
     | undefined;
   private sourceMap: BuilderSourceMap | undefined;
@@ -314,8 +361,10 @@ export class PreviewPanel {
     if (inst.debounceTimer) clearTimeout(inst.debounceTimer);
     // Drop the cached snapshot so the next render reports a full
     // (rather than incremental) reload — refresh exists so the user
-    // can recover from a stale viewer state.
+    // can recover from a stale viewer state. Bump the deck generation
+    // so the webview also remounts the viewer shell.
     inst.lastRender = undefined;
+    inst.deckGeneration++;
     void inst.renderFromTargetUri();
   }
 
@@ -329,7 +378,12 @@ export class PreviewPanel {
         PreviewPanel.diagnosticCollection?.delete(oldUri);
         // Different file → drop the snapshot so the next render is
         // sent as a full reload, flushing the viewer's slide cache.
+        // Bump the deck generation so the webview unmounts the existing
+        // `<PptxPresentation>` and remounts a fresh one — fully resets
+        // currentSlide / zoom / pan / search / dialog state that would
+        // otherwise leak from the previous deck.
         PreviewPanel.instance.lastRender = undefined;
+        PreviewPanel.instance.deckGeneration++;
       }
       PreviewPanel.instance.documentUri = document.uri;
       PreviewPanel.instance.panel.reveal(vscode.ViewColumn.Beside);
@@ -490,6 +544,7 @@ export class PreviewPanel {
     this.queueOrSend({
       bytes: result.bytes,
       name: fileName,
+      deckGeneration: this.deckGeneration,
       ...(diff !== undefined ? { invalidatedSlides: diff } : {}),
     });
 
@@ -505,7 +560,12 @@ export class PreviewPanel {
 
   private queueOrSend(
     payload:
-      | { bytes: Uint8Array; name: string; invalidatedSlides?: number[] }
+      | {
+          bytes: Uint8Array;
+          name: string;
+          invalidatedSlides?: number[];
+          deckGeneration: number;
+        }
       | { error: string },
   ): void {
     if (!this.webviewReady) {
@@ -524,7 +584,12 @@ export class PreviewPanel {
 
   private send(
     payload:
-      | { bytes: Uint8Array; name: string; invalidatedSlides?: number[] }
+      | {
+          bytes: Uint8Array;
+          name: string;
+          invalidatedSlides?: number[];
+          deckGeneration: number;
+        }
       | { error: string },
   ): void {
     if ("error" in payload) {
@@ -538,6 +603,7 @@ export class PreviewPanel {
       type: "pptx",
       bytes: payload.bytes,
       name: payload.name,
+      deckGeneration: payload.deckGeneration,
       ...(payload.invalidatedSlides !== undefined
         ? { invalidatedSlides: payload.invalidatedSlides }
         : {}),

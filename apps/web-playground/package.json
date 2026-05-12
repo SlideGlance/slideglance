@@ -2,8 +2,14 @@
   "name": "@slideglance/web-playground",
   "version": "0.1.0",
   "license": "MIT",
-  "author": "Taehwan Kwag",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
+  "description": "Drag-and-drop SPA for evaluating slideglance against arbitrary .pptx decks.",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "apps/web-playground"
+  },
   "type": "module",
   "scripts": {
     "predev": "node ../../scripts/run-build-wasm.mjs",

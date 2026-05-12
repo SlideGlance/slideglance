@@ -2,8 +2,14 @@
   "name": "@slideglance/chrome-extension",
   "version": "0.1.0",
   "license": "MIT",
-  "author": "Taehwan Kwag",
+  "author": "Taehwan Kwag <dev@simplecore.kr>",
+  "description": "Chrome extension that opens .pptx files locally via @slideglance/viewer.",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideGlance/slideglance.git",
+    "directory": "apps/chrome-extension"
+  },
   "type": "module",
   "scripts": {
     "predev": "node ../../scripts/run-build-wasm.mjs",
@@ -24,13 +30,13 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.0.0-beta.25",
-    "@types/chrome": "^0.0.270",
+    "@crxjs/vite-plugin": "^2.4.0",
+    "@types/chrome": "^0.1.42",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "jsdom": "^25.0.0",
-    "sharp": "^0.33.0",
+    "jsdom": "^29.0.0",
+    "sharp": "^0.34.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-top-level-await": "catalog:",
