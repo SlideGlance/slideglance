@@ -1,7 +1,7 @@
 import type { PositionedNode, LineArrow } from "../../types.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn, pxToPt } from "../units.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 
 type LinePositionedNode = Extract<PositionedNode, { type: "line" }>;
 
@@ -43,7 +43,7 @@ export function renderLineNode(
   const flipH = x2 < x1;
   const flipV = y2 < y1;
 
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   ctx.slide.addShape(ctx.pptx.ShapeType.line, {
     x: pxToIn(minX),
     y: pxToIn(minY),

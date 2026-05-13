@@ -165,7 +165,7 @@
 
           <VStack class="hairline-soft" />
           <Use template="callout" cls="callout-warn" kind="ESCAPING"
-               titleColor="92400E" title="items='[…]' is one XML attribute"
+               titleColor="92400E" title="items='[…]' is one attribute"
                body="Use &amp;apos; for apostrophes inside JSON strings (single-quoted attrs would close early). Wrap literal {ident} substrings in {{ident}} to keep them out of placeholder substitution. Standard XML escapes still apply: &amp;lt; &amp;gt; &amp;amp;." />
         </Slot>
         <Slot name="right">
@@ -183,10 +183,10 @@
             <Foreach items='[{"label":"Q1"},{"label":"Q2"},{"label":"Q3"}]'
                      as="m" indexAs="i" lastAs="isLast">
               <HStack gap="8" alignItems="center">
-                <Text class="kw-ink" w="20">{i}</Text>
-                <Text class="body-ink">{m.label}</Text>
+                <Text class="kw-ink" w="20" textVAlign="middle" lineHeight="1.0">{i}</Text>
+                <Text class="body-ink" textVAlign="middle" lineHeight="1.0">{m.label}</Text>
                 <If test="!isLast">
-                  <Text class="caption" color="9297A0">→</Text>
+                  <Text class="caption" color="9297A0" textVAlign="middle" lineHeight="1.0">→</Text>
                 </If>
               </HStack>
             </Foreach>
@@ -209,14 +209,14 @@
         </Slot>
         <Slot name="render">
           <HStack gap="8" alignItems="center" padding="8">
-            <Text class="kw-ink" w="20">0</Text>
-            <Text class="body-ink">Q1</Text>
-            <Text class="caption" color="9297A0">→</Text>
-            <Text class="kw-ink" w="20">1</Text>
-            <Text class="body-ink">Q2</Text>
-            <Text class="caption" color="9297A0">→</Text>
-            <Text class="kw-ink" w="20">2</Text>
-            <Text class="body-ink">Q3</Text>
+            <Text class="kw-ink" w="20" textVAlign="middle" lineHeight="1.0">0</Text>
+            <Text class="body-ink" textVAlign="middle" lineHeight="1.0">Q1</Text>
+            <Text class="caption" color="9297A0" textVAlign="middle" lineHeight="1.0">→</Text>
+            <Text class="kw-ink" w="20" textVAlign="middle" lineHeight="1.0">1</Text>
+            <Text class="body-ink" textVAlign="middle" lineHeight="1.0">Q2</Text>
+            <Text class="caption" color="9297A0" textVAlign="middle" lineHeight="1.0">→</Text>
+            <Text class="kw-ink" w="20" textVAlign="middle" lineHeight="1.0">2</Text>
+            <Text class="body-ink" textVAlign="middle" lineHeight="1.0">Q3</Text>
           </HStack>
         </Slot>
       </Use>
@@ -257,16 +257,16 @@
             </VStack>
             <VStack gap="2" w="max" padding.top="6">
               <HStack gap="6" alignItems="center">
-                <Text class="title-sm">{m.title}</Text>
+                <Text class="title-sm" textVAlign="middle" lineHeight="1.0">{m.title}</Text>
                 <Choose>
                   <When test="m.status == 'ok'">
-                    <Text class="chip-mint">OK</Text>
+                    <Text class="chip-mint" textVAlign="middle" lineHeight="1.0">OK</Text>
                   </When>
                   <When test="m.status == 'warn'">
-                    <Text class="chip-mustard">WARN</Text>
+                    <Text class="chip-mustard" textVAlign="middle" lineHeight="1.0">WARN</Text>
                   </When>
                   <Otherwise>
-                    <Text class="chip-coral">FAIL</Text>
+                    <Text class="chip-coral" textVAlign="middle" lineHeight="1.0">FAIL</Text>
                   </Otherwise>
                 </Choose>
               </HStack>

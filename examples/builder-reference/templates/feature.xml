@@ -64,11 +64,14 @@
       </VStack>
     </Template>
 
-    <!-- Single-row label / value (table-of-contents, presets, enum lists). -->
+    <!-- Single-row label / value (table-of-contents, presets, enum lists).
+         Mixed fontSize (caption=11 / body-ink=13) ⇒ apply the
+         "mixed-size text rows" idiom: textVAlign="middle" + lineHeight=1.0
+         on every sibling so glyph baselines line up. -->
     <Template name="kv-row">
       <HStack gap="10" alignItems="start" w="100%">
-        <Text class="caption" w="40" color="AA2D00">{k}</Text>
-        <Text class="body-ink" w="max">{v}</Text>
+        <Text class="caption" w="40" color="AA2D00" textVAlign="middle" lineHeight="1.0">{k}</Text>
+        <Text class="body-ink" w="max" textVAlign="middle" lineHeight="1.0">{v}</Text>
       </HStack>
     </Template>
 
@@ -184,10 +187,10 @@
          template body stays single-purpose. -->
     <Template name="type-row">
       <HStack gap="14" alignItems="end" w="100%">
-        <Text class="caption" color="AA2D00" w="80">{token}</Text>
+        <Text class="caption" color="AA2D00" w="80" textVAlign="middle" lineHeight="1.0">{token}</Text>
         <Text fontFamily="Inter Display" fontSize="{size}" bold="{bold}"
-              color="181D26" lineHeight="{lh}" w="180">{sample}</Text>
-        <Text class="caption" color="41454D" w="max" textAlign="right">{meta}</Text>
+              color="181D26" lineHeight="1.0" textVAlign="middle" w="160">{sample}</Text>
+        <Text class="caption" color="41454D" w="max" textAlign="right" textVAlign="middle" lineHeight="1.0">{meta}</Text>
       </HStack>
     </Template>
 

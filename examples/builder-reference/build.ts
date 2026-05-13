@@ -11,6 +11,11 @@
 // every `auto` / `auto:KEY` / `capbar:CLASS` sentinel into a concrete
 // pixel value before parsing. Finally, calls buildPptx and writes
 // output/reference.pptx.
+//
+// Flags:
+//   --no-lint   Skip the lint pass (faster; no quality summary).
+//               Lint is on by default and prints a one-line
+//               `N error · N warn · N info` summary.
 
 import { promises as fs, readFileSync } from "node:fs";
 import * as path from "node:path";
@@ -22,6 +27,9 @@ const entry = path.join(here, "main.sgx");
 const outputDir = path.join(here, "output");
 const outputPath = path.join(outputDir, "reference.pptx");
 
+const args = process.argv.slice(2);
+const lintEnabled = !args.includes("--no-lint");
+
 const fsResolveImport: ImportResolver = (src, fromPath) => {
   const baseDir = fromPath ? path.dirname(fromPath) : here;
   const absolute = path.resolve(baseDir, src);
@@ -29,11 +37,11 @@ const fsResolveImport: ImportResolver = (src, fromPath) => {
 };
 
 async function main(): Promise<void> {
-  console.log("Building deck…");
+  console.log(`Building deck${lintEnabled ? "" : " (lint disabled)"}…`);
   const rawEntry = await fs.readFile(entry, "utf8");
   await fs.mkdir(outputDir, { recursive: true });
 
-  const { pptx, diagnostics } = await buildPptx(
+  const { pptx, diagnostics, lintReport } = await buildPptx(
     rawEntry,
     { w: 793, h: 1122 },
     {
@@ -41,14 +49,25 @@ async function main(): Promise<void> {
       resolveImport: fsResolveImport,
       sourcePath: entry,
       equalize: true,
+      lint: { enabled: lintEnabled, ruleset: "recommended" },
     },
   );
 
   if (diagnostics.length > 0) {
     console.log(`\nDiagnostics (${diagnostics.length}):`);
     for (const d of diagnostics) {
-      console.log(`  [${d.code}] ${d.message}`);
+      const loc = d.sourcePos?.line
+        ? ` ${d.sourcePos.file ? path.relative(here, d.sourcePos.file) : ""}:${d.sourcePos.line}`
+        : "";
+      console.log(`  [${d.severity ?? "warn"}] [${d.code}]${loc} ${d.message}`);
     }
+  }
+
+  if (lintReport) {
+    const s = lintReport.summary;
+    console.log(`\nLint: ${s.error} error · ${s.warn} warn · ${s.info} info`);
+  } else {
+    console.log(`\nLint: skipped (--no-lint)`);
   }
 
   const bytes = (await pptx.write({ outputType: "uint8array" })) as Uint8Array;

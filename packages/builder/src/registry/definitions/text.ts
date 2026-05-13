@@ -56,6 +56,14 @@ export const textNodeDef: NodeDefinition = {
             return Number.POSITIVE_INFINITY;
           case yoga.MEASURE_MODE_EXACTLY:
           case yoga.MEASURE_MODE_AT_MOST:
+            // Yoga occasionally probes with width=0 during its
+            // intrinsic-sizing pass. Treating that literally forces
+            // every whitespace token onto its own line and emits a
+            // bogus "tall + narrow" intrinsic size that the
+            // subsequent constrained pass never overwrites for
+            // height. Fall back to the unconstrained natural width
+            // so yoga sees the real intrinsic size.
+            if (!width || width <= 0) return Number.POSITIVE_INFINITY;
             return width;
           default:
             return Number.POSITIVE_INFINITY;

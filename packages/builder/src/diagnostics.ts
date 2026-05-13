@@ -15,6 +15,8 @@ export type DiagnosticCode =
   | "UNKNOWN_CONNECTOR_ENDPOINT"
   | "INVALID_CONNECTOR_SELF_REF"
   | "CONNECTOR_UNKNOWN_SHAPE_IDX"
+  // --- lint codes (parse) ---
+  | "RAW_LT_GT_IN_ATTR"
   // --- lint codes (post-layout / post-parse) ---
   | "OUT_OF_PAGE"
   | "OUT_OF_PARENT"

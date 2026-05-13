@@ -7,7 +7,7 @@ import {
 import { pxToIn, pxToPt } from "../units.ts";
 import { convertUnderline, convertStrike } from "../textOptions.ts";
 import { getContentArea } from "../utils/contentArea.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 import { validateHref } from "../utils/href.ts";
 
 type UlPositionedNode = Extract<PositionedNode, { type: "ul" }>;
@@ -130,7 +130,7 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
     1.0,
   );
   const content = getContentArea(node);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
 
   // bullet indent: px -> pt for pptxgenjs
   const ulBullet: Record<string, unknown> = {
@@ -157,9 +157,7 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       margin: 0,
       lineSpacingMultiple: lineHeight,
       charSpacing:
-        node.letterSpacing !== undefined
-          ? node.letterSpacing * 100
-          : undefined,
+        node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
       ...(objectName ? { objectName } : {}),
     });
   } else {
@@ -177,9 +175,7 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       margin: 0,
       lineSpacingMultiple: lineHeight,
       charSpacing:
-        node.letterSpacing !== undefined
-          ? node.letterSpacing * 100
-          : undefined,
+        node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
       color: node.color ?? defaultTextStyle?.color,
       bold: node.bold ?? defaultTextStyle?.bold,
       italic: node.italic ?? defaultTextStyle?.italic,
@@ -206,7 +202,7 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
     1.0,
   );
   const content = getContentArea(node);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
 
   const bulletOptions: Record<string, unknown> = {
     type: "number",
@@ -238,9 +234,7 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       margin: 0,
       lineSpacingMultiple: lineHeight,
       charSpacing:
-        node.letterSpacing !== undefined
-          ? node.letterSpacing * 100
-          : undefined,
+        node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
       ...(objectName ? { objectName } : {}),
     });
   } else {
@@ -258,9 +252,7 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       margin: 0,
       lineSpacingMultiple: lineHeight,
       charSpacing:
-        node.letterSpacing !== undefined
-          ? node.letterSpacing * 100
-          : undefined,
+        node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
       color: node.color ?? defaultTextStyle?.color,
       bold: node.bold ?? defaultTextStyle?.bold,
       italic: node.italic ?? defaultTextStyle?.italic,

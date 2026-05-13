@@ -21,6 +21,7 @@ import {
   nodeSourcePos,
   walk,
 } from "../walker.ts";
+import { scanRawXmlForBareLtGt } from "./rawXml.ts";
 
 const TINY_FONT_PT_THRESHOLD = 8;
 const LARGE_IMAGE_BYTES_THRESHOLD = 1_000_000; // 1 MB
@@ -56,6 +57,31 @@ function diag(
     ...extra,
   };
 }
+
+// ============================================================================
+// PHASE 0 — raw-XML parse-phase rules (pre-positioning, source-level)
+// ============================================================================
+
+/**
+ * Detects bare `<` / `>` inside XML attribute values. fast-xml-parser is
+ * lenient here so the violation would otherwise slip through unnoticed
+ * and produce a document strict consumers (PowerPoint, XSD validators)
+ * reject. Operates on the original source strings — the BuilderNode
+ * tree no longer has the unescaped characters by parse-time.
+ */
+const rawLtGtInAttr: LintRule = {
+  code: "RAW_LT_GT_IN_ATTR",
+  severity: "warn",
+  phase: "parse",
+  check(ctx) {
+    if (!ctx.rawXmlSources || ctx.rawXmlSources.length === 0) return [];
+    const out: Diagnostic[] = [];
+    for (const src of ctx.rawXmlSources) {
+      out.push(...scanRawXmlForBareLtGt(src.content, src.path));
+    }
+    return out;
+  },
+};
 
 // ============================================================================
 // PHASE A — overflow / dimension / wrap rules (post-layout)
@@ -151,6 +177,11 @@ const zeroDim: LintRule = {
       // the layout box only constrains where the line draws its endpoints.
       // Skip them so the rule only fires on genuinely-collapsed boxes.
       if (node.type === "line") continue;
+      // Connectors carry a placeholder 0x0 bbox; their real geometry is
+      // resolved render-side from the from/to shapes' bboxes, so a
+      // zero-size connector is the expected steady state, not a layout
+      // collapse worth warning about.
+      if (node.type === "connector") continue;
       if (node.w === 0 || node.h === 0) {
         out.push(
           diag(
@@ -252,6 +283,12 @@ const textOverflowV: LintRule = {
   check(ctx) {
     const out: Diagnostic[] = [];
     for (const { node, path } of walk(ctx.tree)) {
+      // `noWrap=true` is an explicit author opt-out from wrapping. The
+      // text intentionally stays on a single line and lets glyphs spill
+      // past the box. Re-measuring at the constrained width then
+      // counting "lines needed" is meaningless — the text never wraps —
+      // so the rule must respect the opt-out and skip these nodes.
+      if ((node as { noWrap?: boolean }).noWrap === true) continue;
       const r = reMeasure(ctx, node, node.w);
       if (!r) continue;
       // Convert the re-measured pixel height back into a line count so
@@ -295,6 +332,14 @@ const textOverflowH: LintRule = {
   check(ctx) {
     const out: Diagnostic[] = [];
     for (const { node, path } of walk(ctx.tree)) {
+      // `noWrap=true` is an explicit author opt-out: the text is
+      // expected to spill past the right edge by design (e.g. cover-
+      // page meta strips that stay on a single line regardless of how
+      // wide the strip's enclosing flex container is). The rule's
+      // "natural width exceeds box width" diagnosis is exactly that
+      // intended behaviour, so skip noWrap nodes to avoid a stream of
+      // false positives on legitimate authoring.
+      if ((node as { noWrap?: boolean }).noWrap === true) continue;
       // Measure the natural (un-wrapped) single-line width.
       const natural = reMeasure(ctx, node, Number.POSITIVE_INFINITY);
       if (!natural) continue;
@@ -1122,6 +1167,8 @@ const slideFontCount: LintRule = {
 // ============================================================================
 
 export const ALL_RULES: readonly LintRule[] = [
+  // Phase 0 — raw-XML parse-phase
+  rawLtGtInAttr,
   // Phase A — overflow / dimension
   outOfPage,
   outOfParent,

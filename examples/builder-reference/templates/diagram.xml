@@ -60,8 +60,8 @@
     <Template name="callout">
       <VStack class="{cls}" gap="4">
         <HStack gap="8" alignItems="center">
-          <Text class="caption" color="{titleColor}" w="74">{kind}</Text>
-          <Text class="title-sm" w="max">{title}</Text>
+          <Text class="caption" color="{titleColor}" w="74" textVAlign="middle" lineHeight="1.0">{kind}</Text>
+          <Text class="title-sm" w="max" textVAlign="middle" lineHeight="1.0">{title}</Text>
         </HStack>
         <Text class="body">{body}</Text>
       </VStack>
@@ -74,8 +74,8 @@
     <Template name="callout-eq">
       <VStack class="{cls}" gap="4">
         <HStack gap="8" alignItems="center">
-          <Text class="caption" color="{titleColor}" w="74">{kind}</Text>
-          <Text class="title-sm" w="max">{title}</Text>
+          <Text class="caption" color="{titleColor}" w="74" textVAlign="middle" lineHeight="1.0">{kind}</Text>
+          <Text class="title-sm" w="max" textVAlign="middle" lineHeight="1.0">{title}</Text>
         </HStack>
         <Text class="body" h="{bodyH}">{body}</Text>
       </VStack>
@@ -122,12 +122,13 @@
     <!-- Equalize-aware step. Pass `descH="auto"` when grouped in an
          HStack so the desc baselines align across sibling steps. -->
     <Template name="step-eq">
-      <VStack class="card-canvas" gap="8" w="max">
-        <HStack gap="10" alignItems="center">
+      <VStack class="card-canvas" gap="6" w="max" padding="12">
+        <HStack gap="8" alignItems="center" h="30">
           <VStack class="step-disc">
             <Text class="step-disc-num">{n}</Text>
           </VStack>
-          <Text class="title-sm">{title}</Text>
+          <Text fontFamily="Inter Display" fontSize="12" bold="true" color="181D26"
+                lineHeight="1.2" w="max" h="30" textVAlign="middle">{title}</Text>
         </HStack>
         <Text class="body-muted" h="{descH}">{desc}</Text>
       </VStack>
@@ -180,13 +181,13 @@
     <Template name="pricing-card">
       <VStack class="card-canvas" w="max" gap="14">
         <Text fontFamily="Inter Display" fontSize="20" bold="true" color="1D1F25">{plan}</Text>
-        <Text fontFamily="Inter Display" fontSize="44" bold="true" color="1D1F25" lineHeight="1.05">{price}</Text>
+        <Text fontFamily="Inter Display" fontSize="44" bold="true" color="1D1F25" lineHeight="1.05" h="48">{price}</Text>
         <Text class="body-muted" w="max" h="{taglineH}">{tagline}</Text>
         <VStack class="hairline" />
         <VStack gap="6">
           <Slot name="features" />
         </VStack>
-        <Text class="caption" color="41454D">{footer}</Text>
+        <Text class="caption" color="41454D" h="14">{footer}</Text>
       </VStack>
     </Template>
 
@@ -194,16 +195,17 @@
     <Template name="pricing-card-featured">
       <VStack class="card-soft" w="max" gap="14">
         <HStack gap="8" alignItems="center" justifyContent="spaceBetween">
-          <Text fontFamily="Inter Display" fontSize="20" bold="true" color="1D1F25">{plan}</Text>
-          <Text class="chip-ink">FEATURED</Text>
+          <Text fontFamily="Inter Display" fontSize="20" bold="true" color="1D1F25"
+                textVAlign="middle" lineHeight="1.0">{plan}</Text>
+          <Text class="chip-ink" textVAlign="middle" lineHeight="1.0">FEATURED</Text>
         </HStack>
-        <Text fontFamily="Inter Display" fontSize="44" bold="true" color="1D1F25" lineHeight="1.05">{price}</Text>
+        <Text fontFamily="Inter Display" fontSize="44" bold="true" color="1D1F25" lineHeight="1.05" h="48">{price}</Text>
         <Text class="body-muted" w="max" h="{taglineH}">{tagline}</Text>
         <VStack class="hairline" />
         <VStack gap="6">
           <Slot name="features" />
         </VStack>
-        <Text class="caption" color="AA2D00">{footer}</Text>
+        <Text class="caption" color="AA2D00" h="14">{footer}</Text>
       </VStack>
     </Template>
 
@@ -266,7 +268,7 @@
 
     <!-- Single colour-swatch tile (square colour block + name + hex). -->
     <Template name="palette-swatch">
-      <VStack gap="6" w="84">
+      <VStack gap="6" w="80">
         <VStack backgroundColor="{color}" borderRadius="8" h="56"
                 border.color="DDDDDD" border.width="1" />
         <Text class="caption" color="181D26">{name}</Text>

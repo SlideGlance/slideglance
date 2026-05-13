@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  autoSidePair,
-  pickConnectorPreset,
-  sideAnchor,
-} from "./connector.ts";
+import { autoSidePair, pickConnectorPreset, sideAnchor } from "./connector.ts";
 import type { SlideBBox } from "../types.ts";
 
 const A: SlideBBox = { x: 0, y: 0, w: 100, h: 60, prst: "rect" };
@@ -64,15 +60,11 @@ describe("pickConnectorPreset", () => {
   });
 
   it("elbow: perpendicular sides -> bentConnector2 (1 bend, L shape)", () => {
-    expect(pickConnectorPreset("elbow", "right", "top")).toBe(
-      "bentConnector2",
-    );
+    expect(pickConnectorPreset("elbow", "right", "top")).toBe("bentConnector2");
     expect(pickConnectorPreset("elbow", "left", "bottom")).toBe(
       "bentConnector2",
     );
-    expect(pickConnectorPreset("elbow", "top", "right")).toBe(
-      "bentConnector2",
-    );
+    expect(pickConnectorPreset("elbow", "top", "right")).toBe("bentConnector2");
   });
 
   it("elbow: same side -> bentConnector4 (3 bends, U shape)", () => {

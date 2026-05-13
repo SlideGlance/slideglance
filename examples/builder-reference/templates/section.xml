@@ -38,7 +38,7 @@
 
           <!-- Hero block — 2-column 60/40. Left: oversized chapter
                number → title → italic subtitle. Right: INSIDE sidebar. -->
-          <HStack gap="40" alignItems="end" w="100%">
+          <HStack gap="20" alignItems="end" w="100%">
             <VStack gap="20" w="60%">
               <Text fontFamily="Inter Display" fontSize="220" bold="false"
                     color="{titleColor}" lineHeight="1">{number}</Text>

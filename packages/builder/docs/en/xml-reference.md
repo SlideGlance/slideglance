@@ -65,6 +65,8 @@ Every visual node accepts these layout / decoration attributes.
 | `class`             | string                                          | Space-separated reusable style names.                                       |
 | `master`            | string                                          | Slide-master name (only meaningful on `<Slide>` body root).                 |
 | `isDecorative`      | boolean                                         | Marks element decorative for accessibility (`altText=""`).                  |
+| `id`                | string (`[A-Za-z_][A-Za-z0-9_-]*`)              | Author-facing id; referenced by `<Connector from/to>`. Unique per slide.    |
+| `group`             | string                                          | Bundle this node and its descendants into a PowerPoint group (`<p:grpSp>`). Use `"true"` for an auto-named anonymous group or a stable id to merge subtrees / nest. |
 
 Composite attributes accept three forms:
 
@@ -220,13 +222,13 @@ Smart line that binds to two shapes by their `id` and stays attached when the sh
 </HStack>
 ```
 
-| Attribute | Values | Notes |
-| --------- | ------ | ----- |
-| `from`, `to` | author `id` of another node | Required. The referenced ids must exist on the same slide. |
-| `kind` | `straight` (default), `elbow`, `curved` | Picks `straightConnector1` / `bentConnectorN` / `curvedConnectorN`; the segment count `N` follows the side pair. |
-| `fromSide`, `toSide` | `top` \| `right` \| `bottom` \| `left` | When omitted, the renderer auto-picks the dominant axis from the two shapes' bounding boxes. |
-| `color`, `lineWidth`, `dashType` | same vocabulary as `<Line>` | Visual style. |
-| `beginArrow`, `endArrow` | `true` / `false` / `{ type }` | `triangle` default when `true`. |
+| Attribute                        | Values                                  | Notes                                                                                                            |
+| -------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `from`, `to`                     | author `id` of another node             | Required. The referenced ids must exist on the same slide.                                                       |
+| `kind`                           | `straight` (default), `elbow`, `curved` | Picks `straightConnector1` / `bentConnectorN` / `curvedConnectorN`; the segment count `N` follows the side pair. |
+| `fromSide`, `toSide`             | `top` \| `right` \| `bottom` \| `left`  | When omitted, the renderer auto-picks the dominant axis from the two shapes' bounding boxes.                     |
+| `color`, `lineWidth`, `dashType` | same vocabulary as `<Line>`             | Visual style.                                                                                                    |
+| `beginArrow`, `endArrow`         | `true` / `false` / `{ type }`           | `triangle` default when `true`.                                                                                  |
 
 Add `id="..."` to any node you want a Connector to attach to. `id` is XML-friendly (`[A-Za-z_][A-Za-z0-9_-]*`) and must be unique within a slide.
 

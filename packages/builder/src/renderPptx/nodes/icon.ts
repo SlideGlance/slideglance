@@ -1,7 +1,7 @@
 import type { PositionedNode } from "../../types.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn } from "../units.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 
 type IconPositionedNode = Extract<PositionedNode, { type: "icon" }>;
 
@@ -9,7 +9,7 @@ export function renderIconNode(
   node: IconPositionedNode,
   ctx: RenderContext,
 ): void {
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   // pptxgenjs uses `transparency` as percent-opaque-removed (0 = fully
   // visible, 100 = invisible). Translate the builder's 0-1 opacity to
   // that scale; `undefined` skips the attribute entirely so the default

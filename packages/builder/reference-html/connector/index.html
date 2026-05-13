@@ -46,6 +46,7 @@
 <tr><td><code>flexShrink</code></td><td><code>number</code></td><td></td><td>Yoga flex-shrink override (defaults to 1 inside stacks).</td></tr>
 <tr class="attr-required"><td><code>from</code></td><td><code>string</code></td><td><span aria-label="required">*</span></td><td>id of the source shape on the same slide.</td></tr>
 <tr><td><code>fromSide</code></td><td><code>string</code></td><td></td><td>Which side of the source shape to attach to. When omitted, the renderer picks the side that points toward the target (auto).</td></tr>
+<tr><td><code>group</code></td><td><code>string</code></td><td></td><td>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</td></tr>
 <tr><td><code>h</code></td><td><code>length</code></td><td></td><td>Height (number, percentage, or &#39;max&#39;).</td></tr>
 <tr><td><code>id</code></td><td><code>string</code></td><td></td><td>Author-facing identifier for cross-references (e.g. &lt;Connector from=&quot;...&quot; to=&quot;...&quot;/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</td></tr>
 <tr><td><code>isDecorative</code></td><td><code>boolean</code></td><td></td><td></td></tr>
@@ -84,7 +85,7 @@
 <span class="tk-punct">&lt;</span><span class="tk-tag">Connector</span> <span class="tk-attr">from</span>=<span class="tk-str">&quot;A&quot;</span> <span class="tk-attr">to</span>=<span class="tk-str">&quot;B&quot;</span> <span class="tk-attr">kind</span>=<span class="tk-str">&quot;elbow&quot;</span> <span class="tk-attr">endArrow</span>=<span class="tk-str">&quot;true&quot;</span><span class="tk-punct">/&gt;</span></code></pre>
 
 <h2>Source</h2>
-<p><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts#L384"><code>src/registry/compiled/index.ts</code> · line 384</a></p>
+<p><a href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts#L388"><code>src/registry/compiled/index.ts</code> · line 388</a></p>
 </main>
 </div>
 <script src="../scripts/site.js" defer></script>

@@ -24,10 +24,7 @@ import type { Diagnostic } from "../diagnostics.ts";
  * an author-facing `id`. Stops descending into Master objects (they're
  * a separate scope and shouldn't share ids with the slide body).
  */
-function collectIds(
-  node: BuilderNode,
-  out: Map<string, BuilderNode[]>,
-): void {
+function collectIds(node: BuilderNode, out: Map<string, BuilderNode[]>): void {
   if (node.id) {
     const list = out.get(node.id);
     if (list) {

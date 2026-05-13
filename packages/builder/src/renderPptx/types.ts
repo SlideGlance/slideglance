@@ -33,4 +33,12 @@ export type RenderContext = {
    * up their from/to endpoints. Reset per slide.
    */
   idIndex?: Map<string, SlideBBox>;
+  /**
+   * Active group ancestors, outermost first. The slide renderer pushes
+   * a group id every time it descends into a node carrying `group=...`
+   * and pops on exit; leaf renderers read this so every emitted shape
+   * carries `sg-grp:G` tokens for every ancestor group, which the
+   * post-process `<p:grpSp>` rewriter consumes.
+   */
+  groupStack?: readonly string[];
 };

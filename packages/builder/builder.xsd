@@ -161,6 +161,11 @@
     </xs:attribute>
     <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
     <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -342,6 +347,11 @@
     </xs:attribute>
     <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
     <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -523,6 +533,11 @@
     </xs:attribute>
     <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
     <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -695,6 +710,11 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -838,6 +858,11 @@
     <xs:attribute name="flexShrink" type="xs:double" use="optional">
       <xs:annotation>
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
@@ -997,6 +1022,11 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -1145,6 +1175,11 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -1287,6 +1322,11 @@
     </xs:attribute>
     <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
     <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -1497,6 +1537,11 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -1662,6 +1707,11 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -1820,6 +1870,11 @@
           <xs:enumeration value="left"/>
         </xs:restriction>
       </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
@@ -2007,6 +2062,11 @@
       </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="gap" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -2174,6 +2234,11 @@
       </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="gap" type="xs:double" use="optional"/>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
@@ -2319,6 +2384,11 @@
     <xs:attribute name="flexShrink" type="xs:double" use="optional">
       <xs:annotation>
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="group" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="h" type="b:Length" use="optional">

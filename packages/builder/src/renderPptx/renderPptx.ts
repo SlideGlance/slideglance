@@ -53,9 +53,13 @@ import { builderObjectName } from "./utils/objectName.ts";
  */
 function wrapCtxWithObjectName(
   ctx: RenderContext,
-  node: { __nodeId?: number },
+  node: { __nodeId?: number; id?: string },
 ): RenderContext {
-  const objectName = builderObjectName(node);
+  const objectName = builderObjectName({
+    __nodeId: node.__nodeId,
+    id: node.id,
+    groupIds: ctx.groupStack,
+  });
   if (!objectName) return ctx;
   const target = ctx.slide as unknown as Record<string, unknown>;
   const proxy = new Proxy(target, {
@@ -277,14 +281,44 @@ function renderPositionedTree(
   const { rootBackgroundColor, rootBackgroundImage, rootHasOpacity } =
     getRootBackground(data, ctx.buildContext);
 
-  function renderNode(node: PositionedNode, isRoot = false) {
+  // Synthetic group-id pool. `group="true"` is the canonical "auto"
+  // form — each occurrence gets a fresh `auto-grp-N` id so two siblings
+  // both writing it never accidentally merge. Any other string is the
+  // author-chosen group id and is used verbatim.
+  let nextAutoGroupId = 1;
+  const resolveGroupId = (raw: string): string =>
+    raw === "true" ? `auto-grp-${nextAutoGroupId++}` : raw;
+
+  function renderNode(
+    node: PositionedNode,
+    groupStack: readonly string[],
+    isRoot = false,
+  ) {
+    // Push this node's group ancestor (if any) so its own emitted
+    // shapes — bg/border, hit area, leaf body — all carry the group
+    // sigil, not just its descendants.
+    const nextStack =
+      typeof node.group === "string" && node.group.length > 0
+        ? [...groupStack, resolveGroupId(node.group)]
+        : groupStack;
+    // Per-node ctx variant carries the current group stack so
+    // wrapCtxWithObjectName + leaf renderers (notably Connector) can
+    // read it without an extra parameter. We rebuild when nextStack
+    // differs from whatever the outer ctx already carries — including
+    // the case where an ancestor pushed a group but this node merely
+    // inherits it.
+    const groupedCtx: RenderContext =
+      nextStack.length === (ctx.groupStack?.length ?? 0) &&
+      nextStack.every((g, i) => g === ctx.groupStack?.[i])
+        ? ctx
+        : { ...ctx, groupStack: nextStack };
     // Wrap once so every shape this node emits — background, border, an
     // invisible click hit-area for empty containers, and the leaf body —
     // carries the node's `objectName=node#N`. The webview click delegate
     // resolves that id back to the source line, which is how clicking on a
     // VStack/HStack/Layer surface (or even an empty container hit-area)
     // navigates to its XML origin.
-    const nodeCtx = wrapCtxWithObjectName(ctx, node);
+    const nodeCtx = wrapCtxWithObjectName(groupedCtx, node);
     // Tracks whether THIS node's render path emitted at least one PPTX
     // shape carrying its objectName. Used by the container branch to
     // decide whether the invisible hit-area is needed.
@@ -386,14 +420,14 @@ function renderPositionedTree(
           });
         }
         for (const child of sortByZIndex(containerNode.children)) {
-          renderNode(child);
+          renderNode(child, nextStack);
         }
         break;
       }
     }
   }
 
-  renderNode(data, true);
+  renderNode(data, [], true);
 }
 
 /**

@@ -4,7 +4,7 @@ import type { ImageSrcGuardOptions } from "../../options.ts";
 import type { DiagnosticCollector } from "../../diagnostics.ts";
 import { pxToIn } from "../units.ts";
 import { getContentArea } from "../utils/contentArea.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 
 type ImagePositionedNode = Extract<PositionedNode, { type: "image" }>;
 
@@ -103,7 +103,7 @@ export function renderImageNode(
   ctx: RenderContext,
 ): void {
   const content = getContentArea(node);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   const imageOptions: Record<string, unknown> = {
     x: pxToIn(content.x),
     y: pxToIn(content.y),

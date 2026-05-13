@@ -46,8 +46,8 @@
           <Line x1="80" y1="220" x2="160" y2="220" color="DDDDDD" lineWidth="1" />
           <Line x1="80" y1="220" x2="80" y2="240" color="DDDDDD" lineWidth="1" />
           <Line x1="160" y1="220" x2="160" y2="240" color="DDDDDD" lineWidth="1" />
-          <Text x="40"  y="244" fontFamily="Inter Display" fontSize="11" bold="true" color="41454D">VStack</Text>
-          <Text x="120" y="244" fontFamily="Inter Display" fontSize="11" bold="true" color="41454D">HStack</Text>
+          <Text x="40"  y="244" w="60" fontFamily="Inter Display" fontSize="11" bold="true" color="41454D">VStack</Text>
+          <Text x="120" y="244" w="60" fontFamily="Inter Display" fontSize="11" bold="true" color="41454D">HStack</Text>
         </Layer>
       </VStack>
 

@@ -109,7 +109,11 @@ const BASE_ATTRS: Record<string, AttributeSpec> = {
   },
   id: {
     coerce: "string",
-    doc: "Author-facing identifier for cross-references (e.g. <Connector from=\"...\" to=\"...\"/>). Must be unique within a slide; XML-friendly chars only (no colon).",
+    doc: 'Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon).',
+  },
+  group: {
+    coerce: "string",
+    doc: "Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.",
   },
 };
 

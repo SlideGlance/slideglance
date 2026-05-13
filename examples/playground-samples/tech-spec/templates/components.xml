@@ -9,7 +9,7 @@
   -->
   <Templates>
     <Template name="arch-node">
-      <VStack class="bg-card" borderRadius="8"
+      <VStack id="{id}" class="bg-card" borderRadius="8"
               padding.left="12" padding.right="12"
               padding.top="10" padding.bottom="10" gap="4"
               border.color="D1D5DB" border.width="1">
@@ -19,7 +19,7 @@
     </Template>
 
     <Template name="arch-node-accent">
-      <VStack class="bg-accent" borderRadius="8"
+      <VStack id="{id}" class="bg-accent" borderRadius="8"
               padding.left="12" padding.right="12"
               padding.top="10" padding.bottom="10" gap="4">
         <Text fontFamily="Inter" fontSize="12" bold="true" color="FFFFFF">{name}</Text>

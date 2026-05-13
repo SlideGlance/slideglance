@@ -10,12 +10,12 @@ composed from a slide **master**, a small set of **style sheets**, a handful of 
 
 ## Decks
 
-| Slug         | Theme                       | Canvas              | Highlights                                                          |
-| ------------ | --------------------------- | ------------------- | ------------------------------------------------------------------- |
-| `pitch`      | Startup pitch (dark)        | 16:9 · 1280 × 720   | Gradient cover, accent stripe master, metric cards, quote slide.    |
-| `editorial`  | Editorial report (serif)    | A4 · 793 × 1122     | Magazine masthead, two-column body, drop cap, pull quote, figure.   |
-| `tech-spec`  | Technical spec (corporate)  | 16:9 · 1280 × 720   | Sectioned eyebrow master, architecture diagram, comparison grid.    |
-| `workshop`   | Workshop / tutorial         | 16:9 · 1280 × 720   | Step ribbon master, code-block template, callout, exercise card.    |
+| Slug        | Theme                      | Canvas            | Highlights                                                        |
+| ----------- | -------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `pitch`     | Startup pitch (dark)       | 16:9 · 1280 × 720 | Gradient cover, accent stripe master, metric cards, quote slide.  |
+| `editorial` | Editorial report (serif)   | A4 · 793 × 1122   | Magazine masthead, two-column body, drop cap, pull quote, figure. |
+| `tech-spec` | Technical spec (corporate) | 16:9 · 1280 × 720 | Sectioned eyebrow master, architecture diagram, comparison grid.  |
+| `workshop`  | Workshop / tutorial        | 16:9 · 1280 × 720 | Step ribbon master, code-block template, callout, exercise card.  |
 
 ## Layout
 

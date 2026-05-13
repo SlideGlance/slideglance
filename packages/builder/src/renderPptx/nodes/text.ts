@@ -11,7 +11,7 @@ import {
 } from "../../defaultTextStyle.ts";
 import { pxToIn, pxToPt } from "../units.ts";
 import { shouldEmbedBackgroundInText } from "../utils/backgroundBorder.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 import { validateHref } from "../utils/href.ts";
 
 type TextPositionedNode = Extract<PositionedNode, { type: "text" }>;
@@ -134,7 +134,7 @@ function renderEmbeddedTextNode(
     pxToPt(padTop),
   ];
 
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   const frameOptions = {
     shape: shapeType,
     x: pxToIn(node.x),
@@ -180,7 +180,7 @@ export function renderTextNode(
 
   const defaultTextStyle = ctx.buildContext?.defaultTextStyle;
   const textOptions = createTextOptions(node, defaultTextStyle);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
 
   if (node.runs && node.runs.length > 0) {
     ctx.slide.addText(buildRuns(node, defaultTextStyle, ctx), {

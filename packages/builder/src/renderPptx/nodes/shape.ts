@@ -6,7 +6,7 @@ import {
 } from "../../defaultTextStyle.ts";
 import { pxToIn, pxToPt } from "../units.ts";
 import { convertUnderline, convertStrike } from "../textOptions.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 
 type ShapePositionedNode = Extract<PositionedNode, { type: "shape" }>;
 
@@ -38,7 +38,7 @@ export function renderShapeNode(
   ctx: RenderContext,
 ): void {
   const defaultTextStyle = ctx.buildContext?.defaultTextStyle;
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   const shapeOptions = {
     x: pxToIn(node.x),
     y: pxToIn(node.y),
@@ -97,9 +97,7 @@ export function renderShapeNode(
         1.0,
       ),
       charSpacing:
-        node.letterSpacing !== undefined
-          ? node.letterSpacing * 100
-          : undefined,
+        node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
       margin: resolveShapeTextInsetPt(node.padding),
     });
   } else {

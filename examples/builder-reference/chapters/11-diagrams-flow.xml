@@ -37,7 +37,7 @@
             {"lineX1":"400","lineX2":"460","labelX":"430","labelText":"NO","accent":"AA2D00","boxX":"460","boxBg":"AA2D00","kicker":"FALLBACK","kickerColor":"F5E0D6","name":"Use white canvas"}
           ]' as="b">
             <Line x1="{b.lineX1}" y1="118" x2="{b.lineX2}" y2="118" color="{b.accent}" lineWidth="1.5" endArrow.type="triangle" />
-            <Text x="{b.labelX}" y="100" fontFamily="Inter Display" fontSize="11" bold="true" color="{b.accent}">{b.labelText}</Text>
+            <Text x="{b.labelX}" y="100" w="40" fontFamily="Inter Display" fontSize="11" bold="true" color="{b.accent}">{b.labelText}</Text>
             <VStack x="{b.boxX}" y="178" w="180" h="80" backgroundColor="{b.boxBg}" borderRadius="10" alignItems="center" justifyContent="center" gap="4" padding="10">
               <Text fontFamily="Inter Display" fontSize="11" bold="true" color="{b.kickerColor}" textAlign="center" w="120">{b.kicker}</Text>
               <Text fontFamily="Inter Display" fontSize="12" bold="true" color="FFFFFF" textAlign="center" w="160">{b.name}</Text>

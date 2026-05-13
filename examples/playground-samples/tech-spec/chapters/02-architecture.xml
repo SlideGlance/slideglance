@@ -9,59 +9,67 @@
     <Slot name="default">
       <!-- Block diagram (Layer-based absolute positioning).
            Tightened vertical spacing so the bottom HStack (interfaces
-           table + scale) still has room below in the fill VStack. -->
+           table + scale) still has room below in the fill VStack.
+           Nodes carry stable ids so <Connector> can bind the lines to
+           the rect midpoints — PowerPoint reroutes the segments
+           automatically when an editor nudges a box. -->
       <Layer w="100%" h="180">
         <!-- Control plane (top center) -->
         <VStack x="500" y="0" w="220" h="48">
-          <Use template="arch-node-accent" name="atlas-control" sublabel="config + identity · global" />
+          <Use template="arch-node-accent" id="control" name="atlas-control" sublabel="config + identity · global" />
         </VStack>
 
         <!-- Director per region -->
         <VStack x="120" y="68" w="160" h="48">
-          <Use template="arch-node" name="director · us-east" sublabel="control client + admission" />
+          <Use template="arch-node" id="dir-us-east" name="director · us-east" sublabel="control client + admission" />
         </VStack>
         <VStack x="320" y="68" w="160" h="48">
-          <Use template="arch-node" name="director · eu-central" sublabel="control client + admission" />
+          <Use template="arch-node" id="dir-eu-central" name="director · eu-central" sublabel="control client + admission" />
         </VStack>
         <VStack x="540" y="68" w="160" h="48">
-          <Use template="arch-node" name="director · ap-south" sublabel="control client + admission" />
+          <Use template="arch-node" id="dir-ap-south" name="director · ap-south" sublabel="control client + admission" />
         </VStack>
         <VStack x="760" y="68" w="160" h="48">
-          <Use template="arch-node" name="director · ap-ne" sublabel="control client + admission" />
+          <Use template="arch-node" id="dir-ap-ne" name="director · ap-ne" sublabel="control client + admission" />
         </VStack>
         <VStack x="980" y="68" w="160" h="48">
-          <Use template="arch-node" name="director · us-west" sublabel="control client + admission" />
+          <Use template="arch-node" id="dir-us-west" name="director · us-west" sublabel="control client + admission" />
         </VStack>
 
         <!-- Edge data planes (per region, abbreviated) -->
         <VStack x="120" y="136" w="160" h="44">
-          <Use template="arch-node" name="edge · 3 shards" sublabel="ingress + auth + routing" />
+          <Use template="arch-node" id="edge-us-east" name="edge · 3 shards" sublabel="ingress + auth + routing" />
         </VStack>
         <VStack x="320" y="136" w="160" h="44">
-          <Use template="arch-node" name="edge · 3 shards" sublabel="ingress + auth + routing" />
+          <Use template="arch-node" id="edge-eu-central" name="edge · 3 shards" sublabel="ingress + auth + routing" />
         </VStack>
         <VStack x="540" y="136" w="160" h="44">
-          <Use template="arch-node" name="edge · 3 shards" sublabel="ingress + auth + routing" />
+          <Use template="arch-node" id="edge-ap-south" name="edge · 3 shards" sublabel="ingress + auth + routing" />
         </VStack>
         <VStack x="760" y="136" w="160" h="44">
-          <Use template="arch-node" name="edge · 3 shards" sublabel="ingress + auth + routing" />
+          <Use template="arch-node" id="edge-ap-ne" name="edge · 3 shards" sublabel="ingress + auth + routing" />
         </VStack>
         <VStack x="980" y="136" w="160" h="44">
-          <Use template="arch-node" name="edge · 3 shards" sublabel="ingress + auth + routing" />
+          <Use template="arch-node" id="edge-us-west" name="edge · 3 shards" sublabel="ingress + auth + routing" />
         </VStack>
 
-        <!-- Connectors (control → directors → edge) -->
-        <Line x1="610" y1="48"  x2="200" y2="68" color="9CA3AF" lineWidth="1" />
-        <Line x1="610" y1="48"  x2="400" y2="68" color="9CA3AF" lineWidth="1" />
-        <Line x1="610" y1="48"  x2="620" y2="68" color="9CA3AF" lineWidth="1" />
-        <Line x1="610" y1="48"  x2="840" y2="68" color="9CA3AF" lineWidth="1" />
-        <Line x1="610" y1="48"  x2="1060" y2="68" color="9CA3AF" lineWidth="1" />
+        <!-- Control plane fans out to every regional director. The straight
+             kind keeps the original diagonal look; explicit fromSide /
+             toSide pins the anchors to the bottom / top midpoints so the
+             auto-side heuristic does not pick the dominant horizontal
+             axis for the far-left / far-right directors. -->
+        <Connector from="control" to="dir-us-east"    kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="control" to="dir-eu-central" kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="control" to="dir-ap-south"   kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="control" to="dir-ap-ne"      kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="control" to="dir-us-west"    kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
 
-        <Line x1="200" y1="116" x2="200" y2="136" color="9CA3AF" lineWidth="1" />
-        <Line x1="400" y1="116" x2="400" y2="136" color="9CA3AF" lineWidth="1" />
-        <Line x1="620" y1="116" x2="620" y2="136" color="9CA3AF" lineWidth="1" />
-        <Line x1="840" y1="116" x2="840" y2="136" color="9CA3AF" lineWidth="1" />
-        <Line x1="1060" y1="116" x2="1060" y2="136" color="9CA3AF" lineWidth="1" />
+        <!-- Each director drops to its regional edge plane (vertical run). -->
+        <Connector from="dir-us-east"    to="edge-us-east"    kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="dir-eu-central" to="edge-eu-central" kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="dir-ap-south"   to="edge-ap-south"   kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="dir-ap-ne"      to="edge-ap-ne"      kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
+        <Connector from="dir-us-west"    to="edge-us-west"    kind="straight" fromSide="bottom" toSide="top" color="9CA3AF" lineWidth="1" />
       </Layer>
 
       <VStack class="hairline" />
@@ -84,13 +92,13 @@
               <Td text="config-stream" fontSize="10" />
               <Td text="control → director" fontSize="10" />
               <Td text="gRPC server-stream" fontSize="10" />
-              <Td text="snapshots + deltas, mTLS, < 200ms p99" fontSize="10" />
+              <Td text="snapshots + deltas, mTLS, &lt; 200ms p99" fontSize="10" />
             </Tr>
             <Tr>
               <Td text="identity-resolve" fontSize="10" />
               <Td text="director → control" fontSize="10" />
               <Td text="gRPC unary" fontSize="10" />
-              <Td text="cached per-region, < 5ms p50" fontSize="10" />
+              <Td text="cached per-region, &lt; 5ms p50" fontSize="10" />
             </Tr>
             <Tr>
               <Td text="admission-push" fontSize="10" />

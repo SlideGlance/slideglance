@@ -76,8 +76,6 @@ export function createTextOptions(
     strike: convertStrike(node.strike),
     highlight: node.highlight,
     charSpacing:
-      node.letterSpacing !== undefined
-        ? node.letterSpacing * 100
-        : undefined,
+      node.letterSpacing !== undefined ? node.letterSpacing * 100 : undefined,
   };
 }

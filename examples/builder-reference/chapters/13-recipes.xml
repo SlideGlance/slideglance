@@ -96,16 +96,16 @@
       <HStack gap="14" w="100%" alignItems="stretch">
         <Use template="step-eq" n="1" descH="auto"
              title="Sketch surface"
-             desc="Decide which signature surface carries the editorial voltage for this band." />
+             desc="Pick the signature surface for this band." />
         <Use template="step-eq" n="2" descH="auto"
              title="Draft type"
-             desc="Pick a display size from the type ramp; never use weight 700 on display rows." />
+             desc="Pick a display size; avoid weight 700." />
         <Use template="step-eq" n="3" descH="auto"
              title="Pair primary CTA"
-             desc="Anchor with one near-black primary CTA per viewport. Pair with hairline secondary." />
+             desc="One near-black primary CTA per viewport." />
         <Use template="step-eq" n="4" descH="auto"
              title="Anchor rhythm"
-             desc="Apply 96px section padding so the band sits inside the universal vertical rhythm." />
+             desc="96px section padding for vertical rhythm." />
       </HStack>
 
       <Use template="h2" text="Testimonial · quote with avatar" />
@@ -126,7 +126,7 @@
            same tagline height across all three cards so the hairline
            rule and feature list line up across columns. -->
       <HStack gap="14" alignItems="stretch" w="100%">
-        <Use template="pricing-card" plan="Starter" price="$0" footer="Free tier · self-serve onboarding"
+        <Use template="pricing-card" plan="Starter" price="$0" footer="Free · self-serve"
              taglineH="auto"
              tagline="For solo authors writing one deck a month.">
           <Slot name="features">
@@ -135,7 +135,7 @@
             </Foreach>
           </Slot>
         </Use>
-        <Use template="pricing-card-featured" plan="Team" price="$24" footer="Per editor / month · annual billing"
+        <Use template="pricing-card-featured" plan="Team" price="$24" footer="Per editor · annual billing"
              taglineH="auto"
              tagline="Per editor, per month. Includes the signature surface kit.">
           <Slot name="features">
@@ -144,7 +144,7 @@
             </Foreach>
           </Slot>
         </Use>
-        <Use template="pricing-card" plan="Enterprise" price="Talk" footer="Custom pricing · contracted"
+        <Use template="pricing-card" plan="Enterprise" price="Talk" footer="Custom pricing · contract"
              taglineH="auto"
              tagline="Custom pricing for orgs with 50+ editors.">
           <Slot name="features">

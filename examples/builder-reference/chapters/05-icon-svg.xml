@@ -109,7 +109,7 @@
           <Use template="h2" text="Sample · inline arrow" />
           <VStack class="card-canvas" gap="6">
             <Text class="caption" color="AA2D00">a custom right-arrow recoloured via color="AA2D00"</Text>
-            <Svg w="320" h="80" color="AA2D00" alignSelf="center">
+            <Svg w="240" h="60" color="AA2D00" alignSelf="center">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="currentColor">
                 <rect x="0" y="26" width="160" height="8" rx="4" />
                 <polygon points="160,16 200,30 160,44" />

@@ -8,7 +8,7 @@
        inside1="Text · the universal styled-run leaf node"
        inside2="B / I / U / S · classical emphasis runs"
        inside3="Mark / Span · highlight + arbitrary inline styling"
-       inside4="A · hyperlink runs with explicit href"
+       inside4="A · hyperlink with explicit href"
        epigraph="Display weights stay at 400. The system trusts size and contrast, not boldness."
        epigraphAttrib="Airtable type principles"
        meta="Text · B · I · U · S · Mark · Span · A"

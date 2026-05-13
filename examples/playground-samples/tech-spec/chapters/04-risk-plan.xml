@@ -67,7 +67,7 @@
           <Foreach items='[
             {"step":"M1","title":"Control plane bring-up","note":"single region, dark deploy, no real traffic"},
             {"step":"M2","title":"Director shadowing","note":"capture traffic, compare decisions against legacy"},
-            {"step":"M3","title":"Edge canary, us-east","note":"5% traffic, kill switch < 30s"},
+            {"step":"M3","title":"Edge canary, us-east","note":"5% traffic, kill switch &lt; 30s"},
             {"step":"M4","title":"Region-by-region GA","note":"two-week per region, with one-week soak"},
             {"step":"M5","title":"Legacy LB decom","note":"deprovision, archive runbooks, post-mortem"}
           ]' as="m">

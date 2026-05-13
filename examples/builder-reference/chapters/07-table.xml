@@ -24,7 +24,7 @@
           <Foreach items='[
             {"attr":"columns / rows","type":"json","desc":"Alternative to &lt;Col&gt;/&lt;Tr&gt; element notation."},
             {"attr":"defaultRowHeight","type":"number","desc":"Default row height (px)."},
-            {"attr":"cellBorder","type":"object","desc":"{color, width, dashType} — applies to every cell."},
+            {"attr":"cellBorder","type":"object","desc":"{color, width, dashType} per cell."},
             {"attr":"cellMargin","type":"length","desc":"Inner cell padding (number or per-side object)."}
           ]' as="r">
             <Use template="attr-row" attr="{r.attr}" type="{r.type}" desc="{r.desc}" />

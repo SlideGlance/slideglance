@@ -1,6 +1,11 @@
 import type { PositionedNode, LineArrow } from "../../types.ts";
 import type { RenderContext, SlideBBox } from "../types.ts";
 import { pxToIn, pxToPt } from "../units.ts";
+import {
+  SG_CXN_PREFIX,
+  SG_GRP_PREFIX,
+  buildObjectName,
+} from "../postProcess/sigils.ts";
 
 type ConnectorPositionedNode = Extract<PositionedNode, { type: "connector" }>;
 type Side = "top" | "right" | "bottom" | "left";
@@ -99,20 +104,27 @@ export function sideAnchor(
 }
 
 /**
- * Build the cNvPr@name sigil that the post-process pass reads. Format:
- *   sg-cxn:{from}#{fromSide}>{to}#{toSide}:{kind}:{preset}
- * The post-process step looks for the `sg-cxn:` prefix; everything
- * after it is the sole channel by which slide-level metadata reaches
- * the cxnSp rewriter.
+ * Build the cNvPr@name token chain the post-process pass reads. The
+ * sg-cxn body is always present; sg-grp tokens stack outermost-first
+ * when the connector itself sits inside one or more `group="..."`
+ * ancestors, so the group rewriter wraps the cxnSp the same way it
+ * wraps regular shapes.
  */
 export function buildConnectorSigil(
   node: ConnectorPositionedNode,
   fromSide: Side,
   toSide: Side,
   preset: string,
+  groupIds?: readonly string[],
 ): string {
   const kind: ConnectorKind = node.kind ?? "straight";
-  return `sg-cxn:${node.from}#${fromSide}>${node.to}#${toSide}:${kind}:${preset}`;
+  const cxn = `${SG_CXN_PREFIX}${node.from}#${fromSide}>${node.to}#${toSide}:${kind}:${preset}`;
+  const grpTokens = (groupIds ?? []).map((g) => `${SG_GRP_PREFIX}${g}`);
+  // Source-position token is appended too: connectors with __nodeId let
+  // editors jump from the cxn line back to the <Connector> source.
+  const nodeIdToken =
+    node.__nodeId !== undefined ? `node#${node.__nodeId}` : undefined;
+  return buildObjectName([cxn, ...grpTokens, nodeIdToken]);
 }
 
 export function renderConnectorNode(
@@ -129,8 +141,8 @@ export function renderConnectorNode(
   if (!a || !b) return;
 
   const auto = autoSidePair(a, b);
-  const fromSide: Side = (node.fromSide) ?? auto.fromSide;
-  const toSide: Side = (node.toSide) ?? auto.toSide;
+  const fromSide: Side = node.fromSide ?? auto.fromSide;
+  const toSide: Side = node.toSide ?? auto.toSide;
   const kind: ConnectorKind = node.kind ?? "straight";
   const preset = pickConnectorPreset(kind, fromSide, toSide);
 
@@ -154,8 +166,15 @@ export function renderConnectorNode(
     flipV,
     // The sigil here is the entire channel the post-process pass uses
     // to find this shape and rewrite it as a real <p:cxnSp>. Do not
-    // omit it even when trackSourcePos is off.
-    objectName: buildConnectorSigil(node, fromSide, toSide, preset),
+    // omit it even when trackSourcePos is off. Group ancestors are
+    // threaded in so the group rewriter wraps connectors too.
+    objectName: buildConnectorSigil(
+      node,
+      fromSide,
+      toSide,
+      preset,
+      ctx.groupStack,
+    ),
     line: {
       color: node.color ?? "000000",
       width: node.lineWidth !== undefined ? pxToPt(node.lineWidth) : 1,

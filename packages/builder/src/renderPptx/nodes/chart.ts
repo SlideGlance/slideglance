@@ -2,7 +2,7 @@ import type { PositionedNode } from "../../types.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn } from "../units.ts";
 import { getContentArea } from "../utils/contentArea.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 
 type ChartPositionedNode = Extract<PositionedNode, { type: "chart" }>;
 
@@ -17,7 +17,7 @@ export function renderChartNode(
   }));
 
   const content = getContentArea(node);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   const chartOptions: Record<string, unknown> = {
     x: pxToIn(content.x),
     y: pxToIn(content.y),

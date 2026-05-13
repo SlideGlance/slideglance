@@ -23,13 +23,14 @@
 
 import type { Diagnostic } from "../../diagnostics.ts";
 import {
+  SG_CXN_PREFIX,
+  SG_ID_PREFIX,
   parseCxnSigil,
   parseIdSigil,
-  stripSigils,
-  SG_ID_PREFIX,
-  SG_CXN_PREFIX,
+  stripSigilsByPrefix,
 } from "./sigils.ts";
 import { lookupSideIdx, isKnownPrstForCxn } from "./idxTable.ts";
+import { rewriteSlideGroups } from "./groupSp.ts";
 
 // JSZip and fast-xml-parser are CJS — load via dynamic import to handle
 // default export differences across runtimes (Node vs browser bundlers).
@@ -157,10 +158,7 @@ interface ConnectorJob {
  * any changes were made (callers skip the re-serialize step when
  * nothing changed).
  */
-function rewriteSlide(
-  parsed: NodeArray,
-  diagnostics: Diagnostic[],
-): boolean {
+function rewriteSlide(parsed: NodeArray, diagnostics: Diagnostic[]): boolean {
   const spTreeChildren = findSpTreeChildren(parsed);
   if (!spTreeChildren) return false;
 
@@ -175,7 +173,7 @@ function rewriteSlide(
     const tag = getTag(child);
     if (tag !== "p:sp") continue;
 
-    // Find p:nvSpPr > p:cNvPr to read the sigil.
+    // Find p:nvSpPr > p:cNvPr to read the sigil chain.
     const nvSpPr = findDescendant([child], "p:nvSpPr");
     const cNvPr = nvSpPr ? findDescendant([nvSpPr], "p:cNvPr") : undefined;
     if (!cNvPr) continue;
@@ -184,25 +182,36 @@ function rewriteSlide(
     const name = getAttr(cNvPr, "name");
     if (!spId || !name) continue;
 
-    if (name.startsWith(SG_ID_PREFIX)) {
-      const idSig = parseIdSigil(name);
-      if (idSig) {
-        // The prst lives at p:spPr > a:prstGeom@prst.
-        const prstGeom = findDescendant([child], "a:prstGeom");
-        const prst = prstGeom ? getAttr(prstGeom, "prst") : undefined;
-        idMap.set(idSig.userId, { spId, prst });
-        const stripped = stripSigils(name);
-        if (stripped) {
+    const idSig = parseIdSigil(name);
+    if (idSig) {
+      // The prst lives at p:spPr > a:prstGeom@prst.
+      const prstGeom = findDescendant([child], "a:prstGeom");
+      const prst = prstGeom ? getAttr(prstGeom, "prst") : undefined;
+      idMap.set(idSig.userId, { spId, prst });
+    }
+
+    const cxnSig = parseCxnSigil(name);
+    if (cxnSig) {
+      // Connector placeholders go into the rewrite queue. The sigil
+      // strip happens inside rewriteSpToCxnSp so the cNvPr@name is
+      // consistent with the rewritten element.
+      jobs.push({ element: child, parsed: cxnSig });
+      continue;
+    }
+
+    // For non-connector elements: only sg-id consumed here. Strip the
+    // sg-id token if it was present so subsequent passes / final
+    // output don't see it. sg-grp tokens are intentionally preserved —
+    // the group rewriter consumes them in the next pass.
+    if (idSig) {
+      const stripped = stripSigilsByPrefix(name, [SG_ID_PREFIX]);
+      if (stripped !== name) {
+        if (stripped.length > 0) {
           setAttr(cNvPr, "name", stripped);
         } else {
           removeAttr(cNvPr, "name");
         }
         changed = true;
-      }
-    } else if (name.startsWith(SG_CXN_PREFIX)) {
-      const cxnSig = parseCxnSigil(name);
-      if (cxnSig) {
-        jobs.push({ element: child, parsed: cxnSig });
       }
     }
   }
@@ -266,11 +275,13 @@ function rewriteSpToCxnSp(
       delete child["p:nvSpPr"];
       child["p:nvCxnSpPr"] = inner;
 
-      // Strip the sg-cxn sigil from the cNvPr@name.
+      // Strip the sg-cxn sigil from the cNvPr@name. sg-grp tokens
+      // stay so the group rewriter can wrap this connector along with
+      // its sibling shapes when both share a group ancestor.
       const cNvPr = findDescendant(inner, "p:cNvPr");
       if (cNvPr) {
         const name = getAttr(cNvPr, "name");
-        const stripped = stripSigils(name);
+        const stripped = stripSigilsByPrefix(name, [SG_CXN_PREFIX]);
         if (stripped) {
           setAttr(cNvPr, "name", stripped);
         } else {
@@ -366,17 +377,21 @@ export async function postProcessConnectors(
     if (!file) continue;
     const xml = await file.async("string");
     const parsed = parser.parse(xml) as NodeArray;
-    const changed = rewriteSlide(parsed, diagnostics);
-    if (!changed) continue;
+    // Order matters: connectors first (so cxnSp elements exist when
+    // groups wrap them), then groups (which strip all remaining sg-*
+    // tokens as a final cleanup).
+    const cxnChanged = rewriteSlide(parsed, diagnostics);
+    const grpChanged = rewriteSlideGroups(parsed, diagnostics);
+    if (!cxnChanged && !grpChanged) continue;
     const rebuilt = builder.build(parsed);
     zip.file(path, rebuilt);
   }
 
-  const out = (await zip.generateAsync({
+  const out = await zip.generateAsync({
     type: "uint8array",
     compression: "DEFLATE",
     compressionOptions: { level: 6 },
-  }));
+  });
   return { bytes: out, diagnostics };
 }
 

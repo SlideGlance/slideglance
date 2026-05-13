@@ -11,7 +11,7 @@ import {
 import { pxToIn, pxToPt } from "../units.ts";
 import { convertUnderline, convertStrike } from "../textOptions.ts";
 import { getContentArea } from "../utils/contentArea.ts";
-import { builderObjectName } from "../utils/objectName.ts";
+import { renderObjectName } from "../utils/objectName.ts";
 import { validateHref } from "../utils/href.ts";
 
 type TablePositionedNode = Extract<PositionedNode, { type: "table" }>;
@@ -150,7 +150,7 @@ export function renderTableNode(
   );
 
   const content = getContentArea(node);
-  const objectName = builderObjectName(node);
+  const objectName = renderObjectName(node, ctx);
   const tableOptions: Record<string, unknown> = {
     x: pxToIn(content.x),
     y: pxToIn(content.y),

@@ -34,6 +34,13 @@ export interface DeckLintInputs {
    * and their substitution path for unknown families).
    */
   measurer?: TextMeasurer;
+  /**
+   * Raw XML source files seen during parsing (root document + every
+   * `<Import>` target). Drives parse-phase rules like
+   * `RAW_LT_GT_IN_ATTR` that need the original characters before
+   * fast-xml-parser quietly normalises them.
+   */
+  rawXmlSources?: readonly { path?: string; content: string }[];
 }
 
 /**
@@ -56,6 +63,34 @@ export function lintDeck(
     };
   }
   const all: Diagnostic[] = [];
+
+  // Parse-phase rules run once per deck against the raw XML sources.
+  // They produce file/line-anchored diagnostics so authors can fix the
+  // offending source line directly. When no raw sources are supplied
+  // (legacy callers), the parse-phase pass is a no-op.
+  if (inputs.rawXmlSources && inputs.rawXmlSources.length > 0) {
+    // Parse-phase rules never read tree / slideSize. Borrow the first
+    // slide's values as inert placeholders so the shared LintContext
+    // type stays honest; for the 0-slide edge case (rare — master-only
+    // decks), fall back to a minimal stub so source-level rules still
+    // run.
+    const anchor = slides[0];
+    const parseCtx: LintContext = {
+      tree: (anchor?.root ?? {
+        type: "slide",
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0,
+      }) as PositionedNode,
+      slideIndex: 0,
+      slideSize: anchor?.slideSize ?? { w: 0, h: 0 },
+      rawXmlSources: inputs.rawXmlSources,
+      phase: "parse",
+    };
+    all.push(...runLintRules(parseCtx, options));
+  }
+
   slides.forEach((slide, i) => {
     const ctx: LintContext = {
       tree: slide.root,

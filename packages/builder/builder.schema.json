@@ -386,6 +386,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -868,6 +872,10 @@
           ]
         },
         "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "group": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
@@ -1425,6 +1433,10 @@
           ]
         },
         "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "group": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
@@ -2009,6 +2021,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -2406,6 +2422,10 @@
           ]
         },
         "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "group": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
@@ -4727,6 +4747,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -5095,6 +5119,10 @@
           ]
         },
         "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "group": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
@@ -5775,6 +5803,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -6442,6 +6474,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -6911,6 +6947,10 @@
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },
+        "group": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
         "__nodeId": {
           "type": "number"
         },
@@ -7351,6 +7391,10 @@
           ]
         },
         "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
+        },
+        "group": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$"
         },

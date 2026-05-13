@@ -96,6 +96,19 @@ const baseNodeSchema = z.object({
     .string()
     .regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/)
     .optional(),
+  // Group membership. Any string value bundles this node and its
+  // descendants into one PowerPoint group (<p:grpSp>) so editors can
+  // move them as a single selection. The string is the group id; two
+  // subtrees sharing the same id merge into one group. The literal
+  // string "true" is the canonical "auto-named group" form — the
+  // renderer assigns a fresh synthetic id per occurrence, so two
+  // siblings both writing `group="true"` get distinct groups. Nested
+  // groupings on a node and its ancestor stack into nested grpSp
+  // elements with the outermost ancestor wrapped last.
+  group: z
+    .string()
+    .regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/)
+    .optional(),
   /**
    * Stable identifier assigned at parse time. Used to correlate a BuilderNode with
    * its originating source file + line via the parse result's `sourceMap`.

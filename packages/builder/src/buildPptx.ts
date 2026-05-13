@@ -276,8 +276,35 @@ export async function buildPptx(
   slideSize: { w: number; h: number },
   options?: BuildPptxOptions,
 ): Promise<BuildPptxResult> {
+  // Capture the root document plus every successfully resolved import
+  // so the parse-phase lint pass (RAW_LT_GT_IN_ATTR etc.) sees the
+  // original characters before fast-xml-parser quietly normalises
+  // them. Only collect when lint is actually enabled — the resolver
+  // wrap is otherwise an unnecessary allocation per import call.
+  const lintEnabled = options?.lint?.enabled === true;
+  const rawXmlSources: { path?: string; content: string }[] = lintEnabled
+    ? [
+        {
+          content: xml,
+          ...(options?.sourcePath ? { path: options.sourcePath } : {}),
+        },
+      ]
+    : [];
+  const originalResolveImport = options?.resolveImport;
+  const wrappedResolveImport: typeof originalResolveImport =
+    lintEnabled && originalResolveImport
+      ? (src, fromPath) => {
+          const resolved = originalResolveImport(src, fromPath);
+          rawXmlSources.push({
+            content: resolved.content,
+            path: resolved.path,
+          });
+          return resolved;
+        }
+      : originalResolveImport;
+
   const parseResult = parseBuilderDocument(xml, {
-    resolveImport: options?.resolveImport,
+    resolveImport: wrappedResolveImport,
     sourcePath: options?.sourcePath,
     trackSourcePos: options?.trackSourcePos,
     maxTemplateNodes: options?.maxTemplateNodes,
@@ -403,6 +430,7 @@ export async function buildPptx(
         declaredTemplates: document.declaredTemplates,
         referencedTemplates: document.referencedTemplates,
         measurer: ctx.measurer,
+        rawXmlSources,
       },
     );
     for (const d of lintDiags) ctx.diagnostics.addLint(d);

@@ -34,6 +34,14 @@ export interface LintContext {
    * omitted, rules fall back to the bundled-fonts singleton.
    */
   measurer?: TextMeasurer;
+  /**
+   * Raw XML source strings for parse-phase rules (e.g.
+   * `RAW_LT_GT_IN_ATTR`). The root document plus every file resolved
+   * through `<Import>` should appear here so source-level violations
+   * surface with accurate file + line attribution. Empty / absent for
+   * post-layout contexts.
+   */
+  rawXmlSources?: readonly { path?: string; content: string }[];
 }
 
 export interface LintRule {

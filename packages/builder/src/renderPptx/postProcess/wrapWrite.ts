@@ -29,7 +29,10 @@ type WriteFileFn = (props?: WriteFileProps) => Promise<unknown>;
  * (arraybuffer, base64, binarystring, blob, nodebuffer, uint8array).
  * STREAM is not a real bytes type — we treat it as uint8array.
  */
-function convertBytes(bytes: Uint8Array, outputType: string | undefined): unknown {
+function convertBytes(
+  bytes: Uint8Array,
+  outputType: string | undefined,
+): unknown {
   switch (outputType) {
     case undefined:
     case "arraybuffer":
@@ -116,8 +119,7 @@ export function wrapPptxWriteWithConnectors(
       ...(props ?? {}),
       outputType: "uint8array",
     })) as Uint8Array;
-    const { bytes: patched, diagnostics } =
-      await postProcessConnectors(bytes);
+    const { bytes: patched, diagnostics } = await postProcessConnectors(bytes);
     for (const d of diagnostics) {
       collector.add(d.code, d.message);
     }

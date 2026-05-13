@@ -144,9 +144,9 @@
           <Text class="code-text">&lt;!-- No w on children → flexGrow=1,</Text>
           <Text class="code-text">     flexBasis=0 → equal columns. --&gt;</Text>
           <Text class="code-text">&lt;HStack gap="8"&gt;</Text>
-          <Text class="code-text">  &lt;VStack h="60" class="bg-coral" borderRadius="6" /&gt;</Text>
-          <Text class="code-text">  &lt;VStack h="60" class="bg-forest" borderRadius="6" /&gt;</Text>
-          <Text class="code-text">  &lt;VStack h="60" class="bg-mustard" borderRadius="6" /&gt;</Text>
+          <Text class="code-text">  &lt;VStack h="60" class="bg-coral" radius="6"/&gt;</Text>
+          <Text class="code-text">  &lt;VStack h="60" class="bg-forest" radius="6"/&gt;</Text>
+          <Text class="code-text">  &lt;VStack h="60" class="bg-mustard" radius="6"/&gt;</Text>
           <Text class="code-text">&lt;/HStack&gt;</Text>
         </Slot>
         <Slot name="render">
@@ -229,7 +229,7 @@
   <!-- Base attributes page -->
   <Use template="page" eyebrow="01 / Stack" kicker="Base attributes"
        title="Base attributes — applicable to every node"
-       lede="The shared attribute surface every node accepts: sizing, padding, borders, backgrounds, classing, accessibility flags. Each node may add more on top.">
+       lede="Shared attributes every node accepts: sizing, padding, borders, backgrounds, classes, a11y flags. Nodes may add more on top.">
     <Slot name="default">
       <HStack gap="14" alignItems="start" w="100%">
         <VStack gap="6" w="50%">
@@ -238,7 +238,7 @@
             {"attr":"w / h","type":"length","desc":"number, &apos;50%&apos;, or &apos;max&apos;. Drives Yoga sizing."},
             {"attr":"minW / maxW","type":"number","desc":"Lower / upper bound on width."},
             {"attr":"minH / maxH","type":"number","desc":"Lower / upper bound on height."},
-            {"attr":"alignSelf","type":"enum","desc":"auto · start · center · end · stretch — overrides parent alignItems."}
+            {"attr":"alignSelf","type":"enum","desc":"Overrides parent alignItems for this child."}
           ]' as="r">
             <Use template="attr-row" attr="{r.attr}" type="{r.type}" desc="{r.desc}" />
           </Foreach>
@@ -246,7 +246,7 @@
           <VStack class="hairline-soft" />
           <Use template="h3" text="Spacing" />
           <Foreach items='[
-            {"attr":"padding","type":"length","desc":"Number or {top,right,bottom,left} via dot-notation."},
+            {"attr":"padding","type":"length","desc":"Number or {t,r,b,l} via dot-notation."},
             {"attr":"margin","type":"length","desc":"Same shape as padding; outer offset."}
           ]' as="r">
             <Use template="attr-row" attr="{r.attr}" type="{r.type}" desc="{r.desc}" />
@@ -257,11 +257,11 @@
           <Use template="h3" text="Surfaces" />
           <Foreach items='[
             {"attr":"backgroundColor","type":"color","desc":"6-digit hex (with optional #)."},
-            {"attr":"backgroundImage","type":"object","desc":"{\"src\":\"…\",\"sizing\":\"cover\"|\"contain\"} or dot-notation."},
-            {"attr":"border","type":"object","desc":"{\"color\":\"…\",\"width\":1,\"dashType\":\"dash\"} or dot-notation."},
+            {"attr":"backgroundImage","type":"object","desc":"{src, sizing: cover/contain} or dot-notation."},
+            {"attr":"border","type":"object","desc":"{color, width, dashType} or dot-notation."},
             {"attr":"borderRadius","type":"number","desc":"Corner radius in pixels."},
             {"attr":"opacity","type":"number","desc":"Background transparency, 0..1."},
-            {"attr":"shadow","type":"object","desc":"{\"type\":\"outer\",\"blur\":4,\"offset\":2,\"color\":\"000000\"}."}
+            {"attr":"shadow","type":"object","desc":"{type, blur, offset, color} drop shadow."}
           ]' as="r">
             <Use template="attr-row" attr="{r.attr}" type="{r.type}" desc="{r.desc}" />
           </Foreach>
@@ -285,11 +285,11 @@
       <HStack gap="14" alignItems="stretch" w="100%">
         <VStack class="card-coral" w="50%" gap="6" padding="20">
           <Text class="caption" color="F5E0D6">UNIVERSAL</Text>
-          <Text fontFamily="Inter Display" fontSize="22" bold="false" color="FFFFFF" lineHeight="1.2">
+          <Text fontFamily="Inter Display" fontSize="22" bold="false" color="FFFFFF" lineHeight="1.2" w="100%">
             Every node inherits this surface.
           </Text>
-          <Text fontFamily="Inter Display" fontSize="13" bold="false" color="FFD9C8" lineHeight="1.4">
-            Even Text and Icon accept padding, backgroundColor, and borderRadius — that is how the system builds chips and pill buttons without an extra wrapper.
+          <Text fontFamily="Inter Display" fontSize="13" bold="false" color="FFD9C8" lineHeight="1.4" w="100%">
+            Even Text and Icon accept padding, backgroundColor, and borderRadius — chips and pill buttons without an extra wrapper.
           </Text>
         </VStack>
         <VStack class="card-soft" w="50%" gap="6" padding="20">

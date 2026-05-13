@@ -28,14 +28,14 @@ into `output/`.
 
 ## Layout
 
-| Path           | Contents                                                                |
-| -------------- | ----------------------------------------------------------------------- |
-| `main.sgx`     | Top-level document — slide size, default master, imports, slide order. |
-| `chapters/`    | One XML file per chapter, each defining one or more `<Slide>` elements. |
-| `templates/`   | Reusable `<Templates>` definitions (cards, diagrams, layouts).          |
-| `styles/`      | Named `<Styles>` (typography, colors, decoration).                      |
-| `build.ts`     | Compile script — calls `buildPptx` with a hardened import resolver.     |
-| `output/`      | Generated `.pptx` files (gitignored).                                   |
+| Path         | Contents                                                                |
+| ------------ | ----------------------------------------------------------------------- |
+| `main.sgx`   | Top-level document — slide size, default master, imports, slide order.  |
+| `chapters/`  | One XML file per chapter, each defining one or more `<Slide>` elements. |
+| `templates/` | Reusable `<Templates>` definitions (cards, diagrams, layouts).          |
+| `styles/`    | Named `<Styles>` (typography, colors, decoration).                      |
+| `build.ts`   | Compile script — calls `buildPptx` with a hardened import resolver.     |
+| `output/`    | Generated `.pptx` files (gitignored).                                   |
 
 ## License
 

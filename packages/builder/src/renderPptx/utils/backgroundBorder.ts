@@ -1,8 +1,4 @@
-import type {
-  BorderStyle,
-  PositionedNode,
-  ShadowStyle,
-} from "../../types.ts";
+import type { BorderStyle, PositionedNode, ShadowStyle } from "../../types.ts";
 import { getImageData } from "../../shared/measureImage.ts";
 import type { RenderContext } from "../types.ts";
 import { pxToIn, pxToPt } from "../units.ts";
@@ -11,9 +7,7 @@ import { validateImageSrc } from "../nodes/image.ts";
 function isMeaningfulBorder(b: BorderStyle | undefined): b is BorderStyle {
   return (
     b !== undefined &&
-    (b.color !== undefined ||
-      b.width !== undefined ||
-      b.dashType !== undefined)
+    (b.color !== undefined || b.width !== undefined || b.dashType !== undefined)
   );
 }
 

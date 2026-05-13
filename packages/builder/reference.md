@@ -66,6 +66,7 @@ Renders a single piece of styled text. Supports inline styled runs via <B>, <I>,
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
@@ -128,6 +129,7 @@ Bulleted list. Items can be supplied via the JSON `items` attribute or via <Li> 
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
@@ -190,6 +192,7 @@ Numbered list. Items via JSON `items` attribute or <Li> children.
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
@@ -250,6 +253,7 @@ Embeds an image. `src` accepts http(s):// URL, data URI, or relative file path.
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -296,6 +300,7 @@ Renders a built-in icon by name. See docs for the icon catalog.
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -342,6 +347,7 @@ Embeds inline SVG. Supply the SVG via a <svg> child element.
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -393,6 +399,7 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -447,6 +454,7 @@ Renders a built-in PowerPoint shape (rect, ellipse, arrows, callouts, etc.).
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `fontFamily` | string |  |  |
 | `fontSize` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `highlight` | color |  |  |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
@@ -508,6 +516,7 @@ Renders a native PowerPoint chart (bar/line/pie/area/doughnut/radar).
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -570,6 +579,7 @@ Straight line connector with optional arrows on either end.
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -622,6 +632,7 @@ Smart line that binds to two shapes by their `id`. Emits a real PPTX <p:cxnSp> w
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `from` | string | yes | id of the source shape on the same slide. |
 | `fromSide` | string (top\|right\|bottom\|left) |  | Which side of the source shape to attach to. When omitted, the renderer picks the side that points toward the target (auto). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -678,6 +689,7 @@ Flex column container — children stack vertically.
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -723,6 +735,7 @@ Flex row container — children stack horizontally.
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
 | `flexWrap` | flexWrap (nowrap\|wrap\|wrapReverse) |  |  |
 | `gap` | number |  |  |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
@@ -765,6 +778,7 @@ Absolute-positioned container. Direct children must declare `x` and `y`.
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
