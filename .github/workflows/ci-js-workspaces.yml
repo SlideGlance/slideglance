@@ -76,6 +76,11 @@ jobs:
         # step downstream tsc reports "Cannot find module
         # '@slideglance/viewer'".
         run: pnpm --filter @slideglance/viewer run build
+      - name: Build builder (emits d.ts that builder-reference-example reads)
+        # `examples/builder-reference` typechecks against
+        # `@slideglance/builder` whose d.ts lives in dist/ — emit it
+        # before downstream typechecks for the same reason as viewer.
+        run: pnpm --filter @slideglance/builder run build
       - name: typecheck (viewer)
         run: pnpm --filter @slideglance/viewer run typecheck
       - name: fmt:check (viewer)
