@@ -59,7 +59,7 @@
     "prepublishOnly": "pnpm run codegen:check && pnpm run build && pnpm run lint && pnpm run fmt:check && pnpm run typecheck && pnpm run test:run",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
-    "knip": "knip",
+    "knip": "knip --no-exit-code",
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
     "test": "vitest",

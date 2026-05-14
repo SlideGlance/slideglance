@@ -60,6 +60,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
+      - name: Build viewer (emits d.ts the vscode-extension typecheck reads)
+        run: pnpm --filter @slideglance/viewer run build
       - name: Build builder
         run: pnpm --filter @slideglance/builder run build
       - name: Format check

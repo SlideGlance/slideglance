@@ -82,6 +82,13 @@ const SEVERITY_MAP: Record<DiagnosticCode, vscode.DiagnosticSeverity> = {
   LARGE_IMAGE_INLINED: vscode.DiagnosticSeverity.Information,
   EXCESS_NODES: vscode.DiagnosticSeverity.Information,
   SLIDE_FONT_COUNT: vscode.DiagnosticSeverity.Information,
+  // Lint — schema integrity
+  DUPLICATE_NODE_ID: vscode.DiagnosticSeverity.Error,
+  RAW_LT_GT_IN_ATTR: vscode.DiagnosticSeverity.Warning,
+  // Lint — connector validity
+  UNKNOWN_CONNECTOR_ENDPOINT: vscode.DiagnosticSeverity.Error,
+  INVALID_CONNECTOR_SELF_REF: vscode.DiagnosticSeverity.Error,
+  CONNECTOR_UNKNOWN_SHAPE_IDX: vscode.DiagnosticSeverity.Error,
 };
 
 function toVsDiagnostics(items: Diagnostic[]): vscode.Diagnostic[] {

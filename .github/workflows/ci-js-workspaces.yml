@@ -69,6 +69,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
+      - name: Build viewer (emits d.ts that downstream tsc reads)
+        # chrome-extension / web-playground / desktop-viewer import
+        # `@slideglance/viewer`. The package ships d.ts only after
+        # `vite build && tsc --emitDeclarationOnly`; without this
+        # step downstream tsc reports "Cannot find module
+        # '@slideglance/viewer'".
+        run: pnpm --filter @slideglance/viewer run build
       - name: typecheck (viewer)
         run: pnpm --filter @slideglance/viewer run typecheck
       - name: fmt:check (viewer)
