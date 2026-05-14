@@ -16,5 +16,8 @@
     "preview": "node build.mjs && node serve.mjs",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@slideglance/web-playground": "workspace:*"
   }
 }

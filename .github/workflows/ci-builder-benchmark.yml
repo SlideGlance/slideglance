@@ -40,6 +40,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
@@ -49,8 +54,19 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - name: Install wasm-pack
+        # The benchmark exercises the real build pipeline, which imports
+        # @slideglance/measure/node. Without this step the wasm dist is
+        # missing and `vitest bench` fails to resolve the import.
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build wasm artefacts
+        run: bash scripts/build-wasm.sh
 
       - name: Restore baseline from cache
         if: github.event_name == 'pull_request'
