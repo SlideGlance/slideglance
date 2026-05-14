@@ -7,3 +7,7 @@ reference-html
 builder.xsd
 builder.schema.json
 reference.md
+# Golden snapshots written by `src/codegen/html.test.ts` — the test
+# asserts byte equality against the codegen output, so prettier
+# reformatting these files would make every test fail.
+src/codegen/__snapshots__
