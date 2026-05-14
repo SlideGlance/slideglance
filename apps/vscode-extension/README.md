@@ -1,11 +1,12 @@
 <div align="center">
   <img src="./icon.png" alt="SlideGlance" width="128" height="128" />
 
-  # SlideGlance PPTX Viewer
+# SlideGlance PPTX Viewer
 
-  **A PPTX viewer and SlideGlance authoring workbench, in your editor.**
+**A PPTX viewer and SlideGlance authoring workbench, in your editor.**
 
-  Part of the [SlideGlance](https://slideglance.github.io/slideglance/) project.
+Part of the [SlideGlance](https://slideglance.github.io/slideglance/) project.
+
 </div>
 
 ---
@@ -14,10 +15,10 @@
 
 SlideGlance PPTX Viewer unifies two distinct workflows behind a single live-preview surface:
 
-| Mode | Input | Use it when… |
-| --- | --- | --- |
-| **★ PPTX viewer** | `.pptx` | You want to open / browse a deck without launching PowerPoint or Keynote — directly inside VS Code, on any platform. |
-| **★ Slide authoring** | `.sgx` (SlideGlance XML) | You want to author slides as code: diff-friendly, Git-tracked, and exportable to a real editable `.pptx`. |
+| Mode                  | Input                    | Use it when…                                                                                                         |
+| --------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **★ PPTX viewer**     | `.pptx`                  | You want to open / browse a deck without launching PowerPoint or Keynote — directly inside VS Code, on any platform. |
+| **★ Slide authoring** | `.sgx` (SlideGlance XML) | You want to author slides as code: diff-friendly, Git-tracked, and exportable to a real editable `.pptx`.            |
 
 Both modes share the same renderer, so what you see in preview is what your recipient opens in PowerPoint.
 
@@ -45,16 +46,16 @@ Both modes share the same renderer, so what you see in preview is what your reci
 
 Captures from the SlideGlance Chrome extension surface — the React viewer underneath is the same one this VS Code extension's preview pane uses, so deck fidelity, font handling, and the renderer's pixel output are identical.
 
-|     |     |
-| :-: | :-: |
-| [![Empty state](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/01-empty-state.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/01-empty-state.png) | [![Presentation viewer](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/04-presentation-viewer.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/04-presentation-viewer.png) |
-| **Empty state** — drag a `.pptx` or open one explicitly. Nothing leaves your machine. | **Presentation viewer** — thumbnails, ruler, slideshow, print, PDF export. |
-| [![Grid view](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/06-grid-view.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/06-grid-view.png) | [![Font mapping popover](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/05-font-mapping-popover.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/05-font-mapping-popover.png) |
-| **Grid view** for scanning large decks. | **Font mapping** popover surfaces every authored-font → installed-font substitution. |
-| [![Settings — appearance and language](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/02-settings-appearance.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/02-settings-appearance.png) | [![Settings — about](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/03-settings-about.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/03-settings-about.png) |
-| **Settings** — theme + 8 interface languages, ruler / units. | **About** — browser-only WebAssembly engine, offline-capable, MIT. |
+|                                                                                                                                                                                                                                                                                                                             |                                                                                                                                                                                                                                                                                                                 |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                    [![Empty state](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/01-empty-state.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/01-empty-state.png)                     |  [![Presentation viewer](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/04-presentation-viewer.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/04-presentation-viewer.png)   |
+|                                                                                                                    **Empty state** — drag a `.pptx` or open one explicitly. Nothing leaves your machine.                                                                                                                    |                                                                                                                   **Presentation viewer** — thumbnails, ruler, slideshow, print, PDF export.                                                                                                                    |
+|                       [![Grid view](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/06-grid-view.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/06-grid-view.png)                        | [![Font mapping popover](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/05-font-mapping-popover.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/05-font-mapping-popover.png) |
+|                                                                                                                                           **Grid view** for scanning large decks.                                                                                                                                           |                                                                                                              **Font mapping** popover surfaces every authored-font → installed-font substitution.                                                                                                               |
+| [![Settings — appearance and language](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/02-settings-appearance.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/02-settings-appearance.png) |         [![Settings — about](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/03-settings-about.png)](https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/chrome-extension/store-assets/screenshots/03-settings-about.png)         |
+|                                                                                                                                **Settings** — theme + 8 interface languages, ruler / units.                                                                                                                                 |                                                                                                                       **About** — browser-only WebAssembly engine, offline-capable, MIT.                                                                                                                        |
 
-> Sample deck used for the screenshots: [*Business Infographic Presentation*](https://www.slidescarnival.com/template/business-infographic-presentation/19319) by SlidesCarnival.
+> Sample deck used for the screenshots: [_Business Infographic Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319) by SlidesCarnival.
 
 ---
 
@@ -137,7 +138,7 @@ git clone https://github.com/SlideGlance/slideglance.git
 ln -s "$PWD/slideglance/skills/slideglance-pptx" ~/.claude/skills/slideglance-pptx
 ```
 
-Then in any Claude session inside this VS Code workspace, ask for a deck — the skill auto-activates on triggers like *"pitch deck"*, *"weekly report"*, *"슬라이드"*, *"발표자료"*, etc.
+Then in any Claude session inside this VS Code workspace, ask for a deck — the skill auto-activates on triggers like _"pitch deck"_, _"weekly report"_, _"슬라이드"_, _"발표자료"_, etc.
 
 **For other AI assistants (Cursor, Copilot, Cline, …):**
 
@@ -163,11 +164,11 @@ The LLM writes `.sgx`, you save the file, SlideGlance PPTX Viewer previews it li
 
 All commands appear in the Command Palette (`Cmd/Ctrl + Shift + P`). The first two also appear in the editor title bar when a `.sgx` file is active.
 
-| Command                       | Title                          | Effect                              |
-| ----------------------------- | ------------------------------ | ----------------------------------- |
-| `slideBuilder.openPreview`    | SlideGlance: Open Preview      | Open or focus the live preview pane |
-| `slideBuilder.refreshPreview` | SlideGlance: Refresh Preview   | Force a full rebuild                |
-| `slideBuilder.exportPptx`     | SlideGlance: Export PPTX       | Write the current deck to `.pptx`   |
+| Command                       | Title                        | Effect                              |
+| ----------------------------- | ---------------------------- | ----------------------------------- |
+| `slideBuilder.openPreview`    | SlideGlance: Open Preview    | Open or focus the live preview pane |
+| `slideBuilder.refreshPreview` | SlideGlance: Refresh Preview | Force a full rebuild                |
+| `slideBuilder.exportPptx`     | SlideGlance: Export PPTX     | Write the current deck to `.pptx`   |
 
 ---
 

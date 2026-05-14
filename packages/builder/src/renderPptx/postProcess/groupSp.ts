@@ -172,10 +172,7 @@ function unionBBox(boxes: readonly BBoxEmu[]): BBoxEmu | null {
  * Returns undefined when the element does not belong to a group at
  * that depth (either no group at all, or shallower-only nesting).
  */
-function groupAtDepth(
-  element: ElementNode,
-  depth: number,
-): string | undefined {
+function groupAtDepth(element: ElementNode, depth: number): string | undefined {
   const { name } = readCNvPrName(element);
   const groups = parseGrpSigils(name);
   return groups[depth];
@@ -356,12 +353,7 @@ export function rewriteSlideGroups(
 
   const spIdCounter = { next: nextSpIdFromSlide(parsed) };
   const flag = { changed: false };
-  const grouped = buildGroupedChildren(
-    located.children,
-    0,
-    spIdCounter,
-    flag,
-  );
+  const grouped = buildGroupedChildren(located.children, 0, spIdCounter, flag);
   if (flag.changed) {
     located.parent["p:spTree"] = grouped;
   }

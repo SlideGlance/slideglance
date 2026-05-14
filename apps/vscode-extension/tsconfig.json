@@ -13,5 +13,10 @@
     "jsx": "react-jsx",
     "types": ["node", "vscode"]
   },
-  "include": ["src/**/*", "esbuild.mjs", "vite.webview.config.ts", "eslint.config.mts"]
+  "include": [
+    "src/**/*",
+    "esbuild.mjs",
+    "vite.webview.config.ts",
+    "eslint.config.mts"
+  ]
 }

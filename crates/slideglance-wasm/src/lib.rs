@@ -589,8 +589,8 @@ fn check_canvas_measurer_callbacks() {
     let global = js_sys::global();
     let measure_text_ok =
         Reflect::get(&global, &"__slideglanceMeasureText".into()).is_ok_and(|v| v.is_function());
-    let measure_metrics_ok =
-        Reflect::get(&global, &"__slideglanceMeasureLineMetrics".into()).is_ok_and(|v| v.is_function());
+    let measure_metrics_ok = Reflect::get(&global, &"__slideglanceMeasureLineMetrics".into())
+        .is_ok_and(|v| v.is_function());
     if !measure_text_ok {
         // Missing __slideglanceMeasureText causes a TypeError on the first renderSlide
         // call (JS extern throws when the global is undefined). This warn fires

@@ -45,27 +45,27 @@ For composition tooling — `<Templates>`, `<Use>`, `<Slot>`, `<Styles>`, `<Impo
 
 Every visual node accepts these layout / decoration attributes.
 
-| Attribute           | Type                                            | Notes                                                                       |
-| ------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
-| `w`, `h`            | number / `"max"` / `"50%"`                      | Width / height. `"max"` = fill remaining; percentages = of parent.          |
-| `minW`, `maxW`      | number                                          | Sizing constraints.                                                         |
-| `minH`, `maxH`      | number                                          | Sizing constraints.                                                         |
-| `x`, `y`            | number                                          | Absolute coordinates inside `<Layer>`.                                      |
-| `padding`, `margin` | number / shorthand / dot notation               | `padding="16"`, `padding="8 12"`, `padding.top="8"`.                        |
-| `border`            | object                                          | `border.color="333" border.width="1" border.dashType="dash"`.               |
-| `borderRadius`      | number                                          | Corner radius in px.                                                        |
-| `backgroundColor`   | hex (no `#`)                                    | e.g. `F8FAFC`.                                                              |
-| `backgroundImage`   | object                                          | `backgroundImage.src="url" backgroundImage.sizing="cover"`.                 |
-| `opacity`           | 0–1                                             | Element opacity.                                                            |
-| `position`          | `"relative"` / `"absolute"`                     | Position mode.                                                              |
-| `top`, `right`, …   | number                                          | Used with `position="absolute"`.                                            |
-| `alignSelf`         | `auto` / `start` / `center` / `end` / `stretch` | Override parent `alignItems`.                                               |
-| `zIndex`            | number                                          | Stacking order — higher = on top.                                           |
-| `shadow`            | object                                          | `shadow.type="outer" shadow.blur="4" shadow.offset="2" shadow.color="000"`. |
-| `class`             | string                                          | Space-separated reusable style names.                                       |
-| `master`            | string                                          | Slide-master name (only meaningful on `<Slide>` body root).                 |
-| `isDecorative`      | boolean                                         | Marks element decorative for accessibility (`altText=""`).                  |
-| `id`                | string (`[A-Za-z_][A-Za-z0-9_-]*`)              | Author-facing id; referenced by `<Connector from/to>`. Unique per slide.    |
+| Attribute           | Type                                            | Notes                                                                                                                                                               |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `w`, `h`            | number / `"max"` / `"50%"`                      | Width / height. `"max"` = fill remaining; percentages = of parent.                                                                                                  |
+| `minW`, `maxW`      | number                                          | Sizing constraints.                                                                                                                                                 |
+| `minH`, `maxH`      | number                                          | Sizing constraints.                                                                                                                                                 |
+| `x`, `y`            | number                                          | Absolute coordinates inside `<Layer>`.                                                                                                                              |
+| `padding`, `margin` | number / shorthand / dot notation               | `padding="16"`, `padding="8 12"`, `padding.top="8"`.                                                                                                                |
+| `border`            | object                                          | `border.color="333" border.width="1" border.dashType="dash"`.                                                                                                       |
+| `borderRadius`      | number                                          | Corner radius in px.                                                                                                                                                |
+| `backgroundColor`   | hex (no `#`)                                    | e.g. `F8FAFC`.                                                                                                                                                      |
+| `backgroundImage`   | object                                          | `backgroundImage.src="url" backgroundImage.sizing="cover"`.                                                                                                         |
+| `opacity`           | 0–1                                             | Element opacity.                                                                                                                                                    |
+| `position`          | `"relative"` / `"absolute"`                     | Position mode.                                                                                                                                                      |
+| `top`, `right`, …   | number                                          | Used with `position="absolute"`.                                                                                                                                    |
+| `alignSelf`         | `auto` / `start` / `center` / `end` / `stretch` | Override parent `alignItems`.                                                                                                                                       |
+| `zIndex`            | number                                          | Stacking order — higher = on top.                                                                                                                                   |
+| `shadow`            | object                                          | `shadow.type="outer" shadow.blur="4" shadow.offset="2" shadow.color="000"`.                                                                                         |
+| `class`             | string                                          | Space-separated reusable style names.                                                                                                                               |
+| `master`            | string                                          | Slide-master name (only meaningful on `<Slide>` body root).                                                                                                         |
+| `isDecorative`      | boolean                                         | Marks element decorative for accessibility (`altText=""`).                                                                                                          |
+| `id`                | string (`[A-Za-z_][A-Za-z0-9_-]*`)              | Author-facing id; referenced by `<Connector from/to>`. Unique per slide.                                                                                            |
 | `group`             | string                                          | Bundle this node and its descendants into a PowerPoint group (`<p:grpSp>`). Use `"true"` for an auto-named anonymous group or a stable id to merge subtrees / nest. |
 
 Composite attributes accept three forms:

@@ -37,12 +37,12 @@ site, at the `/playground/` path.
 
 ## Commands
 
-| Script | Purpose |
-|---|---|
-| `pnpm --filter @slideglance/web-playground dev` | Vite dev server (HMR) |
-| `pnpm --filter @slideglance/web-playground build` | Production build → `dist/` |
-| `pnpm --filter @slideglance/web-playground preview` | Preview built bundle |
-| `pnpm --filter @slideglance/web-playground typecheck` | `tsc --noEmit` |
+| Script                                                | Purpose                    |
+| ----------------------------------------------------- | -------------------------- |
+| `pnpm --filter @slideglance/web-playground dev`       | Vite dev server (HMR)      |
+| `pnpm --filter @slideglance/web-playground build`     | Production build → `dist/` |
+| `pnpm --filter @slideglance/web-playground preview`   | Preview built bundle       |
+| `pnpm --filter @slideglance/web-playground typecheck` | `tsc --noEmit`             |
 
 `predev` and `prebuild` run `scripts/run-build-wasm.mjs` so the
 underlying `@slideglance/core` WASM is rebuilt before bundling.

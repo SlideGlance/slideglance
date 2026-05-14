@@ -50,9 +50,9 @@ manual push to the `gh-pages` branch.
 
 ## Commands
 
-| Script | Purpose |
-|---|---|
-| `pnpm --filter @slideglance/landing build` | Build → `dist/` |
-| `pnpm --filter @slideglance/landing preview` | Build + serve on a local port |
-| `pnpm --filter @slideglance/landing fmt` | Prettier format |
-| `pnpm --filter @slideglance/landing fmt:check` | Prettier check |
+| Script                                         | Purpose                       |
+| ---------------------------------------------- | ----------------------------- |
+| `pnpm --filter @slideglance/landing build`     | Build → `dist/`               |
+| `pnpm --filter @slideglance/landing preview`   | Build + serve on a local port |
+| `pnpm --filter @slideglance/landing fmt`       | Prettier format               |
+| `pnpm --filter @slideglance/landing fmt:check` | Prettier check                |

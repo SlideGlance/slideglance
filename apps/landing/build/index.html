@@ -83,9 +83,9 @@
         <h1>Author <code>.sgx</code>, compile to <code>.pptx</code></h1>
         <p class="lede">
           <code>@slideglance/builder</code> compiles a tiny XML DSL into
-          deterministic PPTX. Layout, styling, and validation live in the
-          source file — diffable in git, reviewable on a pull request,
-          free of "I'll fix it in the GUI".
+          deterministic PPTX. Layout, styling, and validation live in the source
+          file — diffable in git, reviewable on a pull request, free of "I'll
+          fix it in the GUI".
         </p>
         <div class="cta-row">
           <a
@@ -171,7 +171,11 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">01</span>
-              <h3><a href="./reference/slideglance/">Document &amp; Slides <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/slideglance/"
+                  >Document &amp; Slides <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;Document size="16:9" defaultMaster="body" /&gt;
 &lt;Slide&gt;
@@ -187,9 +191,12 @@ console.log(diagnostics);</code></pre>
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/slideglance/"><code>&lt;SlideGlance&gt;</code></a>,
-              <a href="./reference/document/"><code>&lt;Document&gt;</code></a>,
-              <a href="./reference/slide/"><code>&lt;Slide&gt;</code></a>,
+              <a href="./reference/slideglance/"
+                ><code>&lt;SlideGlance&gt;</code></a
+              >,
+              <a href="./reference/document/"><code>&lt;Document&gt;</code></a
+              >, <a href="./reference/slide/"><code>&lt;Slide&gt;</code></a
+              >,
               <a href="./reference/fragment/"><code>&lt;Fragment&gt;</code></a>
             </p>
           </article>
@@ -197,7 +204,11 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">02</span>
-              <h3><a href="./reference/vstack/">Stacks &amp; layers <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/vstack/"
+                  >Stacks &amp; layers <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;HStack gap="24" alignItems="center"&gt;
   &lt;VStack gap="8" w="50%"&gt;
@@ -214,8 +225,9 @@ console.log(diagnostics);</code></pre>
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/vstack/"><code>&lt;VStack&gt;</code></a>,
-              <a href="./reference/hstack/"><code>&lt;HStack&gt;</code></a>,
+              <a href="./reference/vstack/"><code>&lt;VStack&gt;</code></a
+              >, <a href="./reference/hstack/"><code>&lt;HStack&gt;</code></a
+              >,
               <a href="./reference/layer/"><code>&lt;Layer&gt;</code></a>
             </p>
           </article>
@@ -223,7 +235,12 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">03</span>
-              <h3><a href="./reference/text/">Text &amp; inline formatting <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/text/"
+                  >Text &amp; inline formatting
+                  <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;Text fontSize="16" lineHeight="1.4"&gt;
   Sales rose &lt;B&gt;23%&lt;/B&gt; in
@@ -231,18 +248,18 @@ console.log(diagnostics);</code></pre>
 &lt;/Text&gt;
 &lt;Ul&gt;&lt;Li&gt;item&lt;/Li&gt;&lt;/Ul&gt;</code></pre>
             <p>
-              <code>&lt;Text&gt;</code> supports
-              <code>&lt;B&gt;</code> / <code>&lt;I&gt;</code> /
-              <code>&lt;U&gt;</code> / <code>&lt;S&gt;</code> /
-              <code>&lt;Mark&gt;</code> / <code>&lt;Span&gt;</code> /
-              <code>&lt;A&gt;</code> for inline runs.
-              <code>&lt;Ul&gt;</code> / <code>&lt;Ol&gt;</code> handle bulleted
-              + numbered lists.
+              <code>&lt;Text&gt;</code> supports <code>&lt;B&gt;</code> /
+              <code>&lt;I&gt;</code> / <code>&lt;U&gt;</code> /
+              <code>&lt;S&gt;</code> / <code>&lt;Mark&gt;</code> /
+              <code>&lt;Span&gt;</code> / <code>&lt;A&gt;</code> for inline
+              runs. <code>&lt;Ul&gt;</code> / <code>&lt;Ol&gt;</code> handle
+              bulleted + numbered lists.
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/text/"><code>&lt;Text&gt;</code></a>,
-              <a href="./reference/ul/"><code>&lt;Ul&gt;</code></a>,
+              <a href="./reference/text/"><code>&lt;Text&gt;</code></a
+              >, <a href="./reference/ul/"><code>&lt;Ul&gt;</code></a
+              >,
               <a href="./reference/ol/"><code>&lt;Ol&gt;</code></a>
             </p>
           </article>
@@ -250,7 +267,11 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">04</span>
-              <h3><a href="./reference/styles/">Styles — tokens <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/styles/"
+                  >Styles — tokens <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;Styles&gt;
   &lt;Style name="kicker" fontSize="14" bold="true"
@@ -262,12 +283,13 @@ console.log(diagnostics);</code></pre>
 &lt;Text class="title"&gt;$420K MRR&lt;/Text&gt;</code></pre>
             <p>
               Declare once in <code>&lt;Styles&gt;</code>, apply via
-              <code>class="..."</code>. Multiple classes combine
-              left-to-right; inline attrs always win.
+              <code>class="..."</code>. Multiple classes combine left-to-right;
+              inline attrs always win.
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/styles/"><code>&lt;Styles&gt;</code></a>,
+              <a href="./reference/styles/"><code>&lt;Styles&gt;</code></a
+              >,
               <a href="./reference/style/"><code>&lt;Style&gt;</code></a>
             </p>
           </article>
@@ -275,7 +297,11 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">05</span>
-              <h3><a href="./reference/templates/">Templates &amp; Use <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/templates/"
+                  >Templates &amp; Use <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;Template name="metric-card"&gt;
   &lt;VStack class="card" padding="24" gap="8"&gt;
@@ -296,9 +322,11 @@ console.log(diagnostics);</code></pre>
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/templates/"><code>&lt;Templates&gt;</code></a>,
-              <a href="./reference/template/"><code>&lt;Template&gt;</code></a>,
-              <a href="./reference/use/"><code>&lt;Use&gt;</code></a>,
+              <a href="./reference/templates/"><code>&lt;Templates&gt;</code></a
+              >,
+              <a href="./reference/template/"><code>&lt;Template&gt;</code></a
+              >, <a href="./reference/use/"><code>&lt;Use&gt;</code></a
+              >,
               <a href="./reference/slot/"><code>&lt;Slot&gt;</code></a>
             </p>
           </article>
@@ -306,7 +334,12 @@ console.log(diagnostics);</code></pre>
           <article class="block-card">
             <header>
               <span class="block-num">06</span>
-              <h3><a href="./reference/foreach/">Foreach, Import &amp; Master <span aria-hidden="true">→</span></a></h3>
+              <h3>
+                <a href="./reference/foreach/"
+                  >Foreach, Import &amp; Master
+                  <span aria-hidden="true">→</span></a
+                >
+              </h3>
             </header>
             <pre><code data-lang="xml">&lt;Import src="styles/typography.xml" /&gt;
 
@@ -331,8 +364,9 @@ console.log(diagnostics);</code></pre>
             </p>
             <p class="block-card-more">
               Reference:
-              <a href="./reference/foreach/"><code>&lt;Foreach&gt;</code></a>,
-              <a href="./reference/import/"><code>&lt;Import&gt;</code></a>,
+              <a href="./reference/foreach/"><code>&lt;Foreach&gt;</code></a
+              >, <a href="./reference/import/"><code>&lt;Import&gt;</code></a
+              >,
               <a href="./reference/document/"><code>&lt;Document&gt;</code></a>
             </p>
           </article>
@@ -342,8 +376,8 @@ console.log(diagnostics);</code></pre>
           <a class="btn btn-secondary" href="./reference/"
             >Browse the full XML reference <span aria-hidden="true">→</span></a
           >
-          Every node, attribute, type, and child relation is generated from
-          the same
+          Every node, attribute, type, and child relation is generated from the
+          same
           <a
             href="https://github.com/SlideGlance/slideglance/blob/main/packages/builder/src/registry/compiled/index.ts"
             rel="noopener"
@@ -409,8 +443,8 @@ console.log(diagnostics);</code></pre>
             <p>
               Catches horizontal / vertical overflow, low contrast, mixed
               baselines in rows, unused styles, hardcoded hex, accessibility
-              gaps, and slide-count regressions. Runs on every build and on
-              save in the VS Code extension.
+              gaps, and slide-count regressions. Runs on every build and on save
+              in the VS Code extension.
             </p>
           </li>
         </ul>
@@ -441,9 +475,9 @@ console.log(diagnostics);</code></pre>
             </h3>
             <p>
               <strong>Slide Builder</strong> registers the <code>.sgx</code>
-              schema, opens a live-preview pane next to the source, and runs
-              the same lint set on save. Click any shape in the preview to jump
-              back to the line that produced it.
+              schema, opens a live-preview pane next to the source, and runs the
+              same lint set on save. Click any shape in the preview to jump back
+              to the line that produced it.
             </p>
             <ul class="ide-points">
               <li>Live PPTX preview (incremental — survives edit cycles).</li>
@@ -483,9 +517,18 @@ console.log(diagnostics);</code></pre>
               spreadsheet" script.
             </p>
             <ul class="ide-points">
-              <li>Returns a pptxgenjs instance + structured diagnostics + source map.</li>
-              <li>Same lint catalog as the VS Code preview — fail your build on errors.</li>
-              <li>Inject custom fonts; render off the bundled Pretendard / Noto Sans JP.</li>
+              <li>
+                Returns a pptxgenjs instance + structured diagnostics + source
+                map.
+              </li>
+              <li>
+                Same lint catalog as the VS Code preview — fail your build on
+                errors.
+              </li>
+              <li>
+                Inject custom fonts; render off the bundled Pretendard / Noto
+                Sans JP.
+              </li>
             </ul>
             <a
               class="ide-link"

@@ -237,8 +237,7 @@
       const src = el.textContent ?? "";
       let tokens;
       if (lang === "xml") tokens = tokenizeXml(src);
-      else if (lang === "ts" || lang === "typescript")
-        tokens = tokenizeTs(src);
+      else if (lang === "ts" || lang === "typescript") tokens = tokenizeTs(src);
       else if (lang === "bash" || lang === "sh") tokens = tokenizeBash(src);
       else continue;
       applyTokens(el, tokens);
@@ -296,7 +295,8 @@
   const playgroundDialog = document.getElementById("playground-dialog");
   if (playgroundDialog) {
     const frame = playgroundDialog.querySelector(".playground-dialog-frame");
-    const playgroundUrl = playgroundDialog.dataset.playgroundUrl ?? "./playground/";
+    const playgroundUrl =
+      playgroundDialog.dataset.playgroundUrl ?? "./playground/";
 
     function openDialog() {
       if (!frame.getAttribute("src")) frame.setAttribute("src", playgroundUrl);

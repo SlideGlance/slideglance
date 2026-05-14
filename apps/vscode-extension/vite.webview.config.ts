@@ -76,14 +76,15 @@ export default defineConfig({
   // Relative `./assets/...` resolves against `import.meta.url` of the
   // loaded chunk, which is the webview URI VS Code already serves.
   base: "./",
-  plugins: [stripViteIgnoreFromViewerWorker(), react(), wasm(), topLevelAwait()],
+  plugins: [
+    stripViteIgnoreFromViewerWorker(),
+    react(),
+    wasm(),
+    topLevelAwait(),
+  ],
   worker: {
     format: "es",
-    plugins: () => [
-      stripViteIgnoreFromViewerWorker(),
-      wasm(),
-      topLevelAwait(),
-    ],
+    plugins: () => [stripViteIgnoreFromViewerWorker(), wasm(), topLevelAwait()],
   },
   build: {
     target: "es2022",

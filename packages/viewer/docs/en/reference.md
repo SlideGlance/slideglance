@@ -37,35 +37,35 @@ packages/viewer/
 
 ### Components
 
-| Name | Purpose |
-|---|---|
+| Name               | Purpose                                         |
+| ------------------ | ----------------------------------------------- |
 | `PptxPresentation` | Top-level shell with toolbar, stage, status bar |
-| `SettingsDialog` | The font-mapping / theme settings popover |
+| `SettingsDialog`   | The font-mapping / theme settings popover       |
 
 Each component is paired with a `*Props` type alias.
 
 ### Functions
 
-| Name | Purpose |
-|---|---|
-| `createWorkerController` | Web-Worker-backed `SlideController` for browser hosts |
-| `parseAspect` | Read `viewBox` and `preserveAspectRatio` from an SVG string |
-| `prepareSvg` | Sanitise + decorate a raw slide SVG before mounting |
-| `rewriteMediaRefs` | Replace `<image href>` references with blob URLs |
+| Name                       | Purpose                                                          |
+| -------------------------- | ---------------------------------------------------------------- |
+| `createWorkerController`   | Web-Worker-backed `SlideController` for browser hosts            |
+| `parseAspect`              | Read `viewBox` and `preserveAspectRatio` from an SVG string      |
+| `prepareSvg`               | Sanitise + decorate a raw slide SVG before mounting              |
+| `rewriteMediaRefs`         | Replace `<image href>` references with blob URLs                 |
 | `extractAndStripFontStyle` | Pull `@font-face` rules out of an SVG into a separate stylesheet |
-| `extractFontStyleCss` | Read `@font-face` rules without removing them |
+| `extractFontStyleCss`      | Read `@font-face` rules without removing them                    |
 
 ### Types
 
-| Name | Purpose |
-|---|---|
+| Name              | Purpose                                                             |
+| ----------------- | ------------------------------------------------------------------- |
 | `SlideController` | The interface between the React shell and a slide-rendering backend |
-| `RenderedSlide` | `{ svg: string, mediaBlobs: MediaBlob[] }` |
-| `MediaBlob` | `{ id, mime, bytes }` for embedded images |
-| `SlideSvg` | Parsed-aspect SVG record |
-| `SlideMeta` | Per-slide title / notes / size |
-| `TextRenderMode` | `"text" \| "path"` |
-| `FontFallback` | Caller-provided font mapping |
+| `RenderedSlide`   | `{ svg: string, mediaBlobs: MediaBlob[] }`                          |
+| `MediaBlob`       | `{ id, mime, bytes }` for embedded images                           |
+| `SlideSvg`        | Parsed-aspect SVG record                                            |
+| `SlideMeta`       | Per-slide title / notes / size                                      |
+| `TextRenderMode`  | `"text" \| "path"`                                                  |
+| `FontFallback`    | Caller-provided font mapping                                        |
 
 ## Slide-controller contract
 

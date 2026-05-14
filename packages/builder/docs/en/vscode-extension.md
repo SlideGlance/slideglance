@@ -49,8 +49,8 @@ code --install-extension slideglance.slide-builder
 
 ## Commands
 
-| Command                       | Title                          | Effect                              |
-| ----------------------------- | ------------------------------ | ----------------------------------- |
+| Command                       | Title                        | Effect                              |
+| ----------------------------- | ---------------------------- | ----------------------------------- |
 | `slideBuilder.openPreview`    | SlideGlance: Open Preview    | Open or focus the live preview pane |
 | `slideBuilder.refreshPreview` | SlideGlance: Refresh Preview | Force a full rebuild                |
 | `slideBuilder.exportPptx`     | SlideGlance: Export PPTX     | Write the current deck to `.pptx`   |
