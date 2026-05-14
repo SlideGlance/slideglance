@@ -17,7 +17,7 @@ triggers:
   - "슬라이드"
   - "발표자료"
   - "powerpoint"
-example_prompt: "Build a 10-slide pitch deck about <topic>. Use slideglance-pptx. Before I scaffold, confirm three things: (1) audience and slide count, (2) tone (corporate / editorial / technical / minimal), (3) whether you want a theme variant skill on top — I'll point you at the closest one."
+example_prompt: "Build a 10-slide pitch deck about <topic>. Use slideglance-pptx. Before I scaffold, confirm three things: (1) audience and slide count, (2) tone (corporate / editorial / technical / minimal), (3) which palette + font pairing from references/themes.md to apply."
 ---
 
 # slideglance-pptx — declarative .pptx authoring
@@ -35,51 +35,38 @@ compositions) are out of scope here — the [`references/themes.md`](references/
 file collects reference palettes and font pairings; pick one and apply
 it via `<Styles>`.
 
-## Attribution
+## What slideglance produces
 
-This skill's structure, scenario taxonomy (pitch-deck / weekly-report /
-tech-sharing / xhs-post / course-module / presenter-mode-reveal / …),
-and the reference palettes in
-[`references/themes.md`](references/themes.md) are **informed by an
-upstream HTML-based presentation skill suite** and re-imagined for the
-slideglance medium. The original works:
+`.pptx` files. Real, editable, deterministic. Recipients open the
+output in PowerPoint / Keynote / Google Slides and can edit slides
+themselves — no embedded JS runtime, no required browser, no SaaS.
 
-| Upstream                                                                                            | License        | Coverage                                                                                                                |
-| --------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`lewislulu/html-ppt-skill`](https://github.com/lewislulu/html-ppt-skill)                           | MIT            | Master skill structure, scenario full-decks, themes, layouts, presenter / authoring rules                               |
-| [`zarazhangrui/beautiful-html-templates`](https://github.com/zarazhangrui/beautiful-html-templates) | (see upstream) | Editorial template family (cobalt-grid, coral, vellum, mat, broadside, …) — informed the palette / typography reference |
-| [`Leonxlnx/taste-skill`](https://github.com/Leonxlnx/taste-skill)                                   | (see upstream) | Brutalist / editorial "taste" recipes                                                                                   |
+Trade-offs of the medium (vs. browser-based decks):
 
-Citations point straight at the original authors — not at any
-intermediate curation layer.
-
-## Why slideglance vs. an HTML deck
-
-The upstream skills produce **static HTML/CSS/JS** decks for browser
-presentation. slideglance produces **`.pptx` files**. These media solve
-different problems:
-
-| Medium                  | Strength                                                                                                                  | Cost                                                                                                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HTML deck               | Pixel-perfect CSS, live animations, presenter window, web-shareable                                                       | Recipients can't edit in PowerPoint, can't email as `.pptx`, no Keynote / Google Slides import                                                             |
-| **slideglance (.pptx)** | Editable by anyone, lands in existing review workflows, prints / exports to PDF, plays in PowerPoint's own presenter mode | No CSS keyframe / canvas-FX animations, no custom JS runtime, color tokens are 6-digit hex (no `accent1` theme tokens), no drop-cap text-flow-around-shape |
-
-Pick slideglance when the **artifact must be a .pptx**. If the user
-wants a web-shareable interactive deck, point them at the upstream HTML
-skill instead.
+- No CSS keyframe / canvas-FX animations and no custom JS runtime —
+  motion lives in PowerPoint's own animations tab, added post-export
+  if needed.
+- Color tokens are 6-digit hex (no `accent1` theme tokens, no
+  `var(--accent-1)` references).
+- No drop-cap text-flow-around-shape; use the lead-in idiom instead
+  (see [`references/limitations.md`](references/limitations.md)).
+- Static visual layout only — animated reveals are authored as
+  separate slides.
 
 ## When to use this skill
 
 Triggers: any request for a presentation / ppt / slides / deck /
 keynote / pitch / weekly report / tech sharing / lecture deck — **when
-the deliverable should be a real editable `.pptx` file**, not an HTML
-artifact.
+the deliverable should be a real editable `.pptx` file**.
 
 Counter-triggers (do NOT use slideglance):
 
-- "I want a web-shareable interactive presentation with animations" → use the upstream html-ppt skill family
-- "I need a Google Slides file specifically" → slideglance produces `.pptx`; Google Slides will import it but lossily
-- "I want canvas-FX particle effects on slide entry" → not in the slideglance medium
+- "I want a browser-resident interactive presentation with smooth
+  animations." — slideglance produces static `.pptx`, not a web deck.
+- "I need a Google Slides file specifically." — slideglance produces
+  `.pptx`; Google Slides will import it but lossily.
+- "I want canvas-FX particle effects on slide entry." — not in the
+  slideglance medium.
 
 ## Before you author anything — confirm three things
 
@@ -322,9 +309,10 @@ in your hand**. The structural file count is not evidence.
 
 Treat **every** diagnostic as a bug. `lint.ruleset = "recommended"`
 includes `error` + `warn`; `"strict"` adds `info`. The lint catalog
-(see [`lint.md`](./lint.md)) catches overflow, baseline misalignment,
-low contrast, font-family drift, and hardcoded-color repetition before
-they become "why does this look broken" review cycles.
+(see [`references/lint.md`](references/lint.md)) catches overflow,
+baseline misalignment, low contrast, font-family drift, and
+hardcoded-color repetition before they become "why does this look
+broken" review cycles.
 
 ### Rendering to PNG for visual review
 
@@ -350,16 +338,16 @@ Common reasons (`ParseXmlError: XML validation failed`):
 
 | Error                                                | See                                                                                                         |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `Unknown attribute "letterSpacing"` etc.             | [`schema-gotchas.md`](./schema-gotchas.md) — attributes the docs claim exist but the runtime doesn't accept |
+| `Unknown attribute "letterSpacing"` etc.             | [`references/schema-gotchas.md`](references/schema-gotchas.md) — attributes the docs claim exist but the runtime doesn't accept |
 | `Did you mean "padding"?` (you wrote `paddingTop`)   | dot notation: `padding.top="…"`                                                                             |
 | `readTagExp returned undefined`                      | `<Foreach items='…'>` JSON contains an unescaped `'` — use `&apos;` or rewrite the prose                    |
 | `<Master>.<SlideNumber>: Unknown attribute "format"` | SlideNumber accepts only x/y/w/h/fontSize/fontFamily/color — see schema-gotchas                             |
 | `Unknown attribute "x1"` on `<MasterLine>`           | endpoint-pair form not supported — use positioned-rect (`x, y, w, h, line.color, line.width`)               |
 
 When a gap is genuine (the builder really doesn't support what the
-upstream HTML did), log it in
-[`builder-feature-requests.md`](./builder-feature-requests.md) and use
-the documented workaround.
+deck needs), use the documented workaround from
+[`references/limitations.md`](references/limitations.md) instead of
+authoring around the missing feature.
 
 Slide size cheat sheet:
 
@@ -393,20 +381,15 @@ on-save validation against the bundled XSD (namespace
 
 ## Theme variants
 
-> **Historical note.** An earlier iteration of this skill shipped 50
-> companion `slideglance-theme-*` skills (lewislulu scenarios,
-> zhangzara editorial family, taste brutalist / editorial). They were
-> removed pending render-quality fixes — too many rendered with broken
-> margins, collapsed line breaks, or font fallbacks that didn't match
-> the upstream HTML originals' intent.
->
-> The lessons from that pass are still useful: palettes are
-> consolidated in [`references/themes.md`](references/themes.md),
-> schema gotchas in [`references/schema-gotchas.md`](references/schema-gotchas.md),
-> builder feature gaps in [`references/builder-feature-requests.md`](references/builder-feature-requests.md).
-> If you want a specific design language, pick the palette + fonts
-> from `themes.md` and apply them to a clean copy of
-> [`examples/two-column.sgx`](examples/two-column.sgx).
+If you want a specific design language, pick the palette + font
+pairing from [`references/themes.md`](references/themes.md) and apply
+it to a clean copy of [`examples/two-column.sgx`](examples/two-column.sgx).
+For schema gotchas while customizing, consult
+[`references/schema-gotchas.md`](references/schema-gotchas.md). For
+medium-level features that are not in scope (drop-caps,
+keyframe-style entrance animations, etc.), see
+[`references/limitations.md`](references/limitations.md) for the
+recommended workaround.
 
 ## For contributors (working on the slideglance codebase itself)
 
@@ -430,11 +413,10 @@ slideglance-pptx/
 │   ├── composition.md        (Styles, Templates, Master, Import, If / Choose / Foreach)
 │   ├── layouts.md            (idiomatic layout recipes — cover, title-body, two-column, KPI grid, timeline, etc.)
 │   ├── recipes.md            (patterns, tips, idioms distilled from the runnable example decks)
-│   ├── themes.md             (palette and font guidance for slideglance — companion theme skills are the place to actually pick these)
+│   ├── themes.md             (palette and font guidance — pick one and apply via <Styles>)
 │   ├── limitations.md        (what is NOT in the medium and the recommended substitutes)
 │   ├── lint.md               (lint rules + autofix patterns)
 │   ├── schema-gotchas.md     (attributes that don't exist, dot-notation forms, master-child surfaces)
-│   ├── builder-feature-requests.md  (gaps the builder schema doesn't cover yet, with workarounds)
 │   └── development.md        (contributor reference for working on the builder / vscode-extension)
 └── examples/
     ├── minimal.sgx           (single-slide hello world)

@@ -14,12 +14,11 @@ first.
 
 | Attribute    | What to do                                                                                                                                                                                                           |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fontWeight` | Drop. pptxgenjs 4.x has no `fontWeight` option — only `bold: boolean`. Pick the closest static-instance family (e.g. `fontFamily="Inter Tight"` for heavy weights of Inter). See `builder-feature-requests.md` §B-3. |
+| `fontWeight` | Drop. pptxgenjs 4.x has no `fontWeight` option — only `bold: boolean`. Pick the closest static-instance family (e.g. `fontFamily="Inter Tight"` for heavy weights of Inter). |
 
 `letterSpacing`, `flexGrow`, `flexShrink`, `flexBasis` **are now
 supported** — see [`grammar.md`](./grammar.md) for the attribute
-tables and `builder-feature-requests.md` §R-1 / §R-2 for the
-trade-offs.
+tables.
 
 ## Attributes that need the dot-notation form
 
@@ -136,9 +135,8 @@ src, x, y, w, h. Nothing else.
 ### `<SlideNumber>`
 
 x, y, w, h, fontSize, fontFamily, color, textAlign. **No `format`,
-no `bold`** — `format` is blocked upstream (see
-`builder-feature-requests.md` §B-1); pptxgenjs 4.x emits a fixed
-slide-number placeholder with no prefix/suffix surface.
+no `bold`** — pptxgenjs 4.x emits a fixed slide-number placeholder
+with no prefix/suffix surface, so `format` cannot be plumbed through.
 
 ## `<Document size="…">` conflicts with `<Document w="…" h="…">`
 
@@ -254,6 +252,3 @@ When you find a new attribute mismatch:
    `packages/builder/src/registry/compiled/index.ts` and
    `childAttributeSpecs.ts`.
 2. Append an entry to the right table above.
-3. If the gap is genuine (a feature the schema should have but
-   doesn't), also log it in
-   [`builder-feature-requests.md`](./builder-feature-requests.md).
