@@ -61,6 +61,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      # On macos-latest the runner ships a Homebrew rustup-init that
+      # shadows the cargo binary `dtolnay/rust-toolchain` just
+      # installed; `cargo test ...` then resolves to rustup-init and
+      # bails with `unexpected argument 'test'`. Pinning the default
+      # toolchain forces rustup to install/expose a real cargo
+      # alongside it so $PATH lookups land on the right binary.
+      - run: rustup default stable
       - uses: Swatinem/rust-cache@v2
       # Same Tauri-on-Linux reasoning as clippy above.
       - run: cargo test --workspace --exclude slideglance-viewer
