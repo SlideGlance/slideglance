@@ -20,7 +20,8 @@ use std::sync::Arc;
 
 use slideglance::{convert_to_png, convert_to_svg, parse_pptx, AdditionalFont, ConvertOptions};
 use slideglance_font::{
-    standard_resolver_chain, BufferFontResolver, CjkPlatform, FontFace, FontMapping, FontResolver,
+    get_latin_os_defaults, standard_resolver_chain, BufferFontResolver, CjkPlatform, FontFace,
+    FontMapping, FontResolver,
 };
 use slideglance_parser::PptxArchive;
 
@@ -632,6 +633,15 @@ fn load_host_font_buffers() -> Vec<Vec<u8>> {
 /// names like `"맑은 고딕"` fall through to whichever Korean / CJK face
 /// the host happens to ship — matching what `PowerPoint` does on a
 /// machine without the original font installed.
+///
+/// The CLI then wraps the standard chain with [`LatinOsDefaultsFallback`]
+/// so a deck referencing a Latin family that is neither installed nor
+/// listed in the OSS mapping table (e.g. `Inter Display` on a Mac that
+/// has not installed Inter) falls back to the host's OS-default sans
+/// (Helvetica Neue / Segoe UI / Liberation Sans). Without this layer
+/// the PNG raster path emits blank text for unknown Latin families,
+/// since path-mode rendering bypasses the SVG `font-family=` chain
+/// that `latin_defaults` already injects for browser consumers.
 fn build_resolver(
     cli_fonts: &[Vec<u8>],
     host_fonts: &[Vec<u8>],
@@ -651,8 +661,38 @@ fn build_resolver(
         return Ok(None);
     }
 
-    let chained = standard_resolver_chain(buffer, FontMapping::new(), CjkPlatform::current());
-    Ok(Some(Box::new(chained)))
+    let platform = CjkPlatform::current();
+    let chained = standard_resolver_chain(buffer, FontMapping::new(), platform);
+    let with_latin_fallback = LatinOsDefaultsFallback {
+        inner: chained,
+        platform,
+    };
+    Ok(Some(Box::new(with_latin_fallback)))
+}
+
+/// CLI-local resolver wrapper: when `inner` cannot resolve a name,
+/// retry with each entry in [`get_latin_os_defaults`] for the host
+/// platform. Lives in the binary rather than `slideglance-font`
+/// because library callers (WASM bridge, browser renderer) intentionally
+/// let the browser's per-glyph CSS fallback do the same job — only the
+/// native PNG path-mode pipeline needs an in-process substitute.
+struct LatinOsDefaultsFallback<R: FontResolver> {
+    inner: R,
+    platform: CjkPlatform,
+}
+
+impl<R: FontResolver> FontResolver for LatinOsDefaultsFallback<R> {
+    fn resolve(&self, name: &str) -> Option<Arc<FontFace>> {
+        if let Some(face) = self.inner.resolve(name) {
+            return Some(face);
+        }
+        for default_name in get_latin_os_defaults(self.platform) {
+            if let Some(face) = self.inner.resolve(default_name) {
+                return Some(face);
+            }
+        }
+        None
+    }
 }
 
 /// Register every TTC sub-face under every alias the face reports.
