@@ -61,16 +61,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # On macos-latest the runner ships a Homebrew rustup-init that
-      # shadows the cargo binary `dtolnay/rust-toolchain` just
-      # installed; `cargo test ...` then resolves to rustup-init and
-      # bails with `unexpected argument 'test'`. Pinning the default
-      # toolchain forces rustup to install/expose a real cargo
-      # alongside it so $PATH lookups land on the right binary.
-      - run: rustup default stable
       - uses: Swatinem/rust-cache@v2
-      # Same Tauri-on-Linux reasoning as clippy above.
-      - run: cargo test --workspace --exclude slideglance-viewer
+      # Same Tauri-on-Linux reasoning as clippy above. `rustup run`
+      # invokes the toolchain's cargo via its rustup proxy directly,
+      # which sidesteps the recurring macos-latest PATH conflict where
+      # the runner's pre-installed Homebrew `rustup-init` shadows the
+      # `cargo` binary `dtolnay/rust-toolchain` installed and makes
+      # `cargo test ...` parse as `rustup-init test ...`.
+      - run: rustup run stable cargo test --workspace --exclude slideglance-viewer
 
   wasm-build:
     name: wasm-pack build
