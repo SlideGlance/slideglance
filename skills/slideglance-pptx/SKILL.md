@@ -341,7 +341,7 @@ system fonts the deck's named families resolve to — what you see in
 the PNG is not what a PowerPoint recipient with the proper fonts
 installed will see.
 
-When working interactively, the **Slide Builder** VS Code extension
+When working interactively, the **SlideGlance PPTX Viewer** VS Code extension
 shows the same SVG render the CLI emits, refreshed on save.
 
 ### When the deck doesn't compile
@@ -377,7 +377,7 @@ on `<Import>` and the recommended folder structure.
 
 ## Live preview while authoring
 
-Install the **Slide Builder** VS Code extension
+Install the **SlideGlance PPTX Viewer** VS Code extension
 (`slideglance.slide-builder`) and open any `.sgx` file. The preview pane
 re-renders on save and on keystroke for unchanged-slide-preserving
 incremental updates. Click any rendered element to jump to its source
@@ -455,9 +455,3 @@ read the runnable decks in the workspace itself:
 
 [`references/recipes.md`](references/recipes.md) distils the recurring
 patterns from both trees into a single cookbook.
-
-## License & author
-
-This skill is licensed MIT. It re-imagines structure and taxonomy from
-upstream MIT works (`lewislulu/html-ppt-skill`, etc.). The slideglance
-builder, viewer, and renderer are licensed MIT by SimpleCORE Inc.

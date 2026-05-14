@@ -11,7 +11,7 @@ source_files:
 
 # VS Code Extension
 
-**Slide Builder** (`slideglance.slide-builder`) is the editor companion for `@slideglance/builder`. It turns any `.sgx` file into a live-preview surface with click-to-source and one-command PPTX export.
+**SlideGlance PPTX Viewer** (`slideglance.slide-builder`) is the editor companion for `@slideglance/builder`. It turns any `.sgx` file into a live-preview surface with click-to-source and one-command PPTX export.
 
 The extension lives at [`apps/vscode-extension/`](../../../../apps/vscode-extension/) in the SlideGlance repo and is published to the VS Code Marketplace under the publisher `slideglance`.
 
@@ -30,7 +30,7 @@ The extension lives at [`apps/vscode-extension/`](../../../../apps/vscode-extens
 
 > Requires VS Code 1.85+.
 
-From the Marketplace UI: search **Slide Builder** by **slideglance**.
+From the Marketplace UI: search **SlideGlance PPTX Viewer** by **slideglance**.
 
 From the CLI:
 
@@ -41,9 +41,9 @@ code --install-extension slideglance.slide-builder
 ## Use
 
 1. Open any XML file you author with the builder DSL (`.sgx` is the convention).
-2. Run **Slide Builder: Open Preview** from the Command Palette, or click the preview icon in the editor title bar.
+2. Run **SlideGlance: Open Preview** from the Command Palette, or click the preview icon in the editor title bar.
 3. Edit the file — the preview updates in real time.
-4. Run **Slide Builder: Export PPTX** when you're ready to write the `.pptx` file.
+4. Run **SlideGlance: Export PPTX** when you're ready to write the `.pptx` file.
 
 `<Import src="..." />` resolves relative to the open file's directory, so multi-file decks work without configuration.
 
@@ -51,9 +51,9 @@ code --install-extension slideglance.slide-builder
 
 | Command                       | Title                          | Effect                              |
 | ----------------------------- | ------------------------------ | ----------------------------------- |
-| `slideBuilder.openPreview`    | Slide Builder: Open Preview    | Open or focus the live preview pane |
-| `slideBuilder.refreshPreview` | Slide Builder: Refresh Preview | Force a full rebuild                |
-| `slideBuilder.exportPptx`     | Slide Builder: Export PPTX     | Write the current deck to `.pptx`   |
+| `slideBuilder.openPreview`    | SlideGlance: Open Preview    | Open or focus the live preview pane |
+| `slideBuilder.refreshPreview` | SlideGlance: Refresh Preview | Force a full rebuild                |
+| `slideBuilder.exportPptx`     | SlideGlance: Export PPTX     | Write the current deck to `.pptx`   |
 
 ## Schema-aware editing
 
@@ -71,7 +71,7 @@ The bundled XSD (`packages/builder/builder.xsd`, namespace `urn:slideglance:buil
 }
 ```
 
-The Slide Builder extension itself does not require the namespace — declaring it only enables Red Hat XML's tooling.
+The SlideGlance PPTX Viewer extension itself does not require the namespace — declaring it only enables Red Hat XML's tooling.
 
 ## How it works
 
@@ -116,4 +116,4 @@ The webview rebuilds via Vite — `pnpm --filter slide-builder build:webview`.
 ## Limitations
 
 - The extension bundles its own copy of `@slideglance/builder`. Projects that pin a different builder version at runtime may render slightly differently in the preview than in the final PPTX output. Keep the extension and library versions in sync for the most accurate preview.
-- The PPTX custom editor opens with `priority: "option"`, so `.pptx` files do **not** open in Slide Builder by default. Use **File → Open With… → Slide Builder PPTX Viewer** to opt in per file, or the **vscode** workspace setting to opt in globally.
+- The PPTX custom editor opens with `priority: "option"`, so `.pptx` files do **not** open in SlideGlance PPTX Viewer by default. Use **File → Open With… → SlideGlance PPTX Viewer** to opt in per file, or the **vscode** workspace setting to opt in globally.

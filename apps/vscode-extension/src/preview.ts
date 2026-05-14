@@ -393,7 +393,7 @@ export class PreviewPanel {
 
     const panel = vscode.window.createWebviewPanel(
       "slideBuilderPreview",
-      "Slide Builder Preview",
+      "SlideGlance Preview",
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,

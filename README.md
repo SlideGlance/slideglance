@@ -44,7 +44,7 @@ from XML. The work ships across seven user-facing surfaces:
 | **Native CLI**                     | `slideglance convert / render / inspect` — batch SVG / PNG conversion.                    | `cargo install slideglance` *(once published)* or build from source.                                                                                                               |
 | **Rust library**                   | `slideglance::convert_to_svg / convert_to_png` for Rust pipelines.                        | `slideglance = "..."` once on crates.io, or path-dep on the workspace.                                                                                                             |
 | **Slide builder (`@slideglance/builder`)** | Declarative XML → editable `.pptx`. Flexbox layout, schema validation, AI-friendly. | `npm i @slideglance/builder`                                                                                                                                                       |
-| **VS Code extension (Slide Builder)** | Live preview for `.sgx` files + `.pptx` viewer, click-to-source, one-command export.  | Search **Slide Builder** in the Marketplace, or `code --install-extension slideglance.slide-builder`.                                                                              |
+| **VS Code extension (SlideGlance PPTX Viewer)** | Live preview for `.sgx` files + `.pptx` viewer, click-to-source, one-command export.  | Search **SlideGlance PPTX Viewer** in the Marketplace, or `code --install-extension slideglance.slide-builder`.                                                                              |
 
 ---
 
@@ -151,7 +151,7 @@ await pptx.writeFile({ fileName: "review.pptx" });
 - An XSD + JSON Schema for editor validation.
 - Auto-fit when content overflows the slide.
 
-For the live editing loop, install the **Slide Builder** VS Code
+For the live editing loop, install the **SlideGlance PPTX Viewer** VS Code
 extension — it gives you a webview preview, click-to-source navigation,
 and one-command PPTX export against any `.sgx` file. See
 [`apps/vscode-extension/README.md`](apps/vscode-extension/README.md).

@@ -100,7 +100,7 @@ previous crate's index update (~30 s) before the next dependent can resolve it.
 
 | Extension | Path | Marketplace identifier |
 | --- | --- | --- |
-| Slide Builder | `apps/vscode-extension` | publisher `slideglance`, displayName "Slide Builder" |
+| SlideGlance PPTX Viewer | `apps/vscode-extension` | publisher `slideglance`, displayName "SlideGlance PPTX Viewer" |
 
 **Publish**: manual via `vsce publish` (or `vsce package` → upload `.vsix`
 through the Marketplace UI). CI workflow `ci-vscode-extension.yml` runs
@@ -157,7 +157,7 @@ JS workspaces, assembles the Pages artifact, and deploys via
 
 | Artefact | Source | Trigger |
 | --- | --- | --- |
-| Slide Builder PPTX Viewer (Tauri desktop) | `apps/desktop-viewer` | `.github/workflows/tauri-build.yml` — matrix `macos-latest` / `windows-latest` / `ubuntu-latest`. Uploads installers as workflow artefacts (a Release attachment step is the natural next addition). |
+| SlideGlance PPTX Viewer (Tauri desktop) | `apps/desktop-viewer` | `.github/workflows/tauri-build.yml` — matrix `macos-latest` / `windows-latest` / `ubuntu-latest`. Uploads installers as workflow artefacts (a Release attachment step is the natural next addition). |
 
 **Status**: **automated build** (installers produced on every push that matches
 the workflow trigger), **manual release attach** (the workflow uploads to the

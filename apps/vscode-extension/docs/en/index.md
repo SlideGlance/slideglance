@@ -17,7 +17,7 @@ source_files:
 
 ## What it is
 
-The "Slide Builder" VS Code extension. Live preview for `.sgx`
+The "SlideGlance PPTX Viewer" VS Code extension. Live preview for `.sgx`
 files (the
 [`@slideglance/builder`](../../../../packages/builder/docs/en/index.md)
 XML DSL) plus a `.pptx` viewer powered by
@@ -28,7 +28,7 @@ PPTX export.
 ## Install
 
 ```text
-Search "Slide Builder" in the Marketplace
+Search "SlideGlance PPTX Viewer" in the Marketplace
 or: code --install-extension slideglance.slide-builder
 ```
 

@@ -5,7 +5,7 @@
  * builder-driven re-render.
  *
  * Registered with `priority: "option"` (see package.json) so the user
- * opts in via "Open With… → Slide Builder PPTX Viewer" rather than
+ * opts in via "Open With… → SlideGlance PPTX Viewer" rather than
  * having the default double-click behaviour silently replaced.
  *
  * The webview ⇄ host protocol matches `PreviewPanel`:

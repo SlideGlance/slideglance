@@ -40,7 +40,7 @@ apps/vscode-extension/
 | `engines.vscode` | `^1.85.0` |
 | `categories` | "Programming Languages", "Other" |
 | `activationEvents` | On `.sgx` file open, on `.pptx` file open |
-| `contributes.commands` | "Slide Builder: Preview", "Slide Builder: Export PPTX" |
+| `contributes.commands` | "SlideGlance: Preview", "SlideGlance: Export PPTX" |
 | `contributes.languages` | `slidegx` for `.sgx` files |
 | `contributes.jsonValidation` | Maps `.sgx` to `builder.schema.json` |
 

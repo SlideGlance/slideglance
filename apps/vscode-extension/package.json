@@ -1,8 +1,8 @@
 {
   "name": "slide-builder",
   "private": true,
-  "displayName": "Slide Builder",
-  "description": "Live preview for slideglance/builder XML presentations (slideglance/viewer-backed).",
+  "displayName": "SlideGlance PPTX Viewer",
+  "description": "PPTX viewer and SlideGlance authoring workbench — live preview for .sgx files, custom editor for .pptx, one-command PPTX export.",
   "version": "0.1.0",
   "publisher": "slideglance",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
@@ -54,7 +54,7 @@
     "customEditors": [
       {
         "viewType": "slideBuilder.pptxViewer",
-        "displayName": "Slide Builder PPTX Viewer",
+        "displayName": "SlideGlance PPTX Viewer",
         "selector": [
           {
             "filenamePattern": "*.pptx"
@@ -66,7 +66,7 @@
     "commands": [
       {
         "command": "slideBuilder.openPreview",
-        "title": "Slide Builder: Open Preview",
+        "title": "SlideGlance: Open Preview",
         "icon": {
           "dark": "icons/preview-dark.svg",
           "light": "icons/preview-light.svg"
@@ -74,7 +74,7 @@
       },
       {
         "command": "slideBuilder.refreshPreview",
-        "title": "Slide Builder: Refresh Preview",
+        "title": "SlideGlance: Refresh Preview",
         "icon": {
           "dark": "icons/refresh-dark.svg",
           "light": "icons/refresh-light.svg"
@@ -82,7 +82,7 @@
       },
       {
         "command": "slideBuilder.exportPptx",
-        "title": "Slide Builder: Export PPTX",
+        "title": "SlideGlance: Export PPTX",
         "icon": {
           "dark": "icons/export-dark.svg",
           "light": "icons/export-light.svg"

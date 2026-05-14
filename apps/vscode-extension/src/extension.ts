@@ -55,7 +55,7 @@ async function registerXmlCatalog(
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const outputChannel = vscode.window.createOutputChannel("Slide Builder");
+  const outputChannel = vscode.window.createOutputChannel("SlideGlance");
   context.subscriptions.push(outputChannel);
   PreviewPanel.setOutputChannel(outputChannel);
 

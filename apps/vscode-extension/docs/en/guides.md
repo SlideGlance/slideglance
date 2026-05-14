@@ -27,7 +27,7 @@ extension host.
 3. Press F5 to launch a new VS Code window with the extension
    loaded.
 4. In the new window, open any `.sgx` or `.pptx` file. The
-   "Slide Builder: Preview" command (Cmd-Shift-P) opens the preview
+   "SlideGlance: Preview" command (Cmd-Shift-P) opens the preview
    pane.
 5. Edits to webview source hot-reload immediately. Edits to
    extension source require restarting the debug session (Cmd-Shift-F5).

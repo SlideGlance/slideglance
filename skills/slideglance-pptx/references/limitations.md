@@ -28,7 +28,7 @@ upstream `lewislulu/html-ppt-skill` instead.
 | --- | --- |
 | `S` key → magnetic-card presenter window | PowerPoint's own presenter view does this. Speaker notes live in `<Notes>`. |
 | `T` key → cycle themes live | Themes are baked into the `.sgx` at build time. Re-build with a different palette to swap. |
-| `?preview=N` URL → single-slide preview | Use the **Slide Builder** VS Code extension; click any slide thumbnail to preview. |
+| `?preview=N` URL → single-slide preview | Use the **SlideGlance PPTX Viewer** VS Code extension; click any slide thumbnail to preview. |
 | Drag / resize presenter cards | Native PowerPoint presenter view. |
 | `BroadcastChannel` sync between windows | N/A — PowerPoint owns the presentation runtime. |
 
