@@ -220,78 +220,21 @@ page count is fixed.
 
 ## Other authoring rules
 
-1. **Start from `examples/two-column.sgx`, not blank.** It's the
-   minimal scaffold with `<Master>` chrome + `<Styles>` palette +
-   `<Templates>` macro patterns already wired up. Replace content,
-   swap the palette block from
-   [`references/themes.md`](references/themes.md), keep the file split.
-2. **Speaker notes go in `<Notes>`, never on the slide.** Audience-facing
+1. **Speaker notes go in `<Notes>`, never on the slide.** Audience-facing
    slides contain only audience-facing content (titles, body, data,
    images). Anything that starts with "as you can see" / "what I want to
    highlight" / "during the demo I'll show" belongs in `<Notes>`.
-3. **Run the linter.** Build with `lint: { enabled: true, ruleset: "recommended" }`
-   and treat warnings as bugs. The lint catalog catches overflow, baseline
-   misalignment, low contrast, and design-system regressions before they
-   become "why does this look broken" review cycles.
-4. **Colors are 6-digit hex without `#`.** `color="0F172A"`. No
-   `#0F172A`, no `accent1`. PPTX theme tokens are not supported — this
-   trade-off keeps output deterministic across editors.
-5. **Run on real fonts.** `Pretendard` (Korean + Latin) and `Noto Sans JP`
-   (Japanese) are bundled and measured exactly. Anything else uses a
-   heuristic measurer — the deck will still render in PowerPoint with the
-   recipient's installed font, but layout drift is possible. For pixel-
-   exact decks, stick to the two bundled families or pin custom fonts via
-   `<Master>` font embedding.
-6. **Line breaks inside `<Text>` — `\n` or a stack, not `<Br>`.** Source
+2. **Line breaks inside `<Text>` — `\n` or a stack, not `<Br>`.** Source
    newlines and indentation inside a `<Text>` body collapse to a single
-   space. Same-line whitespace is preserved, and leading / trailing
+   space; same-line whitespace is preserved; leading / trailing
    whitespace is trimmed. To force a deliberate break, use either a
-   `\n` literal in the body (`<Text>line 1\nline 2</Text>` — escapes
-   decode after the collapse so `\n` / `\t` / `\\` survive in body
-   text) or a stack of single-line `<Text>` inside a `<VStack gap="0">`
-   when each line needs its own style. `<Br>` is **not** in the
-   grammar; authoring `<Br/>` is silently dropped. See
+   `\n` literal in the body (`<Text>line 1\nline 2</Text>`) or a stack
+   of single-line `<Text>` inside a `<VStack gap="0">` when each line
+   needs its own style. `<Br/>` is silently dropped. See
    [`references/grammar.md`](references/grammar.md) §"Multi-line
-   headlines and line breaks" and
-   [`references/schema-gotchas.md`](references/schema-gotchas.md).
+   headlines and line breaks".
 
-## Build pipeline
-
-```ts
-import { readFileSync, writeFileSync } from "node:fs";
-import { buildPptx } from "@slideglance/builder";
-
-const xml = readFileSync("./deck.sgx", "utf8");
-
-const { pptx, diagnostics } = await buildPptx(
-  xml,
-  { w: 1280, h: 720 },
-  {
-    textMeasurement: "auto",
-    resolveImport: (src, fromPath) => {
-      const baseDir = fromPath ? path.dirname(fromPath) : process.cwd();
-      const absolute = path.resolve(baseDir, src);
-      return { content: readFileSync(absolute, "utf8"), path: absolute };
-    },
-    sourcePath: "./deck.sgx",
-    equalize: true,
-    lint: { enabled: true, ruleset: "recommended" },
-  },
-);
-
-if (diagnostics.length > 0) {
-  for (const d of diagnostics) {
-    console.warn(
-      `${d.severity ?? "info"} ${d.code}: ${d.message} @ ${d.path ?? "?"}`,
-    );
-  }
-}
-
-const bytes = (await pptx.write({ outputType: "uint8array" })) as Uint8Array;
-writeFileSync("./deck.pptx", bytes);
-```
-
-## Post-write workflow — author → lint → render → review
+## Build, render, review
 
 The contract is: **a deck is not authored until you have a green PNG
 in your hand**. The structural file count is not evidence.
@@ -308,76 +251,18 @@ in your hand**. The structural file count is not evidence.
 ```
 
 Treat **every** diagnostic as a bug. `lint.ruleset = "recommended"`
-includes `error` + `warn`; `"strict"` adds `info`. The lint catalog
-(see [`references/lint.md`](references/lint.md)) catches overflow,
-baseline misalignment, low contrast, font-family drift, and
-hardcoded-color repetition before they become "why does this look
-broken" review cycles.
+catches overflow, baseline misalignment, low contrast, font-family
+drift, and hardcoded-color repetition before they become "why does
+this look broken" review cycles.
 
-### Rendering to PNG for visual review
-
-Build the `.pptx` (see the build pipeline above), then use the native
-`slideglance` CLI to render every slide to PNG:
-
-```sh
-slideglance convert deck.pptx --output ./out --format png --width 1280
-```
-
-For accurate font metrics (especially CJK), pass system font files via
-`--font /path/to/font.ttf`. Without that, the CLI substitutes whatever
-system fonts the deck's named families resolve to — what you see in
-the PNG is not what a PowerPoint recipient with the proper fonts
-installed will see.
-
-When working interactively, the **SlideGlance PPTX Viewer** VS Code extension
-shows the same SVG render the CLI emits, refreshed on save.
-
-### When the deck doesn't compile
-
-Common reasons (`ParseXmlError: XML validation failed`):
-
-| Error                                                | See                                                                                                         |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `Unknown attribute "letterSpacing"` etc.             | [`references/schema-gotchas.md`](references/schema-gotchas.md) — attributes the docs claim exist but the runtime doesn't accept |
-| `Did you mean "padding"?` (you wrote `paddingTop`)   | dot notation: `padding.top="…"`                                                                             |
-| `readTagExp returned undefined`                      | `<Foreach items='…'>` JSON contains an unescaped `'` — use `&apos;` or rewrite the prose                    |
-| `<Master>.<SlideNumber>: Unknown attribute "format"` | SlideNumber accepts only x/y/w/h/fontSize/fontFamily/color — see schema-gotchas                             |
-| `Unknown attribute "x1"` on `<MasterLine>`           | endpoint-pair form not supported — use positioned-rect (`x, y, w, h, line.color, line.width`)               |
-
-When a gap is genuine (the builder really doesn't support what the
-deck needs), use the documented workaround from
-[`references/limitations.md`](references/limitations.md) instead of
-authoring around the missing feature.
-
-Slide size cheat sheet:
-
-| Aspect                           | `w`  | `h`  |
-| -------------------------------- | ---- | ---- |
-| 16:9 (modern presentations)      | 1280 | 720  |
-| 4:3 (legacy / projector)         | 1024 | 768  |
-| A4 portrait (printable handout)  | 794  | 1123 |
-| Letter portrait                  | 816  | 1056 |
-| 9:16 (vertical / social)         | 720  | 1280 |
-| 3:4 (xhs / 小红书 vertical card) | 960  | 1280 |
-
-For multi-file decks, see [`references/composition.md`](references/composition.md)
-on `<Import>` and the recommended folder structure.
-
-## Live preview while authoring
-
-Install the **SlideGlance PPTX Viewer** VS Code extension
-(`slideglance.slide-builder`) and open any `.sgx` file. The preview pane
-re-renders on save and on keystroke for unchanged-slide-preserving
-incremental updates. Click any rendered element to jump to its source
-line. One-command export writes the `.pptx`.
-
-```sh
-code --install-extension slideglance.slide-builder
-```
-
-The extension hard-depends on Red Hat XML for schema-aware editing and
-on-save validation against the bundled XSD (namespace
-`urn:slideglance:builder:v1`).
+The concrete pipeline — `buildPptx` invocation, `<Import>` resolution,
+diagnostic severity policy, CLI PNG rendering with `--font` flags, and
+VS Code live preview — lives in
+[`references/build-and-render.md`](references/build-and-render.md).
+Lint rules and autofix patterns live in
+[`references/lint.md`](references/lint.md). When a `.sgx` file fails
+to parse, the common error catalog is in
+[`references/schema-gotchas.md`](references/schema-gotchas.md).
 
 ## Theme variants
 
@@ -416,7 +301,8 @@ slideglance-pptx/
 │   ├── themes.md             (palette and font guidance — pick one and apply via <Styles>)
 │   ├── limitations.md        (what is NOT in the medium and the recommended substitutes)
 │   ├── lint.md               (lint rules + autofix patterns)
-│   ├── schema-gotchas.md     (attributes that don't exist, dot-notation forms, master-child surfaces)
+│   ├── schema-gotchas.md     (parse errors, attributes that don't exist, dot-notation forms)
+│   ├── build-and-render.md   (buildPptx invocation, CLI PNG rendering, VS Code live preview)
 │   └── development.md        (contributor reference for working on the builder / vscode-extension)
 └── examples/
     ├── minimal.sgx           (single-slide hello world)

@@ -10,6 +10,16 @@ If you hit a `ParseXmlError: XML validation failed` — `Unknown
 attribute "X"` or `Unknown attribute, did you mean "Y"?` — look here
 first.
 
+## When the deck doesn't compile — common parse errors
+
+| Error                                                | Cause                                                                                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Unknown attribute "letterSpacing"` etc.             | Old attribute name. See the "Attributes that don't exist" table below or the dot-notation forms.            |
+| `Did you mean "padding"?` (you wrote `paddingTop`)   | Camel-case shorthand isn't accepted — use dot notation: `padding.top="…"`.                                  |
+| `readTagExp returned undefined`                      | `<Foreach items='…'>` JSON contains an unescaped `'` — use `&apos;` or rewrite the prose without apostrophes. |
+| `<Master>.<SlideNumber>: Unknown attribute "format"` | SlideNumber accepts only `x` / `y` / `w` / `h` / `fontSize` / `fontFamily` / `color` / `textAlign`.         |
+| `Unknown attribute "x1"` on `<MasterLine>`           | Endpoint-pair form not supported — use the positioned-rect form (`x, y, w, h, line.color, line.width`).     |
+
 ## Attributes that don't exist (drop them)
 
 | Attribute    | What to do                                                                                                                                                                                                           |

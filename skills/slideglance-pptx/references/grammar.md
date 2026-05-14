@@ -27,6 +27,28 @@ and please log the drift in `schema-gotchas.md`.
 - `<Slide>` — accepts **exactly one** root child (usually `<VStack>`, `<HStack>`, or `<Layer>`).
 - Order of `<Master>`, `<Styles>`, `<Templates>`, `<Slide>` does not matter — declarations are collected in a single pass before slide rendering.
 
+### Slide size on `<Document>`
+
+`size="16:9"` is the default. Other named presets and the explicit
+`w` / `h` form:
+
+| Aspect                           | Named preset       | `w`  | `h`  |
+| -------------------------------- | ------------------ | ---- | ---- |
+| 16:9 (modern presentations)      | `size="16:9"`      | 1280 | 720  |
+| 4:3 (legacy / projector)         | `size="4:3"`       | 1024 | 768  |
+| A4 portrait (printable handout)  | `size="A4"`        | 794  | 1123 |
+| Letter portrait                  | `size="Letter"`    | 816  | 1056 |
+| 9:16 (vertical / social)         | `size="9:16"`      | 720  | 1280 |
+| 3:4 (xhs / 小红书 vertical card) | (explicit w/h)     | 960  | 1280 |
+
+For a custom aspect, use the explicit form:
+
+```xml
+<Document w="960" h="1280" fontFamily="Pretendard" />
+```
+
+Don't mix `size="custom"` with `w` / `h` — pick one form, not both.
+
 ## Common attributes (every visual node)
 
 | Attribute                        | Type                                            | Notes                                                                                                                                                                                                          |
