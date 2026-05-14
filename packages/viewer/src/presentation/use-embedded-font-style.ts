@@ -14,7 +14,7 @@
  *
  * The `<style>` element is identified by a single id so re-mounting
  * the component (or swapping decks) replaces the rules atomically;
- * empty CSS removes the element entirely. The `data-pptx-rs-fonts`
+ * empty CSS removes the element entirely. The `data-slideglance-fonts`
  * attribute is for co-located shells that need to detect or clean
  * up orphan blocks.
  *
@@ -29,7 +29,7 @@
 
 import { useEffect } from "react";
 
-const STYLE_ELEMENT_ID = "pptx-rs-deck-fonts";
+const STYLE_ELEMENT_ID = "slideglance-deck-fonts";
 
 export function useEmbeddedFontStyle(fontDefsCss: string): void {
   useEffect(() => {
@@ -45,7 +45,7 @@ export function useEmbeddedFontStyle(fontDefsCss: string): void {
       existing ?? document.createElement("style");
     if (!existing) {
       styleEl.id = STYLE_ELEMENT_ID;
-      styleEl.dataset.pptxRsFonts = "true";
+      styleEl.dataset.slideglanceFonts = "true";
       document.head.appendChild(styleEl);
     }
     if (styleEl.textContent !== fontDefsCss) {

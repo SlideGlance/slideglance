@@ -47,8 +47,8 @@ The crate imports two callbacks the host **may** install:
 
 | JS name | Purpose |
 |---|---|
-| `__pptxRsMeasureText` | Returns the pixel advance for a `(text, font, size, bold)` tuple |
-| `__pptxRsMeasureLineMetrics` | Returns `{ ascent, descent, lineGap }` for a CSS font declaration |
+| `__slideglanceMeasureText` | Returns the pixel advance for a `(text, font, size, bold)` tuple |
+| `__slideglanceMeasureLineMetrics` | Returns `{ ascent, descent, lineGap }` for a CSS font declaration |
 
 If absent (or returning zeros), the Rust side falls back to the
 heuristic measurer with a `console.warn`. See

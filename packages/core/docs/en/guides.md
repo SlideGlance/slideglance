@@ -62,7 +62,7 @@ browser will render.
 const canvas = new OffscreenCanvas(0, 0);
 const ctx = canvas.getContext("2d")!;
 
-(globalThis as any).__pptxRsMeasureText = (
+(globalThis as any).__slideglanceMeasureText = (
   text: string,
   family: string | undefined,
   _familyEa: string | undefined,
@@ -77,7 +77,7 @@ const ctx = canvas.getContext("2d")!;
 
 ### What's happening
 
-The WASM module imports `globalThis.__pptxRsMeasureText`. If
+The WASM module imports `globalThis.__slideglanceMeasureText`. If
 present, the Rust resolver uses its measurements instead of the
 heuristic / OpenType paths. The host is responsible for matching
 the canvas context's font features (e.g. `font-kerning: none`) to

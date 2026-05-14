@@ -42,10 +42,10 @@ interface PptxDocumentCtor {
   ): PptxDocumentInstance;
 }
 
-// `__pptxRsMeasureText` is the JS-side hook the wasm module imports
+// `__slideglanceMeasureText` is the JS-side hook the wasm module imports
 // when the host enabled canvas-backed measurement. Installing it on
 // the worker `self` global makes it visible to the wasm-bindgen
-// glue's `self.__pptxRsMeasureText(...)` call site.
+// glue's `self.__slideglanceMeasureText(...)` call site.
 //
 // The implementation runs measurement through an `OffscreenCanvas`
 // using the SAME font / weight / kerning settings the renderer will
@@ -149,8 +149,8 @@ function measureTextWidth(
 }
 
 // Install on the worker self global so wasm-bindgen's
-// `self.__pptxRsMeasureText(...)` call resolves to this fn.
-(self as unknown as Record<string, unknown>).__pptxRsMeasureText =
+// `self.__slideglanceMeasureText(...)` call resolves to this fn.
+(self as unknown as Record<string, unknown>).__slideglanceMeasureText =
   measureTextWidth;
 
 function measureLineMetrics(fontDecl: string): {
@@ -179,8 +179,8 @@ function measureLineMetrics(fontDecl: string): {
 }
 
 // Install on the worker self global so wasm-bindgen's
-// `self.__pptxRsMeasureLineMetrics(...)` call resolves to this fn.
-(self as unknown as Record<string, unknown>).__pptxRsMeasureLineMetrics =
+// `self.__slideglanceMeasureLineMetrics(...)` call resolves to this fn.
+(self as unknown as Record<string, unknown>).__slideglanceMeasureLineMetrics =
   measureLineMetrics;
 
 interface PptxDocumentInstance {
@@ -587,7 +587,7 @@ async function handleOpen(
   let fontDefs = doc.fontDefs();
 
   // Await every embedded @font-face so measureText returns accurate
-  // ascent/descent when renderSlide calls __pptxRsMeasureLineMetrics.
+  // ascent/descent when renderSlide calls __slideglanceMeasureLineMetrics.
   // We also collect a per-face load report so the main thread can
   // surface which embedded faces failed (typically MicroType Express
   // payloads our pipeline can't decode, but also subset / permission

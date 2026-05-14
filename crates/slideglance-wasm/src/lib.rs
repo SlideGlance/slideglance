@@ -43,7 +43,7 @@ extern "C" {
     /// .new(..., useCanvasMeasurer = false)` and the renderer falls
     /// back to the auto OpenType measurer (deck embed fonts only) or
     /// the heuristic.
-    #[wasm_bindgen(js_namespace = self, js_name = "__pptxRsMeasureText")]
+    #[wasm_bindgen(js_namespace = self, js_name = "__slideglanceMeasureText")]
     fn js_measure_text(
         text: &str,
         font_family: Option<String>,
@@ -61,7 +61,7 @@ extern "C" {
     /// result as unavailable and falls back to `HeuristicTextMeasurer`
     /// with a `console.warn`. Returning null / undefined has the same
     /// effect — `JsValue::null()` → `as_f64()` returns `None`.
-    #[wasm_bindgen(js_namespace = self, js_name = "__pptxRsMeasureLineMetrics")]
+    #[wasm_bindgen(js_namespace = self, js_name = "__slideglanceMeasureLineMetrics")]
     fn js_measure_line_metrics(font_decl: &str) -> JsValue;
 }
 
@@ -72,7 +72,7 @@ struct LineMetrics {
     line_gap: f64,
 }
 
-/// Parse a `JsValue` returned by `__pptxRsMeasureLineMetrics` into `LineMetrics`.
+/// Parse a `JsValue` returned by `__slideglanceMeasureLineMetrics` into `LineMetrics`.
 ///
 /// Returns `None` when both `ascent` and `descent` are 0 (browser returned
 /// generic fallback metrics) or when the value is missing required fields.
@@ -121,7 +121,7 @@ fn build_font_decl_for_metrics(font_family: Option<&str>, font_family_ea: Option
 }
 
 /// `TextMeasurer` impl that delegates every measurement to the host's
-/// `__pptxRsMeasureText` JS function. Use only when the host installed
+/// `__slideglanceMeasureText` JS function. Use only when the host installed
 /// that function (else every measurement panics).
 struct JsCanvasTextMeasurer;
 
@@ -135,7 +135,7 @@ impl TextMeasurer for JsCanvasTextMeasurer {
         font_family_ea: Option<&str>,
     ) -> f64 {
         // The JS bridge receives only the `bold` flag today; `italic`
-        // is plumbed to D4 (KDD-3 wasm bridge) for a follow-up `__pptxRsMeasureText`
+        // is plumbed to D4 (KDD-3 wasm bridge) for a follow-up `__slideglanceMeasureText`
         // signature change. For now italic is silently ignored on the JS side
         // — same width as upright.
         js_measure_text(
@@ -191,7 +191,7 @@ impl TextMeasurer for JsCanvasTextMeasurer {
             total / METRICS_FONT_SIZE_PX
         } else {
             web_sys::console::warn_1(
-                &"[slideglance] __pptxRsMeasureLineMetrics returned zero metrics \
+                &"[slideglance] __slideglanceMeasureLineMetrics returned zero metrics \
                   — falling back to heuristic line height"
                     .into(),
             );
@@ -214,7 +214,7 @@ impl TextMeasurer for JsCanvasTextMeasurer {
             m.ascent / METRICS_FONT_SIZE_PX
         } else {
             web_sys::console::warn_1(
-                &"[slideglance] __pptxRsMeasureLineMetrics returned zero metrics \
+                &"[slideglance] __slideglanceMeasureLineMetrics returned zero metrics \
                   — falling back to heuristic ascender ratio"
                     .into(),
             );
@@ -588,26 +588,26 @@ fn check_canvas_measurer_callbacks() {
     use js_sys::Reflect;
     let global = js_sys::global();
     let measure_text_ok =
-        Reflect::get(&global, &"__pptxRsMeasureText".into()).is_ok_and(|v| v.is_function());
+        Reflect::get(&global, &"__slideglanceMeasureText".into()).is_ok_and(|v| v.is_function());
     let measure_metrics_ok =
-        Reflect::get(&global, &"__pptxRsMeasureLineMetrics".into()).is_ok_and(|v| v.is_function());
+        Reflect::get(&global, &"__slideglanceMeasureLineMetrics".into()).is_ok_and(|v| v.is_function());
     if !measure_text_ok {
-        // Missing __pptxRsMeasureText causes a TypeError on the first renderSlide
+        // Missing __slideglanceMeasureText causes a TypeError on the first renderSlide
         // call (JS extern throws when the global is undefined). This warn fires
         // eagerly at document construction so callers can diagnose the issue before
         // the first render attempt.
         web_sys::console::warn_1(
-            &"[slideglance] useCanvasMeasurer=true but __pptxRsMeasureText is not \
+            &"[slideglance] useCanvasMeasurer=true but __slideglanceMeasureText is not \
               registered — first renderSlide call will fail with a TypeError. \
               Install @slideglance/viewer or register the callback manually."
                 .into(),
         );
     }
     if !measure_metrics_ok {
-        // Missing __pptxRsMeasureLineMetrics causes a TypeError on the first
+        // Missing __slideglanceMeasureLineMetrics causes a TypeError on the first
         // get_line_height_ratio / get_ascender_ratio call. Warn eagerly.
         web_sys::console::warn_1(
-            &"[slideglance] useCanvasMeasurer=true but __pptxRsMeasureLineMetrics is \
+            &"[slideglance] useCanvasMeasurer=true but __slideglanceMeasureLineMetrics is \
               not registered — line-height measurement will fail on first render. \
               Install @slideglance/viewer or register the callback manually."
                 .into(),
@@ -679,7 +679,7 @@ impl PptxDocument {
     /// substitutes); pass an empty array to skip.
     ///
     /// `use_canvas_measurer` switches every wrap measurement onto a
-    /// JS-side bridge that calls `__pptxRsMeasureText` (typically
+    /// JS-side bridge that calls `__slideglanceMeasureText` (typically
     /// implemented with `OffscreenCanvas.measureText` in a worker).
     /// When this is `true` the host MUST install that function on the
     /// global scope before any `renderSlide` call. Use this in the

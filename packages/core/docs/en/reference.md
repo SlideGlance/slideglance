@@ -61,8 +61,8 @@ The WASM module imports two globals the host **may** install on
 
 | Global | Purpose |
 |---|---|
-| `__pptxRsMeasureText(text, family, familyEa, chain, sizePt, bold) => number` | Pixel advance |
-| `__pptxRsMeasureLineMetrics(fontDecl) => { ascent, descent, lineGap }` | Vertical metrics |
+| `__slideglanceMeasureText(text, family, familyEa, chain, sizePt, bold) => number` | Pixel advance |
+| `__slideglanceMeasureLineMetrics(fontDecl) => { ascent, descent, lineGap }` | Vertical metrics |
 
 When absent, the Rust side falls back to its heuristic measurer and
 logs a `console.warn`. The
