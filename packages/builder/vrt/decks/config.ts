@@ -44,4 +44,5 @@ export const PAGE_NAMES = [
   "36-inline-formatting",
   "37-table-cell-border",
   "38-d4-schema-additions",
+  "39-connector",
 ] as const;
