@@ -1,6 +1,6 @@
 {
   "name": "@slideglance/builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Declarative slide builder: XML DSL with a Flexbox layout engine, compiled to PPTX.",
   "type": "module",
   "main": "./dist/index.js",

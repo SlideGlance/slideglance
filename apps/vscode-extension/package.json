@@ -3,7 +3,7 @@
   "private": true,
   "displayName": "SlideGlance PPTX Viewer",
   "description": "PPTX viewer and SlideGlance authoring workbench — live preview for .sgx files, custom editor for .pptx, one-command PPTX export.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "slideglance",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
   "license": "MIT",

@@ -24,7 +24,7 @@
  * truth in the root removes the class of bug entirely.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,14 +45,29 @@ if (typeof targetVersion !== "string" || !/^\d+\.\d+\.\d+/.test(targetVersion)) 
   process.exit(2);
 }
 
-const packageJsonTargets = [
-  "packages/core/package.json",
-  "packages/measure/package.json",
-  "packages/viewer/package.json",
-  "apps/chrome-extension/package.json",
-  "apps/web-playground/package.json",
-  "apps/desktop-viewer/package.json",
-];
+// Every workspace package.json other than the repo root — both the
+// published `packages/*` lane and the gitignored-or-private `apps/*` /
+// `examples/*` lane. Missing any publishable entry here silently breaks
+// `pnpm publish` because pnpm sees the package version is unchanged
+// from the registry and skips ("There are no new packages that should
+// be published"). The v0.1.1 release uncovered exactly that for
+// `packages/builder/`; the discovery loop avoids the class of bug.
+const packageJsonTargets = (() => {
+  const dirs = ["packages", "apps", "examples"];
+  const out = [];
+  for (const dir of dirs) {
+    const base = join(repoRoot, dir);
+    if (!existsSync(base)) continue;
+    for (const entry of readdirSync(base, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const pkgPath = join(base, entry.name, "package.json");
+      if (existsSync(pkgPath)) {
+        out.push(`${dir}/${entry.name}/package.json`);
+      }
+    }
+  }
+  return out.sort();
+})();
 
 const cargoTargets = [
   "Cargo.toml",
