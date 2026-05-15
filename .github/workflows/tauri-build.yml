@@ -4,14 +4,17 @@ name: CI - tauri-build
 # a merge gate. Running the 3-OS Tauri build on every push / PR was the
 # single biggest contributor to CI wall time despite Tauri-relevant code
 # changing rarely. Triggers:
-#   - push of a v* tag — gates an actual release
 #   - weekly schedule — catches upstream toolchain regressions
-#   - workflow_dispatch — on-demand before cutting a release
+#   - workflow_dispatch — on-demand readiness build or manual attach
+#                         to an existing Release via the release_tag input
+# The desktop app is intentionally excluded from automatic releases —
+# `v*` tag pushes do NOT trigger this workflow, and the GitHub Release
+# created by release.yml ships only npm packages and the .vsix. If you
+# need to attach installers to an existing tag, dispatch this workflow
+# manually with `release_tag` set.
 # Per-PR validation lives in ci.yml (Rust workspace) and the JS workflows;
 # cross-OS Tauri regressions are caught post-merge / nightly.
 on:
-  push:
-    tags: ["v*"]
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
@@ -134,18 +137,15 @@ jobs:
           if-no-files-found: ignore
 
       - name: Attach installers to GitHub Release
-        # Fires on either:
-        #   - tag push (`v*`) — the automatic release flow, or
-        #   - workflow_dispatch with `release_tag` set — for re-attaching
-        #     after a path/glob fix on an existing Release.
-        # `softprops/action-gh-release@v2` is idempotent: it creates the
-        # Release if release.yml hasn't yet (race-safe with the parallel
-        # tag-push trigger) and otherwise appends files to the existing
-        # one without overwriting unrelated assets.
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+        # Fires only when the workflow is manually dispatched with
+        # `release_tag` set — automatic tag-push attachment was removed
+        # to keep the desktop app out of the standard release flow.
+        # `softprops/action-gh-release@v2` is idempotent: appends files
+        # to the existing Release without overwriting unrelated assets.
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          tag_name: ${{ inputs.release_tag }}
           # File-level globs: ship only the user-facing installer
           # bundles, not the bare `release/` binaries or `.app` dirs.
           files: |

@@ -87,3 +87,9 @@ jobs:
         run: pnpm --filter slide-builder run typecheck
       - name: Build
         run: pnpm --filter slide-builder run build
+      # Smoke test: catch vsce packaging errors (missing files,
+      # .vscodeignore misconfiguration, README/CHANGELOG issues, etc.)
+      # at PR time rather than mid-release. Output is discarded — the
+      # real .vsix is produced by release.yml's publish-vsix job.
+      - name: Package VSIX (smoke test)
+        run: pnpm --filter slide-builder exec vsce package --no-dependencies --out "${RUNNER_TEMP}/slide-builder-smoke.vsix"

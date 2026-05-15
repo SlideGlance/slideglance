@@ -9,9 +9,16 @@ name: Release
 #   2. publish-npm    — `pnpm publish` the 4 npm packages
 #                       (@slideglance/core, measure, builder, viewer)
 #                       in topological order with npm provenance.
-#   3. github-release — create the GitHub Release with auto-generated
-#                       notes. Tauri installers attach themselves
-#                       independently (see tauri-build.yml).
+#   3. publish-vsix   — `vsce package` the VS Code extension and attach
+#                       the .vsix to the GitHub Release. Marketplace
+#                       publishing is intentionally out of scope (no
+#                       VSCE_PAT secret); the .vsix is download-and-
+#                       install only.
+#   4. github-release — create the GitHub Release with auto-generated
+#                       notes. The .vsix attaches itself independently
+#                       (see publish-vsix above). Desktop installers are
+#                       intentionally excluded from the automatic flow;
+#                       see tauri-build.yml for the manual-dispatch path.
 #
 # crates.io publish is intentionally NOT part of this pipeline. The
 # Rust crates exist as internal scaffolding for the wasm bindings
@@ -212,9 +219,92 @@ jobs:
             echo "::endgroup::"
           done
 
+  publish-vsix:
+    name: Package and attach VSIX
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # See verify job for cache rationale. wasm-pack is required because
+      # slide-builder's `vscode:prepublish` hook transitively triggers
+      # `scripts/build-wasm.sh` via the @slideglance/core / @slideglance/measure
+      # prebuild chain — same guard as ci-vscode-extension.yml.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - id: wasm-dist-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/core/dist
+            packages/measure/dist
+          key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
+      - run: pnpm install --frozen-lockfile
+      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-wasm.sh
+
+      # Build viewer + builder up front so slide-builder's
+      # `vscode:prepublish` hook (build:deps + build) collapses to
+      # cache-hit no-ops. viewer's d.ts output is also required for
+      # slide-builder's typecheck during `vsce package`.
+      - run: pnpm -r --filter './packages/*' build
+
+      - name: Package VSIX
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          VSIX_PATH="${GITHUB_WORKSPACE}/slideglance-vscode-${VERSION}.vsix"
+          # `--no-dependencies` matches the existing local `pnpm package`
+          # script — vsce's npm-list-based dependency walk doesn't
+          # understand pnpm workspace symlinks.
+          # `--out` overrides the default `{name}-{version}.vsix` so end
+          # users on the Release page see `slideglance-vscode-*` instead
+          # of the internal `slide-builder-*` package name.
+          pnpm --filter slide-builder exec vsce package --no-dependencies --out "${VSIX_PATH}"
+          echo "VSIX_PATH=${VSIX_PATH}" >> "$GITHUB_ENV"
+
+      # Upload as workflow artifact regardless of dry-run / tag-push
+      # status — gives a downloadable fallback if the Release attach
+      # step fails or is skipped (mirrors tauri-build.yml).
+      - name: Upload VSIX (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: slideglance-vscode
+          path: ${{ env.VSIX_PATH }}
+          if-no-files-found: error
+
+      - name: Attach VSIX to GitHub Release
+        # Same gating as the github-release job: only on real tag pushes.
+        # `softprops/action-gh-release@v2` is idempotent and race-safe
+        # with the parallel tauri-build attach and the github-release
+        # creation step — it creates the Release if no other job has yet.
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.VSIX_PATH }}
+          fail_on_unmatched_files: true
+
   github-release:
     name: Create GitHub Release
-    needs: [publish-npm]
+    needs: [publish-npm, publish-vsix]
     # Only run on real tag pushes — dry-run workflow_dispatch invocations
     # exercise the publish pipeline without leaving a draft Release behind.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
@@ -231,10 +321,11 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          # The Release may already exist if tauri-build.yml's installer
-          # upload (which runs in parallel for the same tag) reached
-          # softprops/action-gh-release first. Treat that as benign and
-          # only fill in auto-generated notes when we are the creator.
+          # The Release may already exist if publish-vsix's
+          # softprops/action-gh-release step (which runs in parallel
+          # under `needs: verify`) reached the API first. Treat that as
+          # benign and only fill in auto-generated notes when we are
+          # the creator.
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists — leaving in place."
           else
