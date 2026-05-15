@@ -73,14 +73,22 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      # wasm-pack is always installed (~2s) even on cache hit: viewer's
+      # prebuild hook (run-build-wasm.mjs -> scripts/build-wasm.sh)
+      # checks `command -v wasm-pack` before its own up-to-date guard
+      # kicks in, so pnpm -r build would fail mid-run otherwise. The
+      # 5min wasm-pack *build* work is what the cache gates, not the
+      # binary download.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
       # Content-addressed wasm dist cache. `scripts/build-wasm.sh` was
       # taking ~5min per run and was the single biggest contributor to
       # release wall time. We key on every input that can change the
       # output bytes: every Rust source under crates/, every per-crate
       # manifest, the root workspace manifest, the lockfile, the
-      # toolchain pin, and the build script itself. On hit we skip
-      # build-wasm.sh entirely (and even wasm-pack installation, since
-      # there is nothing for it to build).
+      # toolchain pin, and the build script itself.
       - id: wasm-dist-cache
         uses: actions/cache@v4
         with:
@@ -88,11 +96,6 @@ jobs:
             packages/core/dist
             packages/measure/dist
           key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
-
-      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: latest
 
       - id: read-version
         env:
