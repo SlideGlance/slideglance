@@ -6,31 +6,28 @@ name: Release
 #   1. verify         — install, build wasm + JS, run the Rust workspace
 #                       tests, and confirm `package.json` version matches
 #                       the tag (single source of truth check).
-#   2. publish-crates — `cargo publish` the 9 publishable crates in
-#                       topological order to crates.io.
-#   3. publish-npm    — `pnpm publish` the 4 npm packages
+#   2. publish-npm    — `pnpm publish` the 4 npm packages
 #                       (@slideglance/core, measure, builder, viewer)
 #                       in topological order with npm provenance.
-#   4. github-release — create the GitHub Release with auto-generated
+#   3. github-release — create the GitHub Release with auto-generated
 #                       notes. Tauri installers attach themselves
 #                       independently (see tauri-build.yml).
+#
+# crates.io publish is intentionally NOT part of this pipeline. The
+# Rust crates exist as internal scaffolding for the wasm bindings
+# (@slideglance/core, @slideglance/measure); end users consume the
+# library through npm, not crates.io. If that distribution model
+# changes, re-add a publish-crates job and gate github-release on it.
 #
 # `workflow_dispatch` provides a dry-run path that runs every step but
 # substitutes `--dry-run` for the actual publish — invoke it manually
 # before the first real release to validate the pipeline end-to-end.
 #
 # Required GitHub secrets:
-#   - CARGO_REGISTRY_TOKEN  — crates.io API token with publish scope
-#                              for every `slideglance-*` crate. The
-#                              very first publish auto-creates the
-#                              crate; subsequent owners use
-#                              `cargo owner --add` from a maintainer
-#                              machine.
-#   - NPM_TOKEN             — npm Granular Access Token scoped to
-#                              the `@slideglance` org with
-#                              `read-and-write` on every published
-#                              package. Provenance also requires the
-#                              `id-token: write` permission below.
+#   - NPM_TOKEN  — npm Granular Access Token scoped to the
+#                  `@slideglance` org with `read-and-write` on every
+#                  published package. Provenance also requires the
+#                  `id-token: write` permission below.
 on:
   push:
     tags: ["v*"]
@@ -130,70 +127,6 @@ jobs:
       - run: pnpm -r --filter './packages/*' build
       - run: rustup run stable cargo test --workspace --exclude slideglance-viewer
 
-  publish-crates:
-    name: Publish to crates.io
-    needs: verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Publish crates in topological order
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          # Topological order — leaves first, then dependents. Mirrors
-          # the `[workspace.dependencies]` graph in the root Cargo.toml.
-          # slideglance-wasm / slideglance-measure-wasm are intentionally
-          # omitted: they carry `publish = false` because they ship via
-          # npm (@slideglance/core, @slideglance/measure), not crates.io.
-          ALL_CRATES=(
-            slideglance-utils
-            slideglance-color
-            slideglance-emf
-            slideglance-png
-            slideglance-model
-            slideglance-font
-            slideglance-parser
-            slideglance-renderer
-            slideglance
-          )
-
-          if [[ "$IS_DRY_RUN" == "true" ]]; then
-            # Workspace dry-run limitation: `cargo publish --dry-run`
-            # always resolves declared dep versions against crates.io
-            # during the packaging step (before verify, so `--no-verify`
-            # does not help). For a first publish where the workspace
-            # crates do not yet exist on the registry, the second crate
-            # in the chain 404s on the first. There is no flag combo
-            # that bypasses this. We therefore dry-run only the leaf
-            # crates (no internal deps) and note explicitly that the
-            # dependent crates can only be validated by a real publish,
-            # which succeeds because each `cargo publish` populates the
-            # index before the next crate's resolution runs.
-            LEAF_CRATES=(
-              slideglance-utils
-              slideglance-color
-              slideglance-emf
-              slideglance-png
-            )
-            for c in "${LEAF_CRATES[@]}"; do
-              echo "::group::cargo publish -p $c --dry-run"
-              cargo publish -p "$c" --dry-run
-              echo "::endgroup::"
-            done
-            echo "::notice::Skipped dry-run for slideglance-model / -font / -parser / -renderer / slideglance — workspace internal-dep resolution requires the leaf crates to exist on crates.io. They will be validated by the real publish path, which uses cargo's --wait-for-publish (default) for index propagation between iterations."
-          else
-            for c in "${ALL_CRATES[@]}"; do
-              echo "::group::cargo publish -p $c"
-              cargo publish -p "$c"
-              echo "::endgroup::"
-            done
-          fi
-
   publish-npm:
     name: Publish to npm
     needs: verify
@@ -281,7 +214,7 @@ jobs:
 
   github-release:
     name: Create GitHub Release
-    needs: [publish-crates, publish-npm]
+    needs: [publish-npm]
     # Only run on real tag pushes — dry-run workflow_dispatch invocations
     # exercise the publish pipeline without leaving a draft Release behind.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
