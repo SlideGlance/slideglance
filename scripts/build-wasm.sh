@@ -117,13 +117,22 @@ needs_rebuild() {
     return 0
   fi
   # find returns the first source file newer than the artefact and
-  # exits — empty result means everything is up to date.
+  # exits — empty result means everything is up to date. Narrow the
+  # walk to files that can actually change the compiled wasm output:
+  # `.rs` sources and per-crate `Cargo.toml` manifests. Documentation
+  # (`docs/**`, `README.md`), test fixtures, build snapshots, etc.
+  # don't affect the binary, and including them caused spurious
+  # rebuilds in CI where `git checkout` stamps every file with the
+  # current time and the wasm dist (restored from a content-addressed
+  # cache) ends up older than unrelated docs.
   local newer
   newer=$(find "${ROOT}/crates" \
             \! -path "${ROOT}/crates/target*" \
-            -type f -newer "${artefact}" -print -quit 2>/dev/null || true)
+            -type f \
+            \( -name '*.rs' -o -name 'Cargo.toml' \) \
+            -newer "${artefact}" -print -quit 2>/dev/null || true)
   if [[ -z "${newer}" ]]; then
-    for extra in "${ROOT}/Cargo.toml" "${ROOT}/Cargo.lock" "${SCRIPT_PATH}"; do
+    for extra in "${ROOT}/Cargo.toml" "${ROOT}/Cargo.lock" "${ROOT}/rust-toolchain.toml" "${SCRIPT_PATH}"; do
       if [[ -f "${extra}" && "${extra}" -nt "${artefact}" ]]; then
         newer="${extra}"
         break

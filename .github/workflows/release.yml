@@ -97,6 +97,15 @@ jobs:
             packages/measure/dist
           key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
 
+      # Cache extraction preserves the original mtimes (cache write time
+      # < this checkout's stamp time), so `scripts/build-wasm.sh`'s
+      # `find -newer` check would still classify the restored dist as
+      # "older than source" and rebuild. Bump dist mtimes past checkout
+      # so the up-to-date guard passes. No-op on miss (next step rebuilds).
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
       - id: read-version
         env:
           REF_TYPE: ${{ github.ref_type }}
@@ -223,6 +232,12 @@ jobs:
             packages/core/dist
             packages/measure/dist
           key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      # See verify job — bump dist mtimes past checkout time so the
+      # script's mtime-based up-to-date check passes on cache hit.
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
 
       - run: pnpm install --frozen-lockfile
       - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
