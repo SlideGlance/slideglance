@@ -14,11 +14,19 @@ name: Release
 #                       publishing is intentionally out of scope (no
 #                       VSCE_PAT secret); the .vsix is download-and-
 #                       install only.
-#   4. github-release — create the GitHub Release with auto-generated
-#                       notes. The .vsix attaches itself independently
-#                       (see publish-vsix above). Desktop installers are
-#                       intentionally excluded from the automatic flow;
-#                       see tauri-build.yml for the manual-dispatch path.
+#   4. publish-chrome-zip — build the Chrome extension and attach the
+#                       Web Store upload zip
+#                       (`slideglance-chrome-{version}.zip`) to the
+#                       GitHub Release. Chrome Web Store auto-publish
+#                       is intentionally out of scope (no chrome-
+#                       webstore-upload secrets); the zip is download-
+#                       and-load-unpacked only.
+#   5. github-release — create the GitHub Release with auto-generated
+#                       notes. The .vsix and Chrome zip attach themselves
+#                       independently (see publish-vsix / publish-chrome-zip
+#                       above). Desktop installers are intentionally
+#                       excluded from the automatic flow; see tauri-build.yml
+#                       for the manual-dispatch path.
 #
 # crates.io publish is intentionally NOT part of this pipeline. The
 # Rust crates exist as internal scaffolding for the wasm bindings
@@ -293,7 +301,7 @@ jobs:
       - name: Attach VSIX to GitHub Release
         # Same gating as the github-release job: only on real tag pushes.
         # `softprops/action-gh-release@v2` is idempotent and race-safe
-        # with the parallel tauri-build attach and the github-release
+        # with publish-chrome-zip's attach and the github-release
         # creation step — it creates the Release if no other job has yet.
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -302,9 +310,86 @@ jobs:
           files: ${{ env.VSIX_PATH }}
           fail_on_unmatched_files: true
 
+  publish-chrome-zip:
+    name: Package and attach Chrome zip
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # See verify job for cache rationale. wasm-pack is required because
+      # chrome-extension's `prebuild` hook shells out to
+      # `scripts/run-build-wasm.mjs` → `scripts/build-wasm.sh`.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - id: wasm-dist-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/core/dist
+            packages/measure/dist
+          key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
+      - run: pnpm install --frozen-lockfile
+      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-wasm.sh
+
+      # Pre-build workspace packages chrome-extension imports so the
+      # extension's vite build resolves dist outputs from each
+      # @slideglance/* dep without re-running their compilers.
+      - run: pnpm -r --filter './packages/*' build
+
+      - name: Package Chrome zip
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          # `scripts/package.mjs` writes apps/chrome-extension/
+          # slideglance-chrome-${version}.zip — matching the
+          # vsce-package output `slideglance-vscode-${version}.vsix`
+          # so the GitHub Release ships matching artefact names.
+          pnpm -F @slideglance/chrome-extension package
+          ZIP_PATH="${GITHUB_WORKSPACE}/apps/chrome-extension/slideglance-chrome-${VERSION}.zip"
+          test -f "${ZIP_PATH}"
+          echo "ZIP_PATH=${ZIP_PATH}" >> "$GITHUB_ENV"
+
+      - name: Upload Chrome zip (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: slideglance-chrome
+          path: ${{ env.ZIP_PATH }}
+          if-no-files-found: error
+
+      - name: Attach Chrome zip to GitHub Release
+        # Same gating as publish-vsix — only on real tag pushes.
+        # softprops/action-gh-release@v2 is idempotent and race-safe
+        # with publish-vsix's attach and the github-release creation
+        # step — it creates the Release if no other job has yet.
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.ZIP_PATH }}
+          fail_on_unmatched_files: true
+
   github-release:
     name: Create GitHub Release
-    needs: [publish-npm, publish-vsix]
+    needs: [publish-npm, publish-vsix, publish-chrome-zip]
     # Only run on real tag pushes — dry-run workflow_dispatch invocations
     # exercise the publish pipeline without leaving a draft Release behind.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
