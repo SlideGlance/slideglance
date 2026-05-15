@@ -29,12 +29,27 @@ jobs:
           sudo apt-get install -y binaryen
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      # Shared wasm dist cache — same key across every workflow.
+      - id: wasm-dist-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/core/dist
+            packages/measure/dist
+          key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
       # Single source of truth for wasm artefacts — builds both
       # `slideglance-wasm` and `slideglance-measure-wasm` for all three
       # consumer targets (bundler / web / node). Replaces three direct
       # `wasm-pack build` calls that handled only `slideglance-wasm`
       # and silently left `@slideglance/measure` unpopulated.
-      - name: Build wasm artefacts
+      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
+        name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4

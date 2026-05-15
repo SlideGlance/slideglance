@@ -56,9 +56,24 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: latest
+
+      # Shared wasm dist cache — same key across every workflow.
+      - id: wasm-dist-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/core/dist
+            packages/measure/dist
+          key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build wasm artefacts
+      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
+        name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
       - name: Build viewer (emits d.ts the vscode-extension typecheck reads)
         run: pnpm --filter @slideglance/viewer run build

@@ -68,6 +68,28 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: latest
+
+      # Shared wasm dist cache — same key across every workflow.
+      # The `runner.os` segment in the key auto-partitions across the
+      # 3-OS matrix (Linux / macOS / Windows) so each host caches its
+      # own wasm output. wasm-pack output is architecture-independent
+      # in principle, but the build pipeline (wasm-opt, wasm-bindgen)
+      # runs against per-OS binaries and we don't want to risk mixing.
+      - id: wasm-dist-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/core/dist
+            packages/measure/dist
+          key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
+
+      # `shell: bash` is mandatory on Windows runners — the default
+      # there is pwsh and `find -exec touch` is unavailable.
+      - if: steps.wasm-dist-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          find packages/core/dist packages/measure/dist -type f -exec touch {} + 2>/dev/null || true
+
       - name: Install Linux deps
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -85,7 +107,9 @@ jobs:
       # cache-hit no-ops. Without this, `pnpm -r build` would fan out
       # the same wasm-pack work across multiple packages and serialize
       # them on `build-wasm.sh`'s defense-in-depth lock.
-      - name: Build wasm artefacts
+      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
+        name: Build wasm artefacts
+        shell: bash
         run: bash scripts/build-wasm.sh
       - name: Build JS workspaces
         run: pnpm -r --filter './packages/*' --filter './apps/*' build
