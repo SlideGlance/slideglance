@@ -195,10 +195,24 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      # Restore the wasm dist that `verify` produced (or hit warm from a
-      # prior workflow run). Consumer-only — `restore@v4` does not also
-      # try to write the same key. On a miss we fall back to rebuilding
-      # via wasm-pack below.
+      # Always install Rust + wasm-pack: not because we always rebuild
+      # wasm, but because `packages/viewer`'s `prebuild` hook unconditionally
+      # invokes `scripts/run-build-wasm.mjs` → `scripts/build-wasm.sh`,
+      # which guards on `command -v wasm-pack` before its own up-to-date
+      # check. Setup is ~20s total; the actual `wasm-pack build` work is
+      # what dominates and is gated by the cache below.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      # Consumer-only restore: `verify` writes the cache, publish-npm
+      # only reads. Same key derivation so both jobs land on the same
+      # entry. On miss we fall back to rebuilding via the explicit
+      # `bash scripts/build-wasm.sh` step below.
       - id: wasm-dist-cache
         uses: actions/cache/restore@v4
         with:
@@ -206,19 +220,6 @@ jobs:
             packages/core/dist
             packages/measure/dist
           key: wasm-dist-${{ runner.os }}-${{ hashFiles('crates/**/*.rs', 'crates/**/Cargo.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/build-wasm.sh') }}
-
-      # Only set up Rust + wasm-pack when we actually need to rebuild —
-      # on cache hit publish-npm runs with no Rust toolchain at all.
-      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
-        uses: Swatinem/rust-cache@v2
-      - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: latest
 
       - run: pnpm install --frozen-lockfile
       - if: steps.wasm-dist-cache.outputs.cache-hit != 'true'
