@@ -1,26 +1,26 @@
 name: CI - tauri-build
 
-# Desktop-viewer cross-platform build is a release-readiness check, not
-# a merge gate. Running the 3-OS Tauri build on every push / PR was the
-# single biggest contributor to CI wall time despite Tauri-relevant code
-# changing rarely. Triggers:
-#   - weekly schedule — catches upstream toolchain regressions
-#   - workflow_dispatch — on-demand readiness build or manual attach
+# Desktop-viewer cross-platform build is a manual-only operation —
+# never runs automatically. The desktop app is intentionally excluded
+# from CI gating, scheduled regression checks, AND from the release
+# pipeline: `v*` tag pushes do NOT trigger this workflow, and the
+# GitHub Release created by release.yml ships only npm packages and
+# the .vsix.
+#
+# Triggers:
+#   - workflow_dispatch — on-demand readiness build, or manual attach
 #                         to an existing Release via the release_tag input
-# The desktop app is intentionally excluded from automatic releases —
-# `v*` tag pushes do NOT trigger this workflow, and the GitHub Release
-# created by release.yml ships only npm packages and the .vsix. If you
-# need to attach installers to an existing tag, dispatch this workflow
-# manually with `release_tag` set.
-# Per-PR validation lives in ci.yml (Rust workspace) and the JS workflows;
-# cross-OS Tauri regressions are caught post-merge / nightly.
+#
+# Per-PR validation lives in ci.yml (Rust workspace) and the JS
+# workflows; the desktop crate participates in `cargo test --workspace`
+# and `apps/desktop-viewer` participates in the JS workspace typecheck,
+# which is sufficient for code-correctness signal. Cross-OS Tauri
+# regressions only surface when this workflow is dispatched manually.
 on:
-  schedule:
-    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "If set, attach built installers to this existing GitHub Release tag (e.g. v0.1.0). Leave empty for a regular release-readiness build with no upload."
+        description: "If set, attach built installers to this existing GitHub Release tag (e.g. v0.1.0). Leave empty for a regular readiness build with no upload."
         required: false
         default: ""
 
