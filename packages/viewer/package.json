@@ -1,6 +1,6 @@
 {
   "name": "@slideglance/viewer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
   "description": "React PPTX presentation viewer backed by @slideglance/core.",
   "license": "MIT",
