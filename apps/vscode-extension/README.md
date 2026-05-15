@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./icon.png" alt="SlideGlance" width="128" height="128" />
+  <img src="https://github.com/SlideGlance/slideglance/raw/main/apps/vscode-extension/icon.png" alt="SlideGlance PPTX Viewer" width="128" height="128" />
 
 # SlideGlance PPTX Viewer
 
