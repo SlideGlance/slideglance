@@ -3,8 +3,28 @@ name: CI - rust-workspace
 on:
   push:
     branches: [main]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "deny.toml"
+      - "testing/vrt/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "deny.toml"
+      - "testing/vrt/**"
+      - ".github/workflows/ci.yml"
+  schedule:
+    # Weekly full-matrix + cargo-deny advisory refresh against main.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,7 +71,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # PRs only run ubuntu to keep the merge gate fast. The full
+        # cross-platform matrix runs on `push: main`, the weekly
+        # `schedule`, and any manual `workflow_dispatch` invocation —
+        # cross-OS regressions are caught post-merge / nightly rather
+        # than on every PR.
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest","macos-latest","windows-latest"]') }}
     env:
       # Some integration tests (renderer, parser) recurse over deep
       # PPTX trees and overflow the 8 MB default thread stack on
@@ -89,11 +114,13 @@ jobs:
           du -h crates/slideglance-wasm/pkg/
 
   # cargo-deny: license / advisory / source / multiple-version gating per
-  # deny.toml at the repo root. The action pins a recent stable cargo-deny
-  # release; advisory-db updates can spuriously fail the job on transient
-  # advisories — promote to required only after the baseline stabilizes.
+  # deny.toml at the repo root. Advisory-db updates spuriously fail the
+  # job on transient advisories, so we only run it on `push: main`, the
+  # weekly `schedule`, and `workflow_dispatch` — never on PRs. This keeps
+  # the merge gate immune to drive-by advisory churn we didn't introduce.
   deny:
     name: cargo deny
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

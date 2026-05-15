@@ -27,7 +27,9 @@
     "README.md",
     "LICENSE"
   ],
-  "scripts": {},
+  "scripts": {
+    "prepublishOnly": "node -e \"['dist/node/slideglance_wasm.js','dist/node/slideglance_wasm.d.ts','dist/bundler/slideglance_wasm.js','dist/web/slideglance_wasm.js'].forEach(p=>require('node:fs').accessSync(p))\""
+  },
   "main": "./dist/node/slideglance_wasm.js",
   "types": "./dist/node/slideglance_wasm.d.ts",
   "exports": {

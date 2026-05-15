@@ -1,5 +1,10 @@
 name: CI - builder-benchmark
 
+# Benchmark runs on shared GitHub runners are noisy and were posting
+# distracting PR comments on every builder PR. The job no longer runs on
+# PRs; instead it produces a fresh baseline on every push to main (used
+# by future comparison runs) and can be invoked manually via
+# workflow_dispatch when a contributor wants to validate a perf change.
 on:
   push:
     branches: [main]
@@ -8,31 +13,18 @@ on:
       - "packages/builder/bench/**"
       - "package.json"
       - "packages/builder/package.json"
-      - "packages/builder/scripts/format-bench-comment.ts"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".node-version"
       - ".github/workflows/ci-builder-benchmark.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "packages/builder/src/**"
-      - "packages/builder/bench/**"
-      - "package.json"
-      - "packages/builder/package.json"
-      - "packages/builder/scripts/format-bench-comment.ts"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".node-version"
-      - ".github/workflows/ci-builder-benchmark.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   benchmark:
@@ -68,32 +60,7 @@ jobs:
       - name: Build wasm artefacts
         run: bash scripts/build-wasm.sh
 
-      - name: Restore baseline from cache
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
-        with:
-          path: bench-results.json
-          key: builder-bench-baseline-main-${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            builder-bench-baseline-main-
-
-      - name: Prepare baseline
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f bench-results.json ]; then
-            mv bench-results.json bench-baseline.json
-            echo "BASELINE_EXISTS=true" >> "$GITHUB_ENV"
-          else
-            echo "BASELINE_EXISTS=false" >> "$GITHUB_ENV"
-          fi
-
-      - name: Run benchmarks (with comparison)
-        if: env.BASELINE_EXISTS == 'true'
-        working-directory: packages/builder
-        run: pnpm exec vitest bench --compare ../../bench-baseline.json --outputJson ../../bench-results.json
-
       - name: Run benchmarks
-        if: env.BASELINE_EXISTS != 'true'
         working-directory: packages/builder
         run: pnpm exec vitest bench --outputJson ../../bench-results.json
 
@@ -103,44 +70,3 @@ jobs:
         with:
           path: bench-results.json
           key: builder-bench-baseline-main-${{ github.sha }}
-
-      - name: Generate benchmark comment
-        if: github.event_name == 'pull_request'
-        working-directory: packages/builder
-        run: |
-          if [ "$BASELINE_EXISTS" = "true" ]; then
-            pnpm exec tsx scripts/format-bench-comment.ts ../../bench-results.json ../../bench-baseline.json > ../../bench-comment.md
-          else
-            pnpm exec tsx scripts/format-bench-comment.ts ../../bench-results.json > ../../bench-comment.md
-          fi
-
-      - name: Post or update PR comment
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('bench-comment.md', 'utf-8');
-            const marker = '<!-- builder-benchmark-comment -->';
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-            const fullBody = marker + '\n' + body;
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body: fullBody,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: fullBody,
-              });
-            }

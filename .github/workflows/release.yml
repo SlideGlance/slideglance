@@ -1,0 +1,235 @@
+name: Release
+
+# Tag-driven release pipeline. Push a `v<semver>` tag whose value matches
+# the root `package.json` version and this workflow will:
+#
+#   1. verify         — install, build wasm + JS, run the Rust workspace
+#                       tests, and confirm `package.json` version matches
+#                       the tag (single source of truth check).
+#   2. publish-crates — `cargo publish` the 9 publishable crates in
+#                       topological order to crates.io.
+#   3. publish-npm    — `pnpm publish` the 4 npm packages
+#                       (@slideglance/core, measure, builder, viewer)
+#                       in topological order with npm provenance.
+#   4. github-release — create the GitHub Release with auto-generated
+#                       notes. Tauri installers attach themselves
+#                       independently (see tauri-build.yml).
+#
+# `workflow_dispatch` provides a dry-run path that runs every step but
+# substitutes `--dry-run` for the actual publish — invoke it manually
+# before the first real release to validate the pipeline end-to-end.
+#
+# Required GitHub secrets:
+#   - CARGO_REGISTRY_TOKEN  — crates.io API token with publish scope
+#                              for every `slideglance-*` crate. The
+#                              very first publish auto-creates the
+#                              crate; subsequent owners use
+#                              `cargo owner --add` from a maintainer
+#                              machine.
+#   - NPM_TOKEN             — npm Granular Access Token scoped to
+#                              the `@slideglance` org with
+#                              `read-and-write` on every published
+#                              package. Provenance also requires the
+#                              `id-token: write` permission below.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run all build/test steps but skip the real publish (uses --dry-run)."
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  IS_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+jobs:
+  verify:
+    name: Verify release artefacts
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    env:
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - id: read-version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            TAG_VERSION="${REF_NAME#v}"
+            if [[ "$TAG_VERSION" != "$VERSION" ]]; then
+              echo "::error::Tag $REF_NAME does not match package.json version $VERSION"
+              exit 1
+            fi
+          fi
+          echo "Releasing version $VERSION"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run version:check
+      - run: bash scripts/build-wasm.sh
+      - run: pnpm -r --filter './packages/*' build
+      - run: rustup run stable cargo test --workspace --exclude slideglance-viewer
+
+  publish-crates:
+    name: Publish to crates.io
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Publish crates in topological order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Topological order — leaves first, then dependents. Mirrors
+          # the `[workspace.dependencies]` graph in the root Cargo.toml.
+          # slideglance-wasm / slideglance-measure-wasm are intentionally
+          # omitted: they carry `publish = false` because they ship via
+          # npm (@slideglance/core, @slideglance/measure), not crates.io.
+          CRATES=(
+            slideglance-utils
+            slideglance-color
+            slideglance-emf
+            slideglance-png
+            slideglance-model
+            slideglance-font
+            slideglance-parser
+            slideglance-renderer
+            slideglance
+          )
+
+          DRY_FLAG=""
+          if [[ "$IS_DRY_RUN" == "true" ]]; then
+            DRY_FLAG="--dry-run"
+          fi
+
+          for c in "${CRATES[@]}"; do
+            echo "::group::cargo publish -p $c $DRY_FLAG"
+            # `--wait-for-publish` is the default since cargo 1.74; the
+            # explicit form keeps intent legible if the default ever
+            # changes. Without it the next iteration races against
+            # crates.io's index-replication lag.
+            cargo publish -p "$c" $DRY_FLAG
+            echo "::endgroup::"
+          done
+
+  publish-npm:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - run: pnpm install --frozen-lockfile
+      - run: bash scripts/build-wasm.sh
+      - run: pnpm -r --filter './packages/*' build
+
+      - name: Publish npm packages in topological order
+        env:
+          # pnpm respects NODE_AUTH_TOKEN via setup-node's .npmrc.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Enable npm provenance for supply-chain auditability. Requires
+          # the workflow-level `id-token: write` permission above.
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          set -euo pipefail
+
+          # Topological order:
+          #   core / measure  (wasm bindings; leaves)
+          #     downstream:
+          #   builder         (depends on measure)
+          #   viewer          (depends on core; React surface)
+          PACKAGES=(
+            "@slideglance/core"
+            "@slideglance/measure"
+            "@slideglance/builder"
+            "@slideglance/viewer"
+          )
+
+          DRY_FLAG=""
+          if [[ "$IS_DRY_RUN" == "true" ]]; then
+            DRY_FLAG="--dry-run"
+          fi
+
+          for pkg in "${PACKAGES[@]}"; do
+            echo "::group::pnpm publish $pkg $DRY_FLAG"
+            # `--no-git-checks` is required because the worktree may
+            # contain freshly-built dist/ output that is gitignored.
+            pnpm --filter "$pkg" publish --access public --no-git-checks $DRY_FLAG
+            echo "::endgroup::"
+          done
+
+  github-release:
+    name: Create GitHub Release
+    needs: [publish-crates, publish-npm]
+    # Only run on real tag pushes — dry-run workflow_dispatch invocations
+    # exercise the publish pipeline without leaving a draft Release behind.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Auto-generated release notes diff against the previous tag,
+          # which needs the full commit history.
+          fetch-depth: 0
+      - name: Create or update Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # The Release may already exist if tauri-build.yml's installer
+          # upload (which runs in parallel for the same tag) reached
+          # softprops/action-gh-release first. Treat that as benign and
+          # only fill in auto-generated notes when we are the creator.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — leaving in place."
+          else
+            gh release create "$TAG" --generate-notes --title "$TAG"
+          fi
