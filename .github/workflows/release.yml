@@ -131,18 +131,27 @@ jobs:
             slideglance
           )
 
-          DRY_FLAG=""
+          # Dry-run note: cargo's verification step re-resolves every
+          # dependency from the registry inside a fresh tarball, which
+          # cannot succeed for workspace deps that have not actually
+          # been uploaded yet (the second crate in the chain looks for
+          # the first on crates.io and 404s). `--no-verify` keeps the
+          # packaging / manifest / file-list checks but skips the
+          # re-compile, which is the only sane way to validate a full
+          # workspace topology without doing a real publish.
+          #
+          # The real publish path keeps full verification because
+          # cargo's default `--wait-for-publish` (since 1.74) lets each
+          # crate's index entry settle before the next crate's verify
+          # tries to fetch it.
+          PUBLISH_FLAGS=()
           if [[ "$IS_DRY_RUN" == "true" ]]; then
-            DRY_FLAG="--dry-run"
+            PUBLISH_FLAGS=(--dry-run --no-verify)
           fi
 
           for c in "${CRATES[@]}"; do
-            echo "::group::cargo publish -p $c $DRY_FLAG"
-            # `--wait-for-publish` is the default since cargo 1.74; the
-            # explicit form keeps intent legible if the default ever
-            # changes. Without it the next iteration races against
-            # crates.io's index-replication lag.
-            cargo publish -p "$c" $DRY_FLAG
+            echo "::group::cargo publish -p $c ${PUBLISH_FLAGS[*]}"
+            cargo publish -p "$c" "${PUBLISH_FLAGS[@]}"
             echo "::endgroup::"
           done
 
@@ -192,16 +201,16 @@ jobs:
             "@slideglance/viewer"
           )
 
-          DRY_FLAG=""
+          DRY_FLAG=()
           if [[ "$IS_DRY_RUN" == "true" ]]; then
-            DRY_FLAG="--dry-run"
+            DRY_FLAG=(--dry-run)
           fi
 
           for pkg in "${PACKAGES[@]}"; do
-            echo "::group::pnpm publish $pkg $DRY_FLAG"
+            echo "::group::pnpm publish $pkg ${DRY_FLAG[*]}"
             # `--no-git-checks` is required because the worktree may
             # contain freshly-built dist/ output that is gitignored.
-            pnpm --filter "$pkg" publish --access public --no-git-checks $DRY_FLAG
+            pnpm --filter "$pkg" publish --access public --no-git-checks "${DRY_FLAG[@]}"
             echo "::endgroup::"
           done
 
