@@ -80,6 +80,26 @@ const cargoTargets = [
   "crates/slideglance-measure-wasm/Cargo.toml",
 ];
 
+// tauri.conf.json carries its own top-level `version` field independent
+// of Cargo.toml's workspace inheritance — Tauri uses it for installer
+// filenames (SlideGlance_<version>_<arch>.{dmg,msi,deb,...}) and the
+// installer's About metadata. v0.1.1 shipped with 0.1.0-named installers
+// because this file was missing from sync. Discover every apps/* that
+// has an `src-tauri/tauri.conf.json` so future apps are auto-covered.
+const tauriConfigTargets = (() => {
+  const out = [];
+  const appsBase = join(repoRoot, "apps");
+  if (!existsSync(appsBase)) return out;
+  for (const entry of readdirSync(appsBase, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const cfgPath = join(appsBase, entry.name, "src-tauri", "tauri.conf.json");
+    if (existsSync(cfgPath)) {
+      out.push(`apps/${entry.name}/src-tauri/tauri.conf.json`);
+    }
+  }
+  return out.sort();
+})();
+
 const drift = [];
 
 function syncPackageJson(relPath) {
@@ -136,6 +156,10 @@ function syncCargoToml(relPath) {
 
 for (const t of packageJsonTargets) syncPackageJson(t);
 for (const t of cargoTargets) syncCargoToml(t);
+// `tauri.conf.json` happens to share the top-level `version` field
+// shape with `package.json`, so it round-trips through the same JSON
+// sync helper without needing a dedicated function.
+for (const t of tauriConfigTargets) syncPackageJson(t);
 
 if (drift.length === 0) {
   console.log(`[sync-versions] all targets already at ${targetVersion}`);
