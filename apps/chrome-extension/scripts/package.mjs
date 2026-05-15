@@ -1,5 +1,8 @@
 // Build the production bundle and zip dist/ into a Web Store
-// upload artifact at slideglance-{version}.zip in the package root.
+// upload artifact at slideglance-chrome-{version}.zip in the package
+// root. Parallels the `slideglance-vscode-{version}.vsix` name that
+// release.yml's publish-vsix job produces, so download artefacts
+// across stores look like they belong to one project.
 //
 // Run via `pnpm -F @slideglance/chrome-extension package`. Re-runs
 // `vite build` first so the zip always reflects the latest source.
@@ -16,7 +19,7 @@ const ROOT = resolve(__dirname, "..");
 const DIST = resolve(ROOT, "dist");
 
 const pkg = JSON.parse(await readFile(resolve(ROOT, "package.json"), "utf8"));
-const outName = `slideglance-${pkg.version}.zip`;
+const outName = `slideglance-chrome-${pkg.version}.zip`;
 const outPath = resolve(ROOT, outName);
 
 async function ensureDist() {

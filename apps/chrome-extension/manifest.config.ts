@@ -17,7 +17,13 @@ import pkg from "./package.json" with { type: "json" };
 // fails to boot.
 export default defineManifest({
   manifest_version: 3,
-  name: "SlideGlance",
+  // Web Store listing + install confirmation surface. Mirrors the
+  // VS Code extension's `displayName` so users see the same product
+  // brand on both stores.
+  name: "SlideGlance PPTX Viewer",
+  // Chrome restricts `short_name` to 12 chars for toolbar tooltips
+  // and OS menus; the longer name is truncated unattractively if
+  // used here, so keep the bare brand.
   short_name: "SlideGlance",
   description:
     "Open .pptx presentations in your browser — no upload, no server.",

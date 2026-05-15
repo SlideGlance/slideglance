@@ -1,31 +1,59 @@
-# @slideglance/chrome-extension
+<div align="center">
+  <img src="./public/icon-128.png" alt="SlideGlance PPTX Viewer" width="128" height="128" />
 
-Chrome extension that opens `.pptx` files in your browser using [`@slideglance/viewer`](../../packages/viewer). All parsing and rendering happen locally — no upload, no server.
+# SlideGlance PPTX Viewer
 
-Part of the [SlideGlance](https://github.com/SlideGlance/slideglance) project — to be published to the Chrome Web Store.
+**Open `.pptx` presentations in your browser — fully local, no upload, no server.**
 
-## What it does
+Part of the [SlideGlance](https://slideglance.github.io/slideglance/) project.
 
-Adds three entry points to Chromium-based browsers:
+</div>
 
-1. **URL intercept** — visiting any direct `.pptx` URL automatically opens it in the viewer.
-2. **Right-click** — `.pptx` link → "Open with SlideGlance".
-3. **Toolbar icon** — empty viewer tab that accepts a drag-dropped or `Open file…` selection.
+---
 
-The viewer is the same React shell the desktop app, web playground, embeddable component, and VS Code extension preview use. All processing stays in the tab.
+## Why this extension
+
+SlideGlance PPTX Viewer turns Chromium-based browsers into a fast, local-first PowerPoint viewer:
+
+- **Local-first** — `.pptx` parsing and rendering happen entirely in the tab via WebAssembly. Files never leave your machine.
+- **Same renderer everywhere** — the underlying React viewer is identical to the one used by the SlideGlance VS Code extension, the desktop app, and the embeddable component, so deck fidelity, font handling, and pixel output are consistent across surfaces.
+- **No tracking** — no analytics, no error reporting, no third-party calls.
+
+```
+  any .pptx link / file ──────────────► SlideGlance PPTX Viewer tab
+   (web · drive · disk · drag-drop)         (WebAssembly · local · offline-capable)
+```
+
+---
+
+## Three ways to open a `.pptx`
+
+| Entry point       | What happens                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **URL intercept** | Navigating to a direct `.pptx` URL (any site, including authenticated SharePoint / Drive / intranet links) opens it in the viewer instead of triggering a download. |
+| **Right-click**   | Right-click any `.pptx` link → **Open with SlideGlance** to open it in a new viewer tab.                                                                            |
+| **Toolbar icon**  | Click the toolbar icon for an empty viewer tab that accepts a drag-dropped file or an _Open file_ picker.                                                           |
+
+The viewer fetches the same URL with the user's cookies, so authenticated links keep working — but the fetched bytes stay in the tab and are never forwarded.
+
+---
 
 ## Screenshots
 
-|                                                                                                                 |                                                                                                       |
-| :-------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
-|                ![Empty state with Open file button](store-assets/screenshots/01-empty-state.png)                | ![Presentation viewer with thumbnails and ruler](store-assets/screenshots/04-presentation-viewer.png) |
-|                           Drop a `.pptx` or pick from disk — nothing leaves the tab.                            |                Slide stage + thumbnail rail + ruler + slideshow / print / PDF export.                 |
-|                      ![Grid view of all slides](store-assets/screenshots/06-grid-view.png)                      |             ![Font mapping popover](store-assets/screenshots/05-font-mapping-popover.png)             |
-|                                 Grid view for scanning large decks at a glance.                                 |         Font fallback report shows which authored typeface resolved to which installed face.          |
-|               ![Settings — theme + language](store-assets/screenshots/02-settings-appearance.png)               |                  ![Settings — about](store-assets/screenshots/03-settings-about.png)                  |
-| Theme + 8 interface languages (English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |                       Browser-only, offline-capable WebAssembly. MIT-licensed.                        |
+> Captures were taken before the extension was renamed to **SlideGlance PPTX Viewer**, so the empty-state heading still shows the short legacy brand. Functionally identical to the current build.
 
-> Sample deck used for the screenshots: [_Business Infographic Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319) by SlidesCarnival.
+|                                                                                                                                                       |                                                                                                                                           |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------: |
+|                    [![Empty state](./store-assets/screenshots/01-empty-state.png)](./store-assets/screenshots/01-empty-state.png)                     |  [![Presentation viewer](./store-assets/screenshots/04-presentation-viewer.png)](./store-assets/screenshots/04-presentation-viewer.png)   |
+|                                      **Empty state** — drop a `.pptx` or pick from disk. Nothing leaves the tab.                                      |                                **Presentation viewer** — thumbnails, ruler, slideshow, print, PDF export.                                 |
+|                       [![Grid view](./store-assets/screenshots/06-grid-view.png)](./store-assets/screenshots/06-grid-view.png)                        | [![Font mapping popover](./store-assets/screenshots/05-font-mapping-popover.png)](./store-assets/screenshots/05-font-mapping-popover.png) |
+|                                                  **Grid view** for scanning large decks at a glance.                                                  |                         **Font mapping** popover shows which authored typeface resolved to which installed face.                          |
+| [![Settings — appearance and language](./store-assets/screenshots/02-settings-appearance.png)](./store-assets/screenshots/02-settings-appearance.png) |         [![Settings — about](./store-assets/screenshots/03-settings-about.png)](./store-assets/screenshots/03-settings-about.png)         |
+|                              **Settings** — theme + 8 interface languages (en · ko · ja · zh-CN · zh-TW · es · fr · de).                              |                                    **About** — browser-only WebAssembly engine, offline-capable, MIT.                                     |
+
+> Sample deck used for the captures: [_Business Infographic Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319) by SlidesCarnival.
+
+---
 
 ## Prerequisites
 
@@ -35,22 +63,20 @@ The viewer is the same React shell the desktop app, web playground, embeddable c
 
 ## Build
 
-From the **workspace root** (`/Users/.../slideglance`):
+From the **workspace root** (`/path/to/slideglance`):
 
 ```sh
 pnpm install
 pnpm -F @slideglance/chrome-extension build
 ```
 
-The build runs the workspace's `prebuild` (compiles `slideglance-wasm`
-via `wasm-pack`, syncs versions across every package), then Vite emits
-the unpacked extension into `apps/chrome-extension/dist/`.
+The build runs the workspace's `prebuild` (compiles `slideglance-wasm` via `wasm-pack`, syncs versions across every package), then Vite emits the unpacked extension into `apps/chrome-extension/dist/`.
 
 For a Chrome Web Store upload zip:
 
 ```sh
 pnpm -F @slideglance/chrome-extension package
-# writes apps/chrome-extension/slideglance-<version>.zip
+# writes apps/chrome-extension/slideglance-chrome-<version>.zip
 ```
 
 ## Install (load unpacked into Chrome)
@@ -68,30 +94,40 @@ pnpm -F @slideglance/chrome-extension package
 pnpm -F @slideglance/chrome-extension dev
 ```
 
-The dev server watches the source tree and rebuilds `dist/` in place.
-Combined with the loaded-unpacked install above, this gives HMR for
-content scripts and the React UI; service-worker / manifest changes
-still require a `chrome://extensions` reload.
+The dev server watches the source tree and rebuilds `dist/` in place. Combined with the loaded-unpacked install above, this gives HMR for content scripts and the React UI; service-worker / manifest changes still require a `chrome://extensions` reload.
 
 ## Verify it works
 
-1. Click the toolbar icon — an empty viewer tab opens with the "Open file" prompt.
-2. Drag any local `.pptx` onto the empty state, or click _Open file_. Slides should render with the toolbar / thumbnails / ruler.
+1. Click the toolbar icon — an empty viewer tab opens with the **Open file** prompt.
+2. Drag any local `.pptx` onto the empty state, or click _Open file_. Slides should render with the toolbar, thumbnails, and ruler.
 3. Visit any direct `.pptx` URL (an academic course page or open conference site). The extension intercepts the navigation and re-opens it in the viewer.
 4. Right-click a `.pptx` link → **Open with SlideGlance**.
 5. Open Settings (gear icon, top-right of the empty state) and toggle the language / theme — the UI re-renders without reload.
+
+---
 
 ## Permissions
 
 | Permission              | Why                                                                                                                                      |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `<all_urls>` host       | Redirect any direct `.pptx` URL to the viewer; fetch the same URL with the user's cookies for authenticated sites. All processing local. |
-| `declarativeNetRequest` | Dynamic redirect rule, registered on install.                                                                                            |
+| `declarativeNetRequest` | Registers the dynamic redirect rule on install.                                                                                          |
 | `contextMenus`          | Adds the "Open with SlideGlance" right-click item.                                                                                       |
 
 ## Privacy
 
 See [PRIVACY.md](./PRIVACY.md). Short version: no data leaves your browser.
+
+---
+
+## Homepage and reference documentation
+
+- **Homepage** — [slideglance.github.io/slideglance](https://slideglance.github.io/slideglance/) — overview and links into the rest of the project.
+- **Source repository** — [github.com/SlideGlance/slideglance](https://github.com/SlideGlance/slideglance) — workspace root with every crate, package, and app.
+- **`@slideglance/viewer` package** — [`packages/viewer/`](https://github.com/SlideGlance/slideglance/tree/main/packages/viewer) — the React renderer powering this extension.
+- **VS Code extension** — [`apps/vscode-extension/`](https://github.com/SlideGlance/slideglance/tree/main/apps/vscode-extension) — same viewer, plus authoring of `.sgx` decks that compile to editable `.pptx`.
+
+---
 
 ## License
 

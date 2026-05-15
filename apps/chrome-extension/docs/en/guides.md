@@ -42,7 +42,7 @@ Produce the zip required for store submission.
 
 ```sh
 pnpm --filter @slideglance/chrome-extension package
-# → apps/chrome-extension/slideglance-<version>.zip
+# → apps/chrome-extension/slideglance-chrome-<version>.zip
 ```
 
 ### Expected result

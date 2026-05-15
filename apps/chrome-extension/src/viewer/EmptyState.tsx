@@ -7,13 +7,16 @@ import { SettingsDialog, t, subscribeLocale } from "@slideglance/viewer";
 // resolves `public/*` references to a hashed URL the rendered HTML
 // can load directly. Using the icon avoids the lowercase `slideglance
 // viewer` text logo that previously sat in the empty state — the
-// product name everywhere else now reads "SlideGlance".
+// product name everywhere else now reads "SlideGlance PPTX Viewer".
 import iconUrl from "../../public/icon-128.png";
 
 /** User-visible product name, shown beneath the icon. Kept in sync
- * with the manifest, the document `<title>`, and the context-menu
- * label so the user sees one name everywhere. */
-const PRODUCT_NAME = "SlideGlance";
+ * with the manifest `name` and the Web Store listing so the user
+ * sees one brand everywhere. The context-menu label stays terse
+ * ("Open with SlideGlance") for the same reason VS Code commands
+ * use the short prefix — verb phrases in chrome surfaces read
+ * better without the trailing product noun. */
+const PRODUCT_NAME = "SlideGlance PPTX Viewer";
 
 interface EmptyStateProps {
   onFile: (file: File) => void;

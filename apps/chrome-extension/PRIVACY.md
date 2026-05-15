@@ -1,4 +1,4 @@
-# Privacy Policy — SlideGlance (Chrome extension)
+# Privacy Policy — SlideGlance PPTX Viewer (Chrome extension)
 
 Effective date: 2026-05-06
 
@@ -6,8 +6,8 @@ Effective date: 2026-05-06
 
 **None.**
 
-The SlideGlance Chrome extension parses and renders PowerPoint (`.pptx`)
-files entirely in your browser using WebAssembly. No file content, URL, or
+The SlideGlance PPTX Viewer Chrome extension parses and renders PowerPoint
+(`.pptx`) files entirely in your browser using WebAssembly. No file content, URL, or
 usage telemetry is transmitted to any server operated by us or any third
 party.
 

@@ -1,8 +1,7 @@
-# Web Store Listing — SlideGlance
+# Web Store Listing — SlideGlance PPTX Viewer
 
-> Fill in `<TODO>` markers before submitting. Screenshot captures live
-> in `screenshots/` and are referenced from this file in the order the
-> Web Store presents them.
+> Screenshot captures live in `screenshots/` and are referenced from
+> this file in the order the Web Store presents them.
 
 ## Short description (≤132 chars)
 
@@ -10,7 +9,7 @@ Open .pptx presentations in your browser — fully local, no upload, no server.
 
 ## Detailed description
 
-SlideGlance opens PowerPoint files (`.pptx`) directly in your browser.
+SlideGlance PPTX Viewer opens PowerPoint files (`.pptx`) directly in your browser.
 
 - **Local-first.** Parsing and rendering use WebAssembly inside your tab.
   Files never leave your machine.
@@ -37,7 +36,11 @@ them to any server.
 
 ## Privacy URL
 
-<TODO: GitHub Pages URL or similar host of PRIVACY.md>
+https://github.com/SlideGlance/slideglance/blob/main/apps/chrome-extension/PRIVACY.md
+
+> GitHub renders the in-repo `PRIVACY.md` as a public, stable URL — no
+> separate hosting required. If the project later publishes a Pages
+> site with a dedicated `/privacy` route, swap this URL there.
 
 ## Screenshots
 
