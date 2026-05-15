@@ -119,7 +119,7 @@ jobs:
           # slideglance-wasm / slideglance-measure-wasm are intentionally
           # omitted: they carry `publish = false` because they ship via
           # npm (@slideglance/core, @slideglance/measure), not crates.io.
-          CRATES=(
+          ALL_CRATES=(
             slideglance-utils
             slideglance-color
             slideglance-emf
@@ -131,29 +131,37 @@ jobs:
             slideglance
           )
 
-          # Dry-run note: cargo's verification step re-resolves every
-          # dependency from the registry inside a fresh tarball, which
-          # cannot succeed for workspace deps that have not actually
-          # been uploaded yet (the second crate in the chain looks for
-          # the first on crates.io and 404s). `--no-verify` keeps the
-          # packaging / manifest / file-list checks but skips the
-          # re-compile, which is the only sane way to validate a full
-          # workspace topology without doing a real publish.
-          #
-          # The real publish path keeps full verification because
-          # cargo's default `--wait-for-publish` (since 1.74) lets each
-          # crate's index entry settle before the next crate's verify
-          # tries to fetch it.
-          PUBLISH_FLAGS=()
           if [[ "$IS_DRY_RUN" == "true" ]]; then
-            PUBLISH_FLAGS=(--dry-run --no-verify)
+            # Workspace dry-run limitation: `cargo publish --dry-run`
+            # always resolves declared dep versions against crates.io
+            # during the packaging step (before verify, so `--no-verify`
+            # does not help). For a first publish where the workspace
+            # crates do not yet exist on the registry, the second crate
+            # in the chain 404s on the first. There is no flag combo
+            # that bypasses this. We therefore dry-run only the leaf
+            # crates (no internal deps) and note explicitly that the
+            # dependent crates can only be validated by a real publish,
+            # which succeeds because each `cargo publish` populates the
+            # index before the next crate's resolution runs.
+            LEAF_CRATES=(
+              slideglance-utils
+              slideglance-color
+              slideglance-emf
+              slideglance-png
+            )
+            for c in "${LEAF_CRATES[@]}"; do
+              echo "::group::cargo publish -p $c --dry-run"
+              cargo publish -p "$c" --dry-run
+              echo "::endgroup::"
+            done
+            echo "::notice::Skipped dry-run for slideglance-model / -font / -parser / -renderer / slideglance — workspace internal-dep resolution requires the leaf crates to exist on crates.io. They will be validated by the real publish path, which uses cargo's --wait-for-publish (default) for index propagation between iterations."
+          else
+            for c in "${ALL_CRATES[@]}"; do
+              echo "::group::cargo publish -p $c"
+              cargo publish -p "$c"
+              echo "::endgroup::"
+            done
           fi
-
-          for c in "${CRATES[@]}"; do
-            echo "::group::cargo publish -p $c ${PUBLISH_FLAGS[*]}"
-            cargo publish -p "$c" "${PUBLISH_FLAGS[@]}"
-            echo "::endgroup::"
-          done
 
   publish-npm:
     name: Publish to npm
