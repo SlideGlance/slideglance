@@ -23,7 +23,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 # Highest MSRV required by direct dependencies as of this writing:
 #   zip 8.6.0 → 1.88, image 0.25.10 → 1.88, resvg 0.47.0 → 1.87,
@@ -80,15 +80,15 @@ needless_range_loop = "allow"
 # above so a single bump propagates to every dependent. Path declared
 # alongside so a fresh checkout doesn't try to fetch from crates.io
 # before the very first publish.
-slideglance-utils = { path = "crates/slideglance-utils", version = "0.1.0" }
-slideglance-color = { path = "crates/slideglance-color", version = "0.1.0" }
-slideglance-model = { path = "crates/slideglance-model", version = "0.1.0" }
-slideglance-parser = { path = "crates/slideglance-parser", version = "0.1.0" }
-slideglance-emf = { path = "crates/slideglance-emf", version = "0.1.0" }
-slideglance-font = { path = "crates/slideglance-font", version = "0.1.0" }
-slideglance-renderer = { path = "crates/slideglance-renderer", version = "0.1.0" }
-slideglance-png = { path = "crates/slideglance-png", version = "0.1.0" }
-slideglance = { path = "crates/slideglance", version = "0.1.0" }
+slideglance-utils = { path = "crates/slideglance-utils", version = "0.1.1" }
+slideglance-color = { path = "crates/slideglance-color", version = "0.1.1" }
+slideglance-model = { path = "crates/slideglance-model", version = "0.1.1" }
+slideglance-parser = { path = "crates/slideglance-parser", version = "0.1.1" }
+slideglance-emf = { path = "crates/slideglance-emf", version = "0.1.1" }
+slideglance-font = { path = "crates/slideglance-font", version = "0.1.1" }
+slideglance-renderer = { path = "crates/slideglance-renderer", version = "0.1.1" }
+slideglance-png = { path = "crates/slideglance-png", version = "0.1.1" }
+slideglance = { path = "crates/slideglance", version = "0.1.1" }
 
 # ZIP / XML
 zip = { version = "8", default-features = false, features = ["deflate"] }
