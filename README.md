@@ -71,20 +71,9 @@ component, and VS Code extension preview use.
 
 ## Why use it
 
-```mermaid
-graph LR
-    XML[XML deck<br/>.sgx] --> BLD["@slideglance/builder"]
-    BLD --> PPTX[.pptx file]
-    PPTX --> CORE[SlideGlance core]
-    CORE --> SVG[SVG]
-    CORE --> PNG[PNG]
-    SVG --> BR((Browser))
-    SVG --> PDF((PDF / print))
-    PNG --> THM((Thumbnail))
-    PNG --> IMG((Image pipeline))
-    style BLD fill:#7c3aed,color:#fff,stroke:#5b21b6
-    style CORE fill:#c43e1c,color:#fff,stroke:#a32d10
-```
+<p align="center">
+  <img src="assets/why-use-it.svg" alt="Pipeline: an XML deck (.sgx) compiles via @slideglance/builder into a .pptx file, which SlideGlance core renders to SVG (Browser, PDF / print) and PNG (Thumbnail, Image pipeline)." width="900" />
+</p>
 
 - **Local-first** — every file is parsed and rendered in your tab,
   process, or worker. No upload, no server roundtrip.

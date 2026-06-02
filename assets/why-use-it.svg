@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1030 380" width="1030" height="380" role="img" aria-label="Pipeline: an XML deck (.sgx) compiles via @slideglance/builder into a .pptx file, which SlideGlance core renders to SVG (Browser, PDF / print) and PNG (Thumbnail, Image pipeline).">
+  <style>.t{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}</style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="7" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L7 3 L0 6 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <rect x="8" y="8" width="1014" height="364" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+
+  <!-- edges -->
+  <g fill="none" stroke="#94A3B8" stroke-width="1.5">
+    <line x1="154" y1="190" x2="186" y2="190" marker-end="url(#a)"/>
+    <line x1="366" y1="190" x2="398" y2="190" marker-end="url(#a)"/>
+    <line x1="508" y1="190" x2="540" y2="190" marker-end="url(#a)"/>
+    <path d="M690 190 H706 V90 H722" marker-end="url(#a)"/>
+    <path d="M690 190 H706 V290 H722" marker-end="url(#a)"/>
+    <path d="M794 90 H810 V56 H826" marker-end="url(#a)"/>
+    <path d="M794 90 H810 V124 H826" marker-end="url(#a)"/>
+    <path d="M794 290 H810 V256 H826" marker-end="url(#a)"/>
+    <path d="M794 290 H810 V324 H826" marker-end="url(#a)"/>
+  </g>
+
+  <!-- XML deck (.sgx) -->
+  <rect x="24" y="164" width="130" height="52" rx="9" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text class="t" x="89" y="187" text-anchor="middle" font-size="15" font-weight="600" fill="#0F172A">XML deck</text>
+  <text class="t" x="89" y="205" text-anchor="middle" font-size="12" fill="#64748B">.sgx</text>
+
+  <!-- @slideglance/builder (purple) -->
+  <rect x="186" y="164" width="180" height="52" rx="9" fill="#7C3AED"/>
+  <text class="t" x="276" y="194" text-anchor="middle" font-size="13.5" font-weight="600" fill="#FFFFFF">@slideglance/builder</text>
+
+  <!-- .pptx file -->
+  <rect x="398" y="168" width="110" height="44" rx="9" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text class="t" x="453" y="194" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">.pptx file</text>
+
+  <!-- SlideGlance core (red-orange) -->
+  <rect x="540" y="164" width="150" height="52" rx="9" fill="#C43E1C"/>
+  <text class="t" x="615" y="194" text-anchor="middle" font-size="14" font-weight="600" fill="#FFFFFF">SlideGlance core</text>
+
+  <!-- SVG / PNG -->
+  <rect x="722" y="68" width="72" height="44" rx="9" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text class="t" x="758" y="94" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">SVG</text>
+  <rect x="722" y="268" width="72" height="44" rx="9" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text class="t" x="758" y="294" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">PNG</text>
+
+  <!-- leaves (stadium) -->
+  <rect x="826" y="36" width="180" height="40" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.25"/>
+  <text class="t" x="916" y="60" text-anchor="middle" font-size="12.5" fill="#475569">Browser</text>
+  <rect x="826" y="104" width="180" height="40" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.25"/>
+  <text class="t" x="916" y="128" text-anchor="middle" font-size="12.5" fill="#475569">PDF / print</text>
+  <rect x="826" y="236" width="180" height="40" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.25"/>
+  <text class="t" x="916" y="260" text-anchor="middle" font-size="12.5" fill="#475569">Thumbnail</text>
+  <rect x="826" y="304" width="180" height="40" rx="20" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.25"/>
+  <text class="t" x="916" y="328" text-anchor="middle" font-size="12.5" fill="#475569">Image pipeline</text>
+</svg>
