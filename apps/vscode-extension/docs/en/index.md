@@ -3,7 +3,7 @@ title: vscode-extension
 lang: en
 kind: index
 app: vscode-extension
-last_verified_commit: 0000000000000000000000000000000000000000
+last_verified_commit: 93952eafcabba0eb4e38b1d79738462835c3e5c3
 source_files:
   - apps/vscode-extension/package.json
   - apps/vscode-extension/src/
@@ -25,26 +25,31 @@ XML DSL) plus a `.pptx` viewer powered by
 Provides click-to-source from the rendered slide and one-command
 PPTX export.
 
+It declares [`redhat.vscode-xml`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)
+as an extension dependency, so VS Code installs it automatically. That
+extension consumes the bundled `builder.xsd` (registered through an XML
+catalog) to provide `.sgx` schema validation and autocomplete.
+
 ## Install
 
 ```text
 Search "SlideGlance PPTX Viewer" in the Marketplace
-or: code --install-extension slideglance.slide-builder
+or: code --install-extension simplecore.slide-builder
 ```
 
 ## Run it (development)
 
 ```sh
-pnpm --filter slide-builder dev          # webview vite server
-pnpm --filter slide-builder build        # production build
-# Open the apps/vscode-extension folder in VS Code and press F5
+pnpm --filter slide-builder build        # production build (webview + extension host)
+pnpm --filter slide-builder watch:host   # esbuild watch for the extension host
+# then open the apps/vscode-extension folder in VS Code and press F5
 ```
 
 ## When to use this
 
 - Authoring decks in `.sgx` XML with a live preview pane.
 - Reviewing a `.pptx` without leaving the editor.
-- Validating builder XML against the JSON Schema during edit.
+- Validating builder XML against the bundled XSD during edit.
 
 ## Where to go next
 

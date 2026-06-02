@@ -19,3 +19,8 @@ icon.svg
 
 # Source maps — debug aid only, adds ~1 MB to the vsix
 **/*.map
+
+# Member-level docs are workspace-internal and verified separately. The
+# Marketplace listing renders README.md only, so the docs/ tree (including
+# docs/assets/) does not need to ship inside the .vsix.
+docs/**

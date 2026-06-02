@@ -22,23 +22,17 @@ SlideGlance PPTX Viewer unifies two distinct workflows behind a single live-prev
 
 Both modes share the same renderer, so what you see in preview is what your recipient opens in PowerPoint.
 
-```
-   ┌───────────────────────────┐         ┌───────────────────────────┐
-   │      .pptx  (anywhere)    │         │       .sgx  (your repo)   │
-   └─────────────┬─────────────┘         └─────────────┬─────────────┘
-                 │  open with             write + save │
-                 ▼                                     ▼
-   ┌─────────────────────────────────────────────────────────────────┐
-   │              SlideGlance PPTX Viewer  (live webview preview)    │
-   └─────────────────────────────────────────────────────────────────┘
-                                       │  Export PPTX
-                                       ▼
-                          ┌───────────────────────────┐
-                          │   editable .pptx file     │
-                          │  (PowerPoint / Keynote /  │
-                          │       Google Slides)      │
-                          └───────────────────────────┘
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SlideGlance/slideglance/main/apps/vscode-extension/docs/assets/two-tools-flow.png" alt="Open a .pptx or write and save a .sgx — both render in the live SlideGlance PPTX Viewer, which exports an editable .pptx for PowerPoint, Keynote, or Google Slides." width="720" />
+</p>
+
+---
+
+## Requirements
+
+- **VS Code 1.85.0 or newer.**
+- **[Red Hat XML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)** — declared as an extension dependency, so VS Code installs it automatically alongside this one. It powers `.sgx` schema validation and autocomplete from the bundled XSD. No other setup is required.
+- **No account, no network.** Rendering and PPTX export run entirely on your machine via WebAssembly — nothing is uploaded.
 
 ---
 
