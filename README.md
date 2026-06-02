@@ -8,12 +8,30 @@
   Open, view, and author PowerPoint <code>.pptx</code> files in your browser — no upload, no server, no Microsoft Office required.
 </p>
 
+<p align="center">
+  <a href="https://github.com/SlideGlance/slideglance/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SlideGlance/slideglance/actions/workflows/ci.yml/badge.svg?branch=main" /></a>
+  <a href="https://github.com/SlideGlance/slideglance/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/SlideGlance/slideglance?label=release&color=2ea44f&logo=github&logoColor=white" /></a>
+  <a href="LICENSE-MIT"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@slideglance/core"><img alt="@slideglance/core version" src="https://img.shields.io/npm/v/@slideglance/core?label=%40slideglance%2Fcore&color=cb3837&logo=npm&logoColor=white" /></a>
+  <a href="https://www.npmjs.com/package/@slideglance/viewer"><img alt="@slideglance/viewer version" src="https://img.shields.io/npm/v/@slideglance/viewer?label=%40slideglance%2Fviewer&color=cb3837&logo=npm&logoColor=white" /></a>
+  <a href="https://www.npmjs.com/package/@slideglance/measure"><img alt="@slideglance/measure version" src="https://img.shields.io/npm/v/@slideglance/measure?label=%40slideglance%2Fmeasure&color=cb3837&logo=npm&logoColor=white" /></a>
+  <a href="https://www.npmjs.com/package/@slideglance/builder"><img alt="@slideglance/builder version" src="https://img.shields.io/npm/v/@slideglance/builder?label=%40slideglance%2Fbuilder&color=cb3837&logo=npm&logoColor=white" /></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@slideglance/core"><img alt="@slideglance/core downloads per month" src="https://img.shields.io/npm/dm/@slideglance/core?label=%40slideglance%2Fcore%20downloads&color=4c1&logo=npm&logoColor=white" /></a>
+</p>
+
 > ### ⚠ Pre-release / development status
 >
-> SlideGlance is **not yet published** to the Chrome Web Store, npm, or
-> crates.io. The repository currently only supports building from source.
-> Every "Install" step in the table below that mentions a registry name
-> is a placeholder for the eventual published artifact — for now follow
+> The npm packages — `@slideglance/core`, `@slideglance/viewer`,
+> `@slideglance/measure`, and `@slideglance/builder` — are **published** and
+> installable directly from npm. The Chrome Web Store extension and the
+> crates.io crates are **not yet published**; any "Install" step in the table
+> below marked _(once published)_ is still a placeholder — for those, follow
 > the [build from source](#build-from-source) path or the
 > [Chrome extension build / install / run](#chrome-extension-build--install--run)
 > walkthrough.
