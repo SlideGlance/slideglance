@@ -23,6 +23,13 @@ interface MetaSpec {
   root?: boolean;
   /** XML attribute spec — same shape as a regular node. */
   attributes?: Record<string, AttributeSpec>;
+  /**
+   * When true, the element accepts arbitrary additional attributes beyond
+   * those in `attributes` (an untyped attribute bag). Used by `<Style>`, whose
+   * attributes are stored verbatim and validated by the element that opts in
+   * via `class="..."`. Drives an `xs:anyAttribute` in the generated XSD.
+   */
+  openAttributes?: boolean;
   /** Where in the tree the element may appear (for XSD). */
   contentModel: MetaContentModel;
   /** Allowed parent element tags (XSD positioning hint). */
@@ -37,6 +44,7 @@ export interface CompiledMetaDefinition extends Required<
   Pick<MetaSpec, "tag" | "description" | "contentModel">
 > {
   attributes: Record<string, AttributeSpec>;
+  openAttributes: boolean;
   allowedParents: readonly string[];
   root: boolean;
   example?: string;
@@ -55,6 +63,7 @@ export function defineMeta(spec: MetaSpec): CompiledMetaDefinition {
     description: spec.description,
     contentModel: spec.contentModel,
     attributes: spec.attributes ?? {},
+    openAttributes: spec.openAttributes ?? false,
     allowedParents: spec.allowedParents ?? [],
     root: spec.root ?? false,
     example: spec.example,

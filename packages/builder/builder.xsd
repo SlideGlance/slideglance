@@ -2673,6 +2673,7 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="class" type="xs:string" use="optional"/>
+    <xs:anyAttribute processContents="skip"/>
   </xs:complexType>
   <xs:element name="Style" type="b:Style"/>
   <xs:complexType name="If">
@@ -2886,4 +2887,93 @@
       <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
   </xs:element>
+  <xs:complexType name="Master">
+    <xs:annotation>
+      <xs:documentation>Slide master — reusable background chrome (header / footer / page numbers / watermarks). Referenced by &lt;Document defaultMaster&gt; and per-slide `master`.</xs:documentation>
+    </xs:annotation>
+    <xs:choice maxOccurs="unbounded" minOccurs="0">
+      <xs:element ref="b:MasterText"/>
+      <xs:element ref="b:MasterImage"/>
+      <xs:element ref="b:MasterRect"/>
+      <xs:element ref="b:MasterLine"/>
+      <xs:element ref="b:SlideNumber"/>
+    </xs:choice>
+    <xs:attribute name="backgroundColor" type="b:Color" use="optional"/>
+    <xs:attribute name="backgroundData" type="xs:string" use="optional"/>
+    <xs:attribute name="backgroundPath" type="xs:string" use="optional"/>
+    <xs:attribute name="margin" type="b:Padding" use="optional"/>
+    <xs:attribute name="margin.top" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.right" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.bottom" type="xs:double" use="optional"/>
+    <xs:attribute name="margin.left" type="xs:double" use="optional"/>
+    <xs:attribute name="name" type="xs:string" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="Master" type="b:Master"/>
+  <xs:complexType name="MasterText">
+    <xs:attribute name="bold" type="b:Boolean" use="optional"/>
+    <xs:attribute name="color" type="b:Color" use="optional"/>
+    <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
+    <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="highlight" type="b:Color" use="optional"/>
+    <xs:attribute name="italic" type="b:Boolean" use="optional"/>
+    <xs:attribute name="letterSpacing" type="xs:double" use="optional"/>
+    <xs:attribute name="lineHeight" type="xs:double" use="optional"/>
+    <xs:attribute name="strike" type="b:Boolean" use="optional"/>
+    <xs:attribute name="text" type="xs:string" use="optional"/>
+    <xs:attribute name="textAlign" type="xs:string" use="optional"/>
+    <xs:attribute name="underline" type="b:Underline" use="optional"/>
+    <xs:attribute name="w" type="xs:double" use="optional"/>
+    <xs:attribute name="x" type="xs:double" use="optional"/>
+    <xs:attribute name="y" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="MasterText" type="b:MasterText"/>
+  <xs:complexType name="MasterImage">
+    <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="src" type="xs:string" use="optional"/>
+    <xs:attribute name="w" type="xs:double" use="optional"/>
+    <xs:attribute name="x" type="xs:double" use="optional"/>
+    <xs:attribute name="y" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="MasterImage" type="b:MasterImage"/>
+  <xs:complexType name="MasterRect">
+    <xs:attribute name="border" type="b:BorderStyle" use="optional"/>
+    <xs:attribute name="borderRadius" type="xs:double" use="optional"/>
+    <xs:attribute name="fill" type="b:FillStyle" use="optional"/>
+    <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="opacity" type="xs:double" use="optional"/>
+    <xs:attribute name="w" type="xs:double" use="optional"/>
+    <xs:attribute name="x" type="xs:double" use="optional"/>
+    <xs:attribute name="y" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="MasterRect" type="b:MasterRect"/>
+  <xs:complexType name="MasterLine">
+    <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="line" type="b:BorderStyle" use="optional"/>
+    <xs:attribute name="w" type="xs:double" use="optional"/>
+    <xs:attribute name="x" type="xs:double" use="optional"/>
+    <xs:attribute name="x1" type="xs:double" use="optional"/>
+    <xs:attribute name="x2" type="xs:double" use="optional"/>
+    <xs:attribute name="y" type="xs:double" use="optional"/>
+    <xs:attribute name="y1" type="xs:double" use="optional"/>
+    <xs:attribute name="y2" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="MasterLine" type="b:MasterLine"/>
+  <xs:complexType name="SlideNumber">
+    <xs:attribute name="color" type="b:Color" use="optional"/>
+    <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
+    <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="textAlign" type="xs:string" use="optional"/>
+    <xs:attribute name="w" type="xs:double" use="optional"/>
+    <xs:attribute name="x" type="xs:double" use="optional"/>
+    <xs:attribute name="y" type="xs:double" use="optional"/>
+    <xs:attribute name="class" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <xs:element name="SlideNumber" type="b:SlideNumber"/>
 </xs:schema>

@@ -643,6 +643,11 @@ const styleMeta = defineMeta({
   description: 'Named style set. Other elements opt-in via class="name".',
   contentModel: "none",
   allowedParents: ["Styles"],
+  // A <Style> carries any visual attribute valid on the element that opts in
+  // via class="..." (padding, fontSize, bold, color, lineHeight, ...). The
+  // attributes are stored verbatim and coerced in the consuming element's
+  // context, so the schema accepts arbitrary attributes here.
+  openAttributes: true,
   attributes: {
     name: {
       coerce: "string",

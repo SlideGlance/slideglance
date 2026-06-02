@@ -10,6 +10,7 @@ import type {
   CompiledNodeDefinition,
 } from "../registry/defineNode.ts";
 import type { CompiledMetaDefinition } from "../registry/defineMeta.ts";
+import { CHILD_ATTRIBUTE_SPECS } from "../parseXml/childAttributeSpecs.ts";
 import { walkRegistry, coerceToXsdSimpleType } from "./walkRegistry.ts";
 
 export const BUILDER_NAMESPACE_URI = "urn:slideglance:builder:v1";
@@ -132,6 +133,9 @@ export function generateXsd(): string {
 
   // ---- Inline format elements inside <Text> ----
   emitInlineFormatTypes(w);
+
+  // ---- <Master> and its child objects ----
+  emitMasterTypes(w);
 
   w.close("xs:schema");
   return w.toString();
@@ -434,8 +438,55 @@ function emitMetaType(w: XmlWriter, meta: CompiledMetaDefinition): void {
   }
 
   emitAttributes(w, meta.attributes);
+  // Open-attribute metas (e.g. <Style>) are untyped attribute bags at runtime
+  // — every attribute is stored verbatim and merged into the element that
+  // opts in via class="...", which validates them in its own context. Mirror
+  // that by accepting any attribute here instead of rejecting valid presets.
+  if (meta.openAttributes) {
+    w.empty("xs:anyAttribute", { processContents: "skip" });
+  }
   w.close("xs:complexType");
   w.empty("xs:element", { name: meta.tag, type: `b:${meta.tag}` });
+}
+
+/**
+ * <Master> and its child objects (MasterText / MasterImage / MasterRect /
+ * MasterLine / SlideNumber). These are not compiled registry nodes — they are
+ * parsed via CHILD_ATTRIBUTE_SPECS at runtime — so the XSD declares them here,
+ * driven by that same spec map. The SlideGlance root choice references
+ * <Master>, so without these declarations the schema would not compile.
+ */
+function emitMasterTypes(w: XmlWriter): void {
+  const masterChildren = [
+    "MasterText",
+    "MasterImage",
+    "MasterRect",
+    "MasterLine",
+    "SlideNumber",
+  ] as const;
+
+  // <Master> container: a choice of master child objects plus its own attrs.
+  w.open("xs:complexType", { name: "Master" });
+  emitAnnotation(
+    w,
+    "Slide master — reusable background chrome (header / footer / page numbers / watermarks). Referenced by <Document defaultMaster> and per-slide `master`.",
+  );
+  w.open("xs:choice", { minOccurs: "0", maxOccurs: "unbounded" });
+  for (const child of masterChildren) {
+    w.empty("xs:element", { ref: `b:${child}` });
+  }
+  w.close("xs:choice");
+  emitAttributes(w, CHILD_ATTRIBUTE_SPECS.Master ?? {});
+  w.close("xs:complexType");
+  w.empty("xs:element", { name: "Master", type: "b:Master" });
+
+  // Master child objects — leaf elements with fixed attribute sets.
+  for (const child of masterChildren) {
+    w.open("xs:complexType", { name: child });
+    emitAttributes(w, CHILD_ATTRIBUTE_SPECS[child] ?? {});
+    w.close("xs:complexType");
+    w.empty("xs:element", { name: child, type: `b:${child}` });
+  }
 }
 
 function emitInlineFormatTypes(w: XmlWriter): void {

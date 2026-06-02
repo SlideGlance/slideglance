@@ -48,6 +48,41 @@ describe("XSD generator", () => {
     expect(xsd).toContain(`<xs:element name="svg">`);
   });
 
+  it("declares every element it references (no dangling refs)", () => {
+    // Invariant: a `ref="b:X"` with no matching `name="X"` declaration makes
+    // the whole schema fail to compile. This caught a real bug where the
+    // SlideGlance root choice referenced <Master> with no declaration.
+    const refs = [...xsd.matchAll(/ref="b:(\w+)"/g)].map((m) => m[1]);
+    // A ref resolves to a global <xs:element> or <xs:group> of the same name.
+    const declared = new Set([
+      ...[...xsd.matchAll(/<xs:element name="(\w+)"/g)].map((m) => m[1]),
+      ...[...xsd.matchAll(/<xs:group name="(\w+)"/g)].map((m) => m[1]),
+    ]);
+    const dangling = [...new Set(refs)].filter((r) => !declared.has(r!));
+    expect(dangling).toEqual([]);
+  });
+
+  it("declares <Master> and its child objects so masters validate", () => {
+    expect(xsd).toContain(`<xs:element name="Master"`);
+    for (const child of [
+      "MasterText",
+      "MasterImage",
+      "MasterRect",
+      "MasterLine",
+      "SlideNumber",
+    ]) {
+      expect(xsd).toContain(`<xs:element name="${child}"`);
+    }
+  });
+
+  it("accepts arbitrary attributes on <Style> (untyped style bag)", () => {
+    // <Style> carries any visual attribute valid on the consuming element, so
+    // its complexType must allow them rather than reject valid presets.
+    const start = xsd.indexOf('<xs:complexType name="Style">');
+    const body = xsd.slice(start, xsd.indexOf("</xs:complexType>", start));
+    expect(body).toContain("<xs:anyAttribute");
+  });
+
   it("emits xs:enumeration entries for enum attributes", () => {
     // alignItems on VStack
     expect(xsd).toMatch(/xs:enumeration value="start"/);
