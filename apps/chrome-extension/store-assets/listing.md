@@ -13,9 +13,10 @@ SlideGlance PPTX Viewer opens PowerPoint files (`.pptx`) directly in your browse
 
 - **Local-first.** Parsing and rendering use WebAssembly inside your tab.
   Files never leave your machine.
-- **Four ways to open a file.** Click a `.pptx` link, right-click any
-  `.pptx` link, click the toolbar icon, or drag-and-drop into an empty
-  viewer tab.
+- **Three ways to open a file.** Navigate to a `.pptx` URL (it opens in
+  the viewer instead of downloading), right-click any `.pptx` link, or
+  click the toolbar icon for an empty tab that accepts drag-and-drop or
+  a file picker.
 - **Authenticated sources.** Cookies are forwarded when fetching a `.pptx`
   URL, so SharePoint / Drive / intranet links work the same as in the
   original tab.
@@ -44,19 +45,36 @@ https://github.com/SlideGlance/slideglance/blob/main/apps/chrome-extension/PRIVA
 
 ## Screenshots
 
-Captured at 1280×800 (Web Store size). Upload in this order; the
-caption text is what we recommend for the listing's screenshot
-captions field.
+The Chrome Web Store accepts **at most 5 screenshots**, each **1280×800**
+(or 640×400). All six captures in the repo are 1280×800. Upload the five
+listed in this table, in order; the caption text is what we recommend for
+the listing's screenshot-captions field. (`05-font-mapping-popover.png` is
+kept in the repo for the README gallery and demonstrates the font-fallback
+feature, but is omitted from the upload — it uses a different sample deck,
+and the font feature is already covered in the detailed description.)
 
-Sample deck used for the captures: [_Business Infographic
+The five upload captures use the bundled "Flow that ships itself" pitch
+sample (`apps/web-playground/public/samples/01-pitch.pptx`, authored in
+this repo — no third-party attribution needed). The gallery-only
+font-mapping capture uses a [_Business Infographic
 Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
-by SlidesCarnival.
+template by SlidesCarnival.
 
-| File                                                                                 | Caption                                                                                                                |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png)                   | Drop a `.pptx` or click _Open file_ — the viewer is the same tab, no upload.                                           |
-| [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png)   | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
-| [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png)             | Browser-only · offline-capable WebAssembly. MIT-licensed.                                                              |
-| [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png)   | Thumbnails, ruler, slideshow, print, and PDF export — all client-side.                                                 |
-| [`screenshots/05-font-mapping-popover.png`](screenshots/05-font-mapping-popover.png) | Font fallback report shows exactly which authored typeface resolved to which installed face.                           |
-| [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png)                       | Grid view scans large decks at a glance.                                                                               |
+| # | File                                                                                 | Caption                                                                                                                |
+| - | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 1 | [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png)   | Thumbnails, ruler, slideshow, print, and PDF export — all client-side.                                                 |
+| 2 | [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png)                   | Drop a `.pptx` or click _Open file_ — the viewer is the same tab, no upload.                                           |
+| 3 | [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png)                       | Grid view scans large decks at a glance.                                                                               |
+| 4 | [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png)   | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
+| 5 | [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png)             | Browser-only · offline-capable WebAssembly engine. MIT-licensed.                                                       |
+
+## Promotional images
+
+| File                                               | Size    | Status                      | Where it shows                           |
+| -------------------------------------------------- | ------- | --------------------------- | ---------------------------------------- |
+| [`promo-tile-440x280.png`](promo-tile-440x280.png) | 440×280 | Required (small promo tile) | Home, category pages, and search results |
+
+The marquee promo tile (1400×560) is optional — extensions without one
+are simply ranked after those that have it — so it is not included. The
+tile is generated from [`promo-tile.svg`](promo-tile.svg) via
+`node scripts/render-promo.mjs`.

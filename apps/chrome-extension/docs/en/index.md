@@ -3,7 +3,7 @@ title: chrome-extension
 lang: en
 kind: index
 app: chrome-extension
-last_verified_commit: 0000000000000000000000000000000000000000
+last_verified_commit: 93952eafcabba0eb4e38b1d79738462835c3e5c3
 source_files:
   - apps/chrome-extension/package.json
   - apps/chrome-extension/manifest.config.ts

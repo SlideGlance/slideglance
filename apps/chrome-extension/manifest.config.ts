@@ -26,7 +26,7 @@ export default defineManifest({
   // used here, so keep the bare brand.
   short_name: "SlideGlance",
   description:
-    "Open .pptx presentations in your browser — no upload, no server.",
+    "Open .pptx presentations in your browser — fully local, no upload, no server.",
   version: pkg.version,
   // Web Store listing surfaces this as the "Website" link next to
   // the publisher info; matches the repository.url in core/viewer

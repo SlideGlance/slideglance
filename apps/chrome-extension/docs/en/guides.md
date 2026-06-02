@@ -3,7 +3,7 @@ title: chrome-extension — Guides
 lang: en
 kind: guides
 app: chrome-extension
-last_verified_commit: 0000000000000000000000000000000000000000
+last_verified_commit: 93952eafcabba0eb4e38b1d79738462835c3e5c3
 source_files:
   - apps/chrome-extension/package.json
   - apps/chrome-extension/scripts/
@@ -66,5 +66,6 @@ Replace the rendered icon set after editing the master SVG.
 
 ### Expected result
 
-`dist/icons/*.png` is regenerated; the loaded extension's toolbar
-icon updates after a manual reload.
+`public/icon-*.png` is regenerated (and copied to `dist/public/` by
+the build); the loaded extension's toolbar icon updates after a
+manual reload.

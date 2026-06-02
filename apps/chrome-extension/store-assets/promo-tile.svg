@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <!-- Chrome Web Store small promotional tile (440x280). Reuses the
+       public/icon.svg motif (app-window frame + PowerPoint bar chart)
+       on a light panel, paired with the product wordmark. -->
+  <rect width="440" height="280" fill="#ffffff"/>
+  <rect x="0" y="0" width="170" height="280" fill="#f3f4f6"/>
+
+  <!-- App icon motif, scaled from the 1024x1024 master in icon.svg. -->
+  <g transform="translate(15,70) scale(0.13672)">
+    <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="#ffffff" stroke="#e5e7eb" stroke-width="8"/>
+    <g stroke="#6b7280" stroke-width="40" stroke-linejoin="round" stroke-linecap="round" fill="none">
+      <rect x="124" y="184" width="776" height="656" rx="48" ry="48"/>
+      <line x1="144" y1="288" x2="880" y2="288"/>
+    </g>
+    <g fill="#6b7280">
+      <circle cx="208" cy="236" r="14"/>
+      <circle cx="256" cy="236" r="14"/>
+      <circle cx="304" cy="236" r="14"/>
+    </g>
+    <g fill="#c43e1c">
+      <rect x="232" y="568" width="96" height="160" rx="12" ry="12"/>
+      <rect x="372" y="464" width="96" height="264" rx="12" ry="12"/>
+      <rect x="512" y="380" width="96" height="348" rx="12" ry="12"/>
+      <rect x="652" y="512" width="96" height="216" rx="12" ry="12"/>
+    </g>
+  </g>
+
+  <!-- Wordmark + tagline. -->
+  <text x="196" y="118" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#111827">SlideGlance</text>
+  <text x="197" y="148" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="600" fill="#c43e1c">PPTX Viewer</text>
+  <rect x="198" y="160" width="44" height="3" rx="1.5" fill="#c43e1c"/>
+  <text x="197" y="198" font-family="Helvetica, Arial, sans-serif" font-size="14.5" fill="#4b5563">Open .pptx files directly in</text>
+  <text x="197" y="218" font-family="Helvetica, Arial, sans-serif" font-size="14.5" fill="#4b5563">your browser. Fully local.</text>
+</svg>

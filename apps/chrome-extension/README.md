@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/icon-128.png" alt="SlideGlance PPTX Viewer" width="128" height="128" />
+  <img src="./public/icon.svg" alt="SlideGlance PPTX Viewer" width="128" height="128" />
 
 # SlideGlance PPTX Viewer
 
@@ -40,8 +40,6 @@ The viewer fetches the same URL with the user's cookies, so authenticated links 
 
 ## Screenshots
 
-> Captures were taken before the extension was renamed to **SlideGlance PPTX Viewer**, so the empty-state heading still shows the short legacy brand. Functionally identical to the current build.
-
 |                                                                                                                                                       |                                                                                                                                           |
 | :---------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------: |
 |                    [![Empty state](./store-assets/screenshots/01-empty-state.png)](./store-assets/screenshots/01-empty-state.png)                     |  [![Presentation viewer](./store-assets/screenshots/04-presentation-viewer.png)](./store-assets/screenshots/04-presentation-viewer.png)   |
@@ -51,7 +49,7 @@ The viewer fetches the same URL with the user's cookies, so authenticated links 
 | [![Settings — appearance and language](./store-assets/screenshots/02-settings-appearance.png)](./store-assets/screenshots/02-settings-appearance.png) |         [![Settings — about](./store-assets/screenshots/03-settings-about.png)](./store-assets/screenshots/03-settings-about.png)         |
 |                              **Settings** — theme + 8 interface languages (en · ko · ja · zh-CN · zh-TW · es · fr · de).                              |                                    **About** — browser-only WebAssembly engine, offline-capable, MIT.                                     |
 
-> Sample deck used for the captures: [_Business Infographic Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319) by SlidesCarnival.
+> Captures use the bundled "Flow that ships itself" pitch sample authored in this repo (`apps/web-playground/public/samples/01-pitch.pptx`); the font-mapping capture uses a [_Business Infographic Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319) template by SlidesCarnival.
 
 ---
 
