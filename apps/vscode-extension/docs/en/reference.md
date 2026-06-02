@@ -38,18 +38,18 @@ apps/vscode-extension/
 
 ## Manifest highlights (`package.json`)
 
-| Field                        | Value                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------ |
-| `publisher`                  | `simplecore`                                                                  |
-| `name`                       | `slide-builder`                                                                |
-| `displayName`                | `SlideGlance PPTX Viewer`                                                       |
-| `engines.vscode`             | `^1.85.0`                                                                       |
-| `categories`                 | `Visualization`                                                                 |
-| `extensionDependencies`      | `redhat.vscode-xml`                                                             |
-| `activationEvents`           | `workspaceContains:**/*.sgx`, `onCustomEditor:slideBuilder.pptxViewer`          |
-| `contributes.commands`       | `SlideGlance: Open Preview`, `SlideGlance: Refresh Preview`, `SlideGlance: Export PPTX` |
-| `contributes.languages`      | id `xml` (alias `SlideGlance XML`) bound to the `.sgx` extension                |
-| `contributes.customEditors`  | `slideBuilder.pptxViewer` for `*.pptx` (`priority: option`)                     |
+| Field                       | Value                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `publisher`                 | `simplecore`                                                                            |
+| `name`                      | `slide-builder`                                                                         |
+| `displayName`               | `SlideGlance PPTX Viewer`                                                               |
+| `engines.vscode`            | `^1.85.0`                                                                               |
+| `categories`                | `Visualization`                                                                         |
+| `extensionDependencies`     | `redhat.vscode-xml`                                                                     |
+| `activationEvents`          | `workspaceContains:**/*.sgx`, `onCustomEditor:slideBuilder.pptxViewer`                  |
+| `contributes.commands`      | `SlideGlance: Open Preview`, `SlideGlance: Refresh Preview`, `SlideGlance: Export PPTX` |
+| `contributes.languages`     | id `xml` (alias `SlideGlance XML`) bound to the `.sgx` extension                        |
+| `contributes.customEditors` | `slideBuilder.pptxViewer` for `*.pptx` (`priority: option`)                             |
 
 `.sgx` schema validation is not a `jsonValidation` contribution. The
 extension writes an OASIS XML catalog next to `dist/extension.js` and
@@ -60,28 +60,28 @@ registers it with `redhat.vscode-xml` at activation
 
 ## Build artefacts (`dist/`)
 
-| Path                   | Purpose                                                       |
-| ---------------------- | ------------------------------------------------------------- |
-| `dist/extension.js`    | CommonJS extension-host bundle (esbuild)                      |
-| `dist/webview/`        | Webview React app (Vite) + worker / WASM assets              |
-| `dist/builder.xsd`     | Bundled XSD for `.sgx` schema validation                      |
-| `dist/xml-catalog.xml` | OASIS catalog registered with `redhat.vscode-xml`            |
-| `dist/*.wasm`          | slideglance core + measure WASM (host-side builder)           |
-| `*.vsix` (CI, gitignored) | Marketplace upload package (`vsce package`)                |
+| Path                      | Purpose                                             |
+| ------------------------- | --------------------------------------------------- |
+| `dist/extension.js`       | CommonJS extension-host bundle (esbuild)            |
+| `dist/webview/`           | Webview React app (Vite) + worker / WASM assets     |
+| `dist/builder.xsd`        | Bundled XSD for `.sgx` schema validation            |
+| `dist/xml-catalog.xml`    | OASIS catalog registered with `redhat.vscode-xml`   |
+| `dist/*.wasm`             | slideglance core + measure WASM (host-side builder) |
+| `*.vsix` (CI, gitignored) | Marketplace upload package (`vsce package`)         |
 
 ## Scripts (`pnpm --filter slide-builder run <script>`)
 
-| Script         | Purpose                                          |
-| -------------- | ------------------------------------------------ |
-| `build`        | Production build (webview + extension host)      |
-| `build:webview`| Vite build → `dist/webview/`                     |
-| `build:host`   | esbuild → `dist/extension.js`                    |
-| `watch:host`   | esbuild watch (extension host only)              |
-| `typecheck`    | `tsc --noEmit`                                   |
-| `lint`         | ESLint                                           |
+| Script              | Purpose                                     |
+| ------------------- | ------------------------------------------- |
+| `build`             | Production build (webview + extension host) |
+| `build:webview`     | Vite build → `dist/webview/`                |
+| `build:host`        | esbuild → `dist/extension.js`               |
+| `watch:host`        | esbuild watch (extension host only)         |
+| `typecheck`         | `tsc --noEmit`                              |
+| `lint`              | ESLint                                      |
 | `fmt` / `fmt:check` | Prettier write / check                      |
-| `package`      | `vsce package --no-dependencies` → `.vsix`       |
-| `publish`      | `vsce publish --no-dependencies`                 |
+| `package`           | `vsce package --no-dependencies` → `.vsix`  |
+| `publish`           | `vsce publish --no-dependencies`            |
 
 There is no `dev` script — the webview is built (not served via HMR);
 the `.sgx` preview re-renders on save inside the Extension Development

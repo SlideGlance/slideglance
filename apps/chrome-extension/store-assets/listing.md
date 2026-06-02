@@ -60,13 +60,13 @@ font-mapping capture uses a [_Business Infographic
 Presentation_](https://www.slidescarnival.com/template/business-infographic-presentation/19319)
 template by SlidesCarnival.
 
-| # | File                                                                                 | Caption                                                                                                                |
-| - | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 1 | [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png)   | Thumbnails, ruler, slideshow, print, and PDF export — all client-side.                                                 |
-| 2 | [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png)                   | Drop a `.pptx` or click _Open file_ — the viewer is the same tab, no upload.                                           |
-| 3 | [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png)                       | Grid view scans large decks at a glance.                                                                               |
-| 4 | [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png)   | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
-| 5 | [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png)             | Browser-only · offline-capable WebAssembly engine. MIT-licensed.                                                       |
+| #   | File                                                                               | Caption                                                                                                                |
+| --- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1   | [`screenshots/04-presentation-viewer.png`](screenshots/04-presentation-viewer.png) | Thumbnails, ruler, slideshow, print, and PDF export — all client-side.                                                 |
+| 2   | [`screenshots/01-empty-state.png`](screenshots/01-empty-state.png)                 | Drop a `.pptx` or click _Open file_ — the viewer is the same tab, no upload.                                           |
+| 3   | [`screenshots/06-grid-view.png`](screenshots/06-grid-view.png)                     | Grid view scans large decks at a glance.                                                                               |
+| 4   | [`screenshots/02-settings-appearance.png`](screenshots/02-settings-appearance.png) | Theme + 8 interface languages (Auto / English / 한국어 / 日本語 / 简体中文 / 繁體中文 / Español / Français / Deutsch). |
+| 5   | [`screenshots/03-settings-about.png`](screenshots/03-settings-about.png)           | Browser-only · offline-capable WebAssembly engine. MIT-licensed.                                                       |
 
 ## Promotional images
 
