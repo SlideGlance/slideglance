@@ -481,6 +481,16 @@ fn estimate_cell_content_height(
             .runs
             .iter()
             .find_map(|r| r.properties.font_size.map(slideglance_utils::Pt::raw))
+            // A run-less paragraph (an empty form cell) still carries its
+            // intended size on `<a:endParaRPr>` — honour it before falling
+            // back to the OOXML 18 pt default, otherwise every empty cell
+            // is estimated at 18 pt and the row silently grows past the
+            // authored height.
+            .or_else(|| {
+                para.end_para_run_properties
+                    .as_ref()
+                    .and_then(|rp| rp.font_size.map(slideglance_utils::Pt::raw))
+            })
             .unwrap_or(18.0);
         // Honour the paragraph's own line-spacing factor when present.
         // OOXML stores `<a:lnSpc><a:spcPct val="150000"/>` as the raw
