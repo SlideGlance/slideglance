@@ -71,7 +71,7 @@
 //! composition primitives (`ChainFontResolver`, `OpentypeTextMeasurer`)
 //! impose the bound.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::cjk_fallback::{get_cjk_fallback_fonts, CjkPlatform};
@@ -742,5 +742,157 @@ mod tests {
 
         let by_arc: Arc<dyn FontResolver> = Arc::new(BufferFontResolver::new());
         assert!(by_arc.resolve("anything").is_none());
+    }
+}
+
+/// Which face may register under a family's **bare** name.
+///
+/// The typographic family (`name` id 16) is shared by every weight of a
+/// family, so `Pretendard-SemiBold.otf` reports `"Pretendard"` among its
+/// aliases exactly as the regular face does. Register both and the winner
+/// is whichever was written last — decided by read-dir order or by the
+/// order a caller happened to list `--font` arguments in.
+///
+/// That is not merely a weight mismatch on screen. Measurement resolves
+/// the same bare name to the face nearest weight 400, so text measured in
+/// Regular is drawn in SemiBold; Latin advances differ by ~5 %, and since
+/// a run is positioned at the *measured* end of the run before it, the
+/// next run is drawn on top of the previous one. It surfaces as two
+/// characters colliding at a styled-run boundary and as lines running
+/// past the right edge of their frame — neither of which reads as a font
+/// problem.
+///
+/// So the bare name goes to the regular weight, and every other weight
+/// keeps only its suffixed aliases (`"Pretendard SemiBold"`). A family
+/// that ships no regular face is not left unreachable: held-back claims
+/// are replayed afterwards, nearest to 400 first.
+///
+/// Generic over the registered value so the policy can be tested without
+/// parsing a font.
+///
+/// ```
+/// use slideglance_font::BareFamilyClaims;
+///
+/// let mut claims = BareFamilyClaims::new();
+/// // Bold and SemiBold both expose the bare family; neither takes it.
+/// assert!(!claims.admit("Pretendard", Some("Pretendard"), 700, &"bold"));
+/// assert!(!claims.admit("Pretendard", Some("Pretendard"), 600, &"semibold"));
+/// // The suffixed alias always registers.
+/// assert!(claims.admit("Pretendard Bold", Some("Pretendard"), 700, &"bold"));
+/// // Regular takes the bare name.
+/// assert!(claims.admit("Pretendard", Some("Pretendard"), 400, &"regular"));
+/// // Nothing is replayed, because regular claimed it.
+/// assert!(claims.into_deferred().is_empty());
+/// ```
+#[derive(Debug, Default)]
+pub struct BareFamilyClaims<T> {
+    claimed: BTreeSet<String>,
+    deferred: Vec<(String, u16, T)>,
+}
+
+/// How far from 400 a weight may sit and still count as the regular face.
+/// Wide enough for families that label theirs 375 or 425, narrow enough to
+/// exclude Light (300) and Medium (500).
+const REGULAR_WEIGHT_SLACK: i32 = 25;
+
+impl<T: Clone> BareFamilyClaims<T> {
+    /// Empty claim set.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            claimed: BTreeSet::new(),
+            deferred: Vec::new(),
+        }
+    }
+
+    /// True when `weight` is close enough to 400 to be the family's
+    /// regular face.
+    #[must_use]
+    pub const fn is_regular_weight(weight: u16) -> bool {
+        (weight as i32 - 400).abs() <= REGULAR_WEIGHT_SLACK
+    }
+
+    /// Decide whether `name` may be registered now for a face of
+    /// `weight` whose typographic family is `bare`.
+    ///
+    /// Returns `true` for every name that is not the bare family, and for
+    /// the bare family when the face is the regular weight. Returns
+    /// `false` when the claim is held back — [`Self::into_deferred`]
+    /// replays it if no regular face turns up.
+    pub fn admit(&mut self, name: &str, bare: Option<&str>, weight: u16, value: &T) -> bool {
+        let is_bare = bare.is_some_and(|b| b.eq_ignore_ascii_case(name));
+        if !is_bare {
+            return true;
+        }
+        if !Self::is_regular_weight(weight) {
+            self.deferred
+                .push((name.to_string(), weight, value.clone()));
+            return false;
+        }
+        self.claimed.insert(name.to_lowercase());
+        true
+    }
+
+    /// Held-back bare-family claims that no regular face took, nearest
+    /// weight to 400 first and de-duplicated.
+    #[must_use]
+    pub fn into_deferred(mut self) -> Vec<(String, T)> {
+        self.deferred
+            .sort_by_key(|(_, w, _)| (i32::from(*w) - 400).abs());
+        let mut claimed = self.claimed;
+        self.deferred
+            .into_iter()
+            .filter(|(name, _, _)| claimed.insert(name.to_lowercase()))
+            .map(|(name, _, value)| (name, value))
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod bare_family_claims_tests {
+    use super::BareFamilyClaims;
+
+    #[test]
+    fn regular_takes_the_bare_family_whatever_the_order() {
+        for order in [[600_u16, 400], [400, 600]] {
+            let mut claims = BareFamilyClaims::new();
+            let mut registered: Vec<&str> = Vec::new();
+            for w in order {
+                let value = if w == 400 { "regular" } else { "semibold" };
+                if claims.admit("Pretendard", Some("Pretendard"), w, &value) {
+                    registered.push(value);
+                }
+            }
+            assert_eq!(registered, vec!["regular"], "order {order:?}");
+            assert!(claims.into_deferred().is_empty(), "order {order:?}");
+        }
+    }
+
+    #[test]
+    fn a_family_with_no_regular_face_falls_back_to_the_nearest_weight() {
+        let mut claims = BareFamilyClaims::new();
+        for (w, v) in [(900_u16, "black"), (500, "medium"), (700, "bold")] {
+            assert!(!claims.admit("Pretendard", Some("Pretendard"), w, &v));
+        }
+        // 500 is nearest 400, and the bare name is handed out once.
+        assert_eq!(
+            claims.into_deferred(),
+            vec![("Pretendard".to_string(), "medium")]
+        );
+    }
+
+    #[test]
+    fn suffixed_aliases_are_never_held_back() {
+        let mut claims = BareFamilyClaims::new();
+        assert!(claims.admit("Pretendard Bold", Some("Pretendard"), 700, &"bold"));
+        assert!(claims.admit("Pretendard-Bold", Some("Pretendard"), 700, &"bold"));
+        assert!(claims.into_deferred().is_empty());
+    }
+
+    #[test]
+    fn a_face_reporting_no_family_claims_every_name() {
+        let mut claims = BareFamilyClaims::new();
+        assert!(claims.admit("Whatever", None, 900, &"x"));
+        assert!(claims.into_deferred().is_empty());
     }
 }

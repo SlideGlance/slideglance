@@ -21,7 +21,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use slideglance_font::{
-    BufferFontResolver, CjkPlatform, FontFace, FontMapping, FontResolver, HeuristicTextMeasurer,
+    BareFamilyClaims, BufferFontResolver, CjkPlatform, FontFace, FontMapping, FontResolver,
+    HeuristicTextMeasurer,
     OpentypeTextMeasurer, RenderMode, ScriptFontContext, TextMeasurer,
 };
 use slideglance_model::{Presentation, SlideElement};
@@ -330,22 +331,50 @@ impl FontResolver for EmbeddedAwareResolver<'_> {
 /// path-mode `resolve_face` lookup chain matches them when a run has
 /// `<a:rPr b="1">` even if the typeface attribute carries the bold
 /// suffix already.
+///
+/// The typographic family (`name` id 16) is shared by every weight of a
+/// family, so `Pretendard-SemiBold.otf` reports `"Pretendard"` among its
+/// aliases just as the regular face does. Registering both is a
+/// last-write-wins collision, and the loser is decided by the order the
+/// caller happened to list the files in.
+///
+/// That matters beyond weight. [`build_auto_opentype_measurer`] resolves
+/// the same bare name to the face nearest weight 400, so text measured in
+/// Regular was drawn in SemiBold — advances differ by ~5 % on Latin
+/// glyphs, a run is positioned at the *measured* end of the run before it,
+/// and the next run lands on top of the previous one. It shows up as two
+/// characters colliding at a styled-span boundary and as lines running
+/// past the right edge of their frame.
+///
+/// So only the regular weight claims a bare family name. Other weights
+/// keep their suffixed aliases and are replayed afterwards, nearest-to-400
+/// first, so a family that ships no regular face is still reachable.
 fn build_embedded_buffer_resolver(
     embedded_faces: &[crate::embedded_fonts::EmbeddedFontFace],
 ) -> BufferFontResolver {
     let mut buffer = BufferFontResolver::new();
+    let mut claims: BareFamilyClaims<Arc<FontFace>> = BareFamilyClaims::new();
+
     for face in embedded_faces {
         let Ok(parsed) = FontFace::from_bytes(face.bytes.clone(), 0) else {
             continue;
         };
+        let weight = parsed.weight();
+        let bare = parsed.family_name();
         let arc = Arc::new(parsed);
+        let mut claim = |name: String, buffer: &mut BufferFontResolver| {
+            if claims.admit(&name, bare.as_deref(), weight, &arc) {
+                buffer.insert_arc(name, Arc::clone(&arc));
+            }
+        };
+
         // Primary typeface name as declared in the PPTX.
-        buffer.insert_arc(face.typeface.clone(), Arc::clone(&arc));
+        claim(face.typeface.clone(), &mut buffer);
         // Aliases the font itself reports (e.g. `Freesentation 7 Bold`
         // ↔ `프리젠테이션 7 Bold`). Register every variant so deck-side
         // text using either spelling resolves to the same face.
         for alias in slideglance_font::all_face_family_names(&face.bytes) {
-            buffer.insert_arc(alias, Arc::clone(&arc));
+            claim(alias, &mut buffer);
         }
         // path-mode `resolve_face` tries `"{family} Bold"` first when
         // the run requests bold. Even if the typeface name already
@@ -355,11 +384,47 @@ fn build_embedded_buffer_resolver(
         if face.weight == "bold" {
             let suffixed = format!("{} Bold", face.typeface);
             if !suffixed.ends_with(" Bold Bold") {
-                buffer.insert_arc(suffixed, Arc::clone(&arc));
+                claim(suffixed, &mut buffer);
+            }
+        }
+        // A non-regular face that reports only the bare family still
+        // needs `"{family} {subfamily}"` — that suffixed form is what
+        // `resolve_face` asks for when the run requests the style.
+        if !BareFamilyClaims::<Arc<FontFace>>::is_regular_weight(weight) {
+            if let (Some(b), Some(sub)) = (bare.as_ref(), subfamily_name(&face.bytes)) {
+                buffer.insert_arc(format!("{b} {sub}"), Arc::clone(&arc));
             }
         }
     }
+
+    for (name, arc) in claims.into_deferred() {
+        buffer.insert_arc(name, arc);
+    }
     buffer
+}
+
+/// English subfamily (`name` id 17, falling back to id 2) — the token
+/// that turns a bare family into the name `resolve_face` looks up for a
+/// styled run (`"Pretendard" + "SemiBold"`).
+fn subfamily_name(bytes: &[u8]) -> Option<String> {
+    let face = ttf_parser::Face::parse(bytes, 0).ok()?;
+    let names = face.names();
+    let mut fallback: Option<String> = None;
+    for i in 0..names.len() {
+        let Some(rec) = names.get(i) else { continue };
+        let Some(text) = rec.to_string() else { continue };
+        let text = text.trim().to_string();
+        if text.is_empty() {
+            continue;
+        }
+        if rec.name_id == 17 {
+            return Some(text);
+        }
+        if rec.name_id == 2 && fallback.is_none() {
+            fallback = Some(text);
+        }
+    }
+    fallback
 }
 
 /// Public re-export shim for [`PptxDocument`] — same body as the

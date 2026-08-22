@@ -98,7 +98,7 @@ pub use font_metric::{
     system_font_metrics, FontMetricVector, MetricResolver, Panose,
 };
 pub use font_resolver::{
-    standard_resolver_chain, BufferFontResolver, ChainFontResolver, FontResolver,
+    standard_resolver_chain, BareFamilyClaims, BufferFontResolver, ChainFontResolver, FontResolver,
     FontVariantResolver,
 };
 pub use latin_defaults::get_latin_os_defaults;

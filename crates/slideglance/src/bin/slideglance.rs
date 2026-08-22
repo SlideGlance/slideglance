@@ -20,7 +20,8 @@ use std::sync::Arc;
 
 use slideglance::{convert_to_png, convert_to_svg, parse_pptx, AdditionalFont, ConvertOptions};
 use slideglance_font::{
-    get_latin_os_defaults, standard_resolver_chain, BufferFontResolver, CjkPlatform, FontFace,
+    get_latin_os_defaults, standard_resolver_chain, BareFamilyClaims, BufferFontResolver,
+    CjkPlatform, FontFace,
     FontMapping, FontResolver,
 };
 use slideglance_parser::PptxArchive;
@@ -647,14 +648,18 @@ fn build_resolver(
     host_fonts: &[Vec<u8>],
 ) -> Result<Option<Box<dyn FontResolver + Send + Sync>>, String> {
     let mut buffer = BufferFontResolver::new();
+    let mut claims: BareFamilyClaims<Arc<FontFace>> = BareFamilyClaims::new();
 
     for (i, bytes) in cli_fonts.iter().enumerate() {
-        register_font_buffer(&mut buffer, bytes)
+        register_font_buffer(&mut buffer, bytes, &mut claims)
             .map_err(|e| format!("font {i} parse error: {e}"))?;
     }
     for bytes in host_fonts {
         // Host fonts: a single broken file should not abort startup.
-        let _ = register_font_buffer(&mut buffer, bytes);
+        let _ = register_font_buffer(&mut buffer, bytes, &mut claims);
+    }
+    for (name, face) in claims.into_deferred() {
+        buffer.insert_arc(name, face);
     }
 
     if buffer.is_empty() {
@@ -703,29 +708,47 @@ impl<R: FontResolver> FontResolver for LatinOsDefaultsFallback<R> {
 /// and the no-space `"AppleSDGothicNeo"` form so `<a:latin typeface="…">`
 /// matches regardless of how the deck spells the family name.
 ///
-/// Italic/bold faces are intentionally NOT registered under the bare
-/// family name (`"Arial"`) because the typographic family ID is shared
-/// across the whole family — registering both `Arial.ttf` and
-/// `Arial Italic.ttf` under `"Arial"` is a name collision where
-/// `BTreeMap::insert` lets the last write win, and the OS read-dir order
-/// often places the italic variant after the regular. The result was
-/// `<a:buFont typeface="Arial">` resolving to the italic face and every
-/// auto-numbered bullet ("1.", "2.", "3.") rendering slanted. Italic /
-/// bold variants stay reachable through their full names (`"Arial
-/// Italic"`, `"Arial Bold"`), which `resolve_face` already tries first
-/// when the run requests them.
+/// Only the regular weight registers under the bare family name
+/// (`"Pretendard"`). The typographic family ID (`name` id 16) is shared
+/// across every weight of a family, so Thin, Light, SemiBold, Bold and
+/// Black all expose `"Pretendard"` as an alias; registering them all is a
+/// name collision where `BTreeMap::insert` lets the last write win, and
+/// the read-dir order decides which weight a plain
+/// `<a:latin typeface="Pretendard"/>` run gets drawn in.
+///
+/// That is not merely a weight mismatch. The **measurer** picks the face
+/// whose weight is nearest 400 while the resolver used to hand the drawing
+/// path whichever weight was registered last, so body text was measured in
+/// Regular and drawn in SemiBold. Advances then differ by ~5 % on Latin
+/// glyphs, and since a run is positioned at the *measured* end of the run
+/// before it, the next run is drawn on top of the previous one — visible
+/// as two characters colliding at every `<Span>` boundary, and as lines
+/// running past the right edge of their frame.
+///
+/// Weight decides the claim, not the RIBBI style bits: `is_bold()` is set
+/// only on the Bold face, so gating on it let every intermediate weight
+/// through. Non-regular faces stay reachable through their suffixed names
+/// (`"Pretendard Bold"`, `"Pretendard SemiBold"`), which `resolve_face`
+/// tries first when the run requests them, and a family shipping no
+/// regular face at all is restored by the deferred pass in
+/// [`build_resolver`].
 fn register_font_buffer(
     buffer: &mut BufferFontResolver,
     bytes: &[u8],
+    claims: &mut BareFamilyClaims<Arc<FontFace>>,
 ) -> Result<(), slideglance_font::FontError> {
     let face_count = ttf_parser::fonts_in_collection(bytes).unwrap_or(1);
     for idx in 0..face_count {
         let face = FontFace::from_bytes(bytes.to_vec(), idx)?;
         let parsed =
             ttf_parser::Face::parse(bytes, idx).map_err(slideglance_font::FontError::from)?;
-        let is_italic = parsed.is_italic();
-        let is_bold = parsed.is_bold();
-        let is_styled = is_italic || is_bold;
+        // An italic face never holds the bare family name either, so it
+        // is pushed away from 400 rather than tested separately.
+        let weight = if parsed.is_italic() {
+            u16::MAX
+        } else {
+            face.weight()
+        };
         let primary = face.family_name();
         let face_arc = Arc::new(face);
         let mut names = face_arc.all_family_names();
@@ -738,70 +761,12 @@ fn register_font_buffer(
             if name.is_empty() {
                 continue;
             }
-            // Styled (italic / bold) faces only register under names that
-            // already encode the style suffix — never under the bare
-            // family name shared with the regular face.
-            if is_styled
-                && name_matches_bare_family(&name, primary.as_ref(), &names_lower(&face_arc))
-            {
-                continue;
+            if claims.admit(&name, primary.as_deref(), weight, &face_arc) {
+                buffer.insert_arc(name, face_arc.clone());
             }
-            buffer.insert_arc(name, face_arc.clone());
         }
     }
     Ok(())
-}
-
-/// Lowercase set of every name a face exposes — used to detect when an
-/// alias is the "bare family" form (no Italic/Bold suffix).
-fn names_lower(face: &FontFace) -> Vec<String> {
-    face.all_family_names()
-        .into_iter()
-        .map(|n| n.to_lowercase())
-        .collect()
-}
-
-/// True when `name` is the unsuffixed family form (e.g. `"Arial"`) for a
-/// face whose other aliases do carry the style suffix (`"Arial Italic"`,
-/// `"Arial Bold"`). Heuristic — checks whether `name` lowercased is a
-/// prefix of any other registered alias and the suffix is purely style
-/// terms (`italic`, `bold`, `oblique`, ...).
-fn name_matches_bare_family(
-    name: &str,
-    primary: Option<&String>,
-    other_aliases_lower: &[String],
-) -> bool {
-    // The "preferred family" (name id 16) is by definition unsuffixed.
-    // If our name equals the typographic family that other aliases
-    // extend with a style suffix, treat this as bare.
-    let lower = name.to_lowercase();
-    let primary_matches = primary
-        .as_ref()
-        .is_some_and(|p| p.eq_ignore_ascii_case(name));
-    if !primary_matches {
-        return false;
-    }
-    other_aliases_lower.iter().any(|alias| {
-        if alias == &lower {
-            return false;
-        }
-        let Some(suffix) = alias.strip_prefix(&lower) else {
-            return false;
-        };
-        let suffix = suffix.trim_start();
-        let trimmed = suffix.trim_end_matches(' ').trim_end_matches('-');
-        // Style-only suffix tokens, separately or combined.
-        const STYLE_TOKENS: &[&str] = &[
-            "italic",
-            "bold",
-            "oblique",
-            "bold italic",
-            "italic bold",
-            "bolditalic",
-            "italicbold",
-        ];
-        STYLE_TOKENS.iter().any(|t| trimmed.eq_ignore_ascii_case(t))
-    })
 }
 
 #[allow(dead_code)]
