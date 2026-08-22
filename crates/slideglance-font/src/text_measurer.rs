@@ -206,6 +206,18 @@ impl OpentypeTextMeasurer {
         cjk_platform: CjkPlatform,
     ) -> Self {
         let mut buffer = BufferFontResolver::new();
+        // The renderer's `resolve_face` draws a bold run with `"{family}
+        // Bold"` when that name resolves. Register the same face as the
+        // family's bold variant so the run is measured in the face it will
+        // be drawn in. Without this the run is measured in the regular
+        // weight, drawn wider than its measurement, and the run after it
+        // starts on top of it — the collision shows at every boundary
+        // between a bold span and the text around it.
+        for name in fonts.keys() {
+            if let Some(bold) = fonts.get(&format!("{name} Bold")) {
+                buffer.insert_bold_variant(name.clone(), bold.clone());
+            }
+        }
         for (name, face) in fonts {
             buffer.insert(name, face);
         }

@@ -478,6 +478,7 @@ fn build_auto_opentype_measurer(
     // claimed by the Regular face — matching CSS's default weight 400
     // resolution. Subfamily-qualified aliases ("…Light", "…Bold", …)
     // still pin to their own faces because they're unique strings.
+    let mut claims: BareFamilyClaims<FontFace> = BareFamilyClaims::new();
     for bytes in measurement_fonts {
         let face_count = ttf_parser::fonts_in_collection(bytes).unwrap_or(1);
         let mut faces: Vec<FontFace> = (0..face_count)
@@ -485,13 +486,20 @@ fn build_auto_opentype_measurer(
             .collect();
         faces.sort_by_key(|f| (i32::from(f.weight()) - 400).abs());
         for parsed in faces {
+            let weight = parsed.weight();
+            let bare = parsed.family_name();
             for alias in parsed.all_family_names() {
-                map.entry(alias).or_insert_with(|| parsed.clone());
+                if claims.admit(&alias, bare.as_deref(), weight, &parsed) {
+                    map.entry(alias).or_insert_with(|| parsed.clone());
+                }
             }
             if default_face.is_none() {
                 default_face = Some(parsed);
             }
         }
+    }
+    for (alias, parsed) in claims.into_deferred() {
+        map.entry(alias).or_insert(parsed);
     }
     if map.is_empty() {
         return None;
