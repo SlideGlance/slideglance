@@ -112,6 +112,17 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "SlideGlance",
+      "properties": {
+        "slideglance.preview.renderTimeoutMs": {
+          "type": "number",
+          "default": 180000,
+          "minimum": 1000,
+          "markdownDescription": "How long the preview waits for a render before reporting a timeout, in milliseconds. Raise it for decks with many slides."
+        }
+      }
     }
   },
   "scripts": {

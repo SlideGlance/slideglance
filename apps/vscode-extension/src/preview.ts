@@ -34,7 +34,19 @@ import { createFsImportResolver } from "./importResolver.js";
 import { buildWebviewHtml } from "./webviewHtml.js";
 
 const DEBOUNCE_MS = 500;
-const RENDER_TIMEOUT_MS = 15000;
+// A deck's render time scales with its page count, so no single constant fits
+// both a five-slide sample and a hundred-page document. 15 s was short enough
+// that a long deck reported a timeout the author could not tell from a hang.
+const DEFAULT_RENDER_TIMEOUT_MS = 180_000;
+
+function renderTimeoutMs(): number {
+  const configured = vscode.workspace
+    .getConfiguration("slideglance.preview")
+    .get<number>("renderTimeoutMs");
+  return typeof configured === "number" && configured > 0
+    ? configured
+    : DEFAULT_RENDER_TIMEOUT_MS;
+}
 const DEFAULT_SLIDE_WIDTH = 1280;
 const DEFAULT_SLIDE_HEIGHT = 720;
 
@@ -495,14 +507,15 @@ export class PreviewPanel {
       this.lastRender,
       this.importedPaths,
     );
+    const timeoutMs = renderTimeoutMs();
     const timeoutPromise = new Promise<BuildError>((resolve) => {
       setTimeout(
         () =>
           resolve({
             type: "error",
-            message: `Preview render timed out after ${RENDER_TIMEOUT_MS}ms.`,
+            message: `Preview render timed out after ${timeoutMs}ms.`,
           }),
-        RENDER_TIMEOUT_MS,
+        timeoutMs,
       );
     });
     const result = await Promise.race([buildPromise, timeoutPromise]);

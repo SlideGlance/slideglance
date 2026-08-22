@@ -30,7 +30,8 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
 
 // Strip `/* @vite-ignore */` from @slideglance/viewer's pre-built worker
 // chunk. The directive exists so viewer's OWN vite build leaves
@@ -60,6 +61,68 @@ function stripViteIgnoreFromViewerWorker(): Plugin {
   };
 }
 
+// Fail the build when the emitted bundle calls a `self.__slideglance*`
+// hook that nothing in the bundle installs.
+//
+// The webview bundles two artefacts that have to agree on those names:
+// the wasm-bindgen glue for `@slideglance/core` (which CALLS them) and
+// `@slideglance/viewer/dist/pptx-worker.js` (which INSTALLS them). Note
+// the second is the viewer's *pre-built dist*, not its source — so a
+// stale `packages/viewer/dist` produces a bundle whose halves disagree
+// even though every source file in the tree is correct.
+//
+// That is how v0.1.3 shipped: the worker installed the pre-rename
+// `__pptxRs*` names while the glue called `__slideglance*`. Nothing
+// failed at build time; the preview died at runtime with
+// "self.__slideglanceMeasureLineMetrics is not a function", which
+// points at neither artefact.
+//
+// The check is name-agnostic — it compares what is called against what
+// is assigned — so a future rename is caught the same way.
+function assertWorkerGlobalsInstalled(outDir: string): Plugin {
+  // Anchored on `self.` so the wasm-bindgen import symbols
+  // (`__wbg___slideglanceMeasureText_4793a066…`) stay out of it — those
+  // are never installed on the global and are not hooks.
+  const CALLED = /self\s*\.\s*(__slideglance[A-Za-z0-9_]+)/g;
+  const ASSIGNED = /self\s*\.\s*(__slideglance[A-Za-z0-9_]+)\s*=(?!=)/g;
+
+  return {
+    name: "assert-worker-globals-installed",
+    apply: "build",
+    closeBundle() {
+      const assetsDir = join(outDir, "assets");
+      let files: string[];
+      try {
+        files = readdirSync(assetsDir).filter((f) => f.endsWith(".js"));
+      } catch {
+        return; // no assets emitted — nothing to check
+      }
+
+      const referenced = new Set<string>();
+      const installed = new Set<string>();
+      for (const file of files) {
+        const code = readFileSync(join(assetsDir, file), "utf8");
+        for (const m of code.matchAll(CALLED)) referenced.add(m[1]);
+        for (const m of code.matchAll(ASSIGNED)) installed.add(m[1]);
+      }
+
+      const missing = [...referenced].filter((n) => !installed.has(n)).sort();
+      if (missing.length > 0) {
+        throw new Error(
+          [
+            `[webview] ${missing.length} host hook(s) are called but never installed:`,
+            ...missing.map((n) => `  self.${n}`),
+            "",
+            "The wasm glue and @slideglance/viewer/dist/pptx-worker.js disagree on",
+            "these names. The viewer's built dist is almost certainly stale — run",
+            "`pnpm --filter @slideglance/viewer build` and package again.",
+          ].join("\n"),
+        );
+      }
+    },
+  };
+}
+
 // `root` points at `src/webview/` so Vite emits `dist/webview/index.html`
 // at the top level (rather than nested under `src/webview/index.html`,
 // which is what happens when `root` is left at the package root and the
@@ -81,6 +144,7 @@ export default defineConfig({
     react(),
     wasm(),
     topLevelAwait(),
+    assertWorkerGlobalsInstalled(resolve(__dirname, "dist/webview")),
   ],
   worker: {
     format: "es",
