@@ -494,7 +494,15 @@ fn layout_tokens_into_lines(
         return vec![WrappedLine::default()];
     }
 
-    let tolerance = available_width * WRAP_TOLERANCE_RATIO;
+    // Cap the tolerance at a quarter em. The ratio compensates measurement
+    // drift, and drift is a property of the glyph being measured, not of the
+    // column it sits in — 5% of a wide column is several Hangul glyphs. A
+    // 682px body column at 10.5px text tolerated 34px, so three glyphs hung
+    // into the right margin on most paragraphs and the page printed with a
+    // 4mm right margin against a 15mm left one. A quarter em still absorbs
+    // sub-glyph rounding, which is the whole of the drift this guards.
+    let tolerance = (available_width * WRAP_TOLERANCE_RATIO)
+        .min(default_font_size * font_scale * 0.25);
     let mut lines: Vec<WrappedLine> = Vec::new();
     let mut current_line: Vec<Token> = Vec::new();
     let mut current_width = 0.0_f64;
