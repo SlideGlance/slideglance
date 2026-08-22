@@ -7,9 +7,13 @@
 //! Mirrors 1:1. The algorithm:
 //!
 //! 1. Tokenize each run by splitting on whitespace / CJK boundaries —
-//!    spaces become standalone breakable tokens, each CJK character is
-//!    its own token, Latin letter sequences form word tokens. Embedded
-//!    `\n` produces a `force_break` token.
+//!    spaces become standalone breakable tokens, each Han or Kana
+//!    character is its own token, and Latin and Hangul sequences form
+//!    word tokens. Hangul is a word-forming script here even though it is
+//!    measured as CJK: Korean writes spaces between 어절 and Korean
+//!    typesetting breaks at them, so an 어절 stays whole unless it cannot
+//!    fit its column at all. Embedded `\n` produces a `force_break`
+//!    token.
 //! 2. Greedy layout: append tokens until adding the next would exceed
 //!    `available_width + tolerance` (`available_width × 0.02`), then
 //!    break before / at the token depending on its `breakable` flag.
@@ -30,7 +34,7 @@
 
 use slideglance_model::text::{Paragraph, RunProperties};
 
-use crate::text_measure::is_cjk_codepoint;
+use crate::text_measure::{is_cjk_codepoint, is_hangul_codepoint};
 use crate::text_measurer::{FontStyle, TextMeasurer};
 
 /// Default font size when a run has no explicit size and no defaults
@@ -340,7 +344,7 @@ fn split_text_into_fragments(text: &str) -> Vec<(String, bool)> {
             }
             current_kind = Some(FragmentKind::Space);
             current.push(ch);
-        } else if is_cjk_codepoint(cp) {
+        } else if is_cjk_codepoint(cp) && !is_hangul_codepoint(cp) {
             if !current.is_empty() {
                 let breakable =
                     matches!(current_kind, Some(FragmentKind::Cjk | FragmentKind::Space));
@@ -351,7 +355,9 @@ fn split_text_into_fragments(text: &str) -> Vec<(String, bool)> {
             current_kind = Some(FragmentKind::Cjk);
             current.clear();
         } else {
-            // Latin / other non-CJK non-whitespace.
+            // Latin, Hangul, and other non-CJK non-whitespace. Hangul joins
+            // the word token so a 어절 stays whole — see
+            // `is_hangul_codepoint`.
             if !current.is_empty() && current_kind != Some(FragmentKind::Latin) {
                 let breakable = matches!(current_kind, Some(FragmentKind::Space));
                 out.push((std::mem::take(&mut current), breakable));
@@ -585,7 +591,7 @@ fn layout_tokens_into_lines(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use slideglance_model::text::{ParagraphAlignment, ParagraphProperties, TextRun};
     use slideglance_utils::Pt;
 
@@ -608,7 +614,7 @@ mod tests {
         }
     }
 
-    fn make_paragraph_with_props(texts: &[&str], props: &RunProperties) -> Paragraph {
+    pub(crate) fn make_paragraph_with_props(texts: &[&str], props: &RunProperties) -> Paragraph {
         Paragraph {
             runs: texts
                 .iter()
@@ -918,5 +924,64 @@ mod tests {
         let frags = split_text_into_fragments("ABシ");
         let texts: Vec<&str> = frags.iter().map(|(t, _)| t.as_str()).collect();
         assert_eq!(texts, vec!["AB", "シ"]);
+    }
+}
+
+#[cfg(test)]
+mod hangul_wrap_tests {
+    use super::tests::make_paragraph_with_props;
+    use super::*;
+    use crate::text_measurer::HeuristicTextMeasurer;
+    use slideglance_utils::Pt;
+
+    fn lines(text: &str, width: f64) -> Vec<String> {
+        let props = RunProperties {
+            font_size: Some(Pt(12.0)),
+            ..RunProperties::default()
+        };
+        wrap_paragraph(
+            &make_paragraph_with_props(&[text], &props),
+            width,
+            12.0,
+            1.0,
+            &HeuristicTextMeasurer,
+        )
+        .into_iter()
+        .map(|line| {
+            line.segments
+                .iter()
+                .map(|s| s.text.as_str())
+                .collect::<String>()
+        })
+        .collect()
+    }
+
+    #[test]
+    fn a_hangul_eojeol_is_not_split_across_lines() {
+        // Korean writes spaces between 어절 and breaks at them. Splitting
+        // 「플랫폼을」 into 「플랫」/「폼을」 is what every Korean word
+        // processor turns off.
+        let out = lines("인메모리 플랫폼을 24개월 안에 개발한다", 120.0);
+        assert!(out.len() > 1, "줄이 나뉘지 않아 시험이 성립하지 않는다: {out:?}");
+        for word in ["인메모리", "플랫폼을", "24개월", "안에", "개발한다"] {
+            let whole = out.iter().filter(|l| l.contains(word)).count();
+            assert_eq!(whole, 1, "「{word}」가 한 줄에 온전히 있지 않다: {out:?}");
+        }
+    }
+
+    #[test]
+    fn han_and_kana_still_break_between_characters() {
+        // Chinese and Japanese carry no word delimiter, so the per-character
+        // break has to survive the Hangul change.
+        let out = lines("電力系統安定度監視制御装置", 60.0);
+        assert!(out.len() > 1, "한자가 한 줄에 다 들어갔다: {out:?}");
+    }
+
+    #[test]
+    fn an_eojeol_wider_than_the_column_still_splits() {
+        // keep-all is a preference, not a guarantee — a 어절 that cannot fit
+        // falls back to per-character splitting rather than overflowing.
+        let out = lines("전력계통안정도통합감시시스템개발사업", 60.0);
+        assert!(out.len() > 1, "칸보다 긴 어절이 쪼개지지 않았다: {out:?}");
     }
 }

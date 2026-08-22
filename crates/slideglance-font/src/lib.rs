@@ -110,7 +110,7 @@ pub use script_context::{ScriptFontContext, CJK_SCRIPT_CODES};
 pub use text_engine::{RenderMode, TextEngine, TextEngineBuilder};
 pub use text_measure::{
     classify_script, get_ascender_ratio, get_line_height_ratio, is_cjk_codepoint,
-    is_complex_script_codepoint, is_halfwidth_cjk_codepoint, is_pua_codepoint,
+    is_complex_script_codepoint, is_halfwidth_cjk_codepoint, is_hangul_codepoint, is_pua_codepoint,
     is_sym_pua_codepoint, measure_text_width, split_by_script, Script, TextPart, HALFWIDTH_RATIO,
 };
 pub use text_measurer::{FontStyle, HeuristicTextMeasurer, OpentypeTextMeasurer, TextMeasurer};

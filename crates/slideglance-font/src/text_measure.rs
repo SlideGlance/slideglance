@@ -206,6 +206,31 @@ pub fn is_cjk_codepoint(code_point: u32) -> bool {
         || (0xD7B0..=0xD7FF).contains(&code_point)
 }
 
+/// Returns `true` for Hangul syllables and jamo.
+///
+/// Hangul is measured as CJK — one em-square per syllable — but it is not
+/// broken like CJK. Chinese and Japanese carry no word delimiter, so a
+/// line may break between any two characters; Korean writes spaces
+/// between 어절, and Korean typesetting breaks at those spaces. Breaking
+/// mid-어절 is what CSS calls `word-break: normal` and what every Korean
+/// word processor turns off — a document that does it does not look like
+/// a Korean document.
+///
+/// [`crate::text_wrap`] uses this to keep a 어절 whole; an 어절 that
+/// cannot fit its column still falls back to per-character splitting.
+#[must_use]
+pub fn is_hangul_codepoint(code_point: u32) -> bool {
+    // Hangul Syllables.
+    (0xAC00..=0xD7A3).contains(&code_point)
+        // Hangul Jamo.
+        || (0x1100..=0x11FF).contains(&code_point)
+        // Hangul Compatibility Jamo.
+        || (0x3130..=0x318F).contains(&code_point)
+        // Hangul Jamo Extended-A / Extended-B.
+        || (0xA960..=0xA97F).contains(&code_point)
+        || (0xD7B0..=0xD7FF).contains(&code_point)
+}
+
 /// Returns `true` if `code_point` is in the halfwidth CJK ranges.
 ///
 /// Covers Halfwidth Katakana (U+FF61–FF9F) and Halfwidth Hangul
