@@ -16,15 +16,18 @@
 //! user prefers locally available faces over the OSS fallback chain.
 //! Library callers and CI pipelines should leave it off (the default).
 
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::font_resolver::BufferFontResolver;
 use crate::opentype::FontFace;
 
-/// Read every host-installed font face into a `Vec<Vec<u8>>` of raw
+/// Read every host-installed font file into shared buffers of raw
 /// OpenType blobs — suitable as `measurement_fonts` for
 /// `slideglance::PptxDocument::parse`. Faces with unreadable backing
-/// storage (database-only entries, missing files) are skipped.
+/// storage (database-only entries, missing files) are skipped, and a
+/// file backing several faces is read once.
 ///
 /// **Cost:** reads every system-installed font from disk (potentially
 /// hundreds on macOS / Windows). On a fresh process this can be
@@ -36,19 +39,27 @@ use crate::opentype::FontFace;
 ///
 /// **Determinism:** disabled. Same caveats as [`load_system_fonts`].
 #[must_use]
-pub fn load_system_font_bytes() -> Vec<Vec<u8>> {
+pub fn load_system_font_bytes() -> Vec<Arc<Vec<u8>>> {
     let mut db = fontdb::Database::new();
     db.load_system_fonts();
-    let mut out: Vec<Vec<u8>> = Vec::new();
+    let mut out: Vec<Arc<Vec<u8>>> = Vec::new();
+    // A collection reports one face each, all naming the same path.
+    // Reading the file per face is what turned a host font set into
+    // tens of gigabytes; one buffer per file is enough because
+    // `FontFace` indexes into it.
+    let mut seen_paths: HashSet<PathBuf> = HashSet::new();
     for face_info in db.faces() {
         match &face_info.source {
             fontdb::Source::Binary(arc) => {
                 let bytes_ref: &[u8] = (**arc).as_ref();
-                out.push(bytes_ref.to_vec());
+                out.push(Arc::new(bytes_ref.to_vec()));
             }
             fontdb::Source::File(path) => {
+                if !seen_paths.insert(path.clone()) {
+                    continue;
+                }
                 if let Ok(bytes) = std::fs::read(path) {
-                    out.push(bytes);
+                    out.push(Arc::new(bytes));
                 }
             }
             #[allow(unreachable_patterns)]
@@ -76,7 +87,7 @@ pub fn load_system_font_bytes() -> Vec<Vec<u8>> {
 /// **Determinism:** disabled. Two machines with different installed
 /// fonts will produce different byte buffers.
 #[must_use]
-pub fn load_system_font_bytes_for_families(families: &[&str]) -> Vec<Vec<u8>> {
+pub fn load_system_font_bytes_for_families(families: &[&str]) -> Vec<Arc<Vec<u8>>> {
     if families.is_empty() {
         return Vec::new();
     }
@@ -92,9 +103,8 @@ pub fn load_system_font_bytes_for_families(families: &[&str]) -> Vec<Vec<u8>> {
         return Vec::new();
     }
 
-    let mut seen_paths: std::collections::HashSet<std::path::PathBuf> =
-        std::collections::HashSet::new();
-    let mut out: Vec<Vec<u8>> = Vec::new();
+    let mut seen_paths: HashSet<PathBuf> = HashSet::new();
+    let mut out: Vec<Arc<Vec<u8>>> = Vec::new();
     for face_info in db.faces() {
         let matches = face_info
             .families
@@ -112,14 +122,14 @@ pub fn load_system_font_bytes_for_families(families: &[&str]) -> Vec<Vec<u8>> {
         match &face_info.source {
             fontdb::Source::Binary(arc) => {
                 let bytes_ref: &[u8] = (**arc).as_ref();
-                out.push(bytes_ref.to_vec());
+                out.push(Arc::new(bytes_ref.to_vec()));
             }
             fontdb::Source::File(path) => {
                 if !seen_paths.insert(path.clone()) {
                     continue;
                 }
                 if let Ok(bytes) = std::fs::read(path) {
-                    out.push(bytes);
+                    out.push(Arc::new(bytes));
                 }
             }
             #[allow(unreachable_patterns)]
@@ -145,24 +155,37 @@ pub fn load_system_fonts() -> BufferFontResolver {
     let mut db = fontdb::Database::new();
     db.load_system_fonts();
     let mut resolver = BufferFontResolver::new();
+    // One buffer per file, shared by every face read out of it. A
+    // collection reports one `face_info` per contained face, all naming
+    // the same path — reading the file again for each turns
+    // `AppleSDGothicNeo.ttc` (53 MB, 18 faces) into 950 MB.
+    let mut by_path: HashMap<PathBuf, Arc<Vec<u8>>> = HashMap::new();
     for face_info in db.faces() {
-        let bytes: Vec<u8> = match &face_info.source {
+        let bytes: Arc<Vec<u8>> = match &face_info.source {
             fontdb::Source::Binary(arc) => {
                 // Binary sources expose `Arc<dyn AsRef<[u8]> + Send + Sync>`.
                 let bytes_ref: &[u8] = (**arc).as_ref();
-                bytes_ref.to_vec()
+                Arc::new(bytes_ref.to_vec())
             }
-            fontdb::Source::File(path) => match std::fs::read(path) {
-                Ok(bytes) => bytes,
-                Err(_) => continue,
-            },
+            fontdb::Source::File(path) => {
+                if let Some(cached) = by_path.get(path) {
+                    Arc::clone(cached)
+                } else {
+                    let Ok(read) = std::fs::read(path) else {
+                        continue;
+                    };
+                    let shared = Arc::new(read);
+                    by_path.insert(path.clone(), Arc::clone(&shared));
+                    shared
+                }
+            }
             // SharedFile is gated on the `memmap` cargo feature in
             // fontdb. We don't enable it (`fs` only); skip the variant
             // here so the match stays exhaustive across feature combos.
             #[allow(unreachable_patterns)]
             _ => continue,
         };
-        let Ok(face) = FontFace::from_bytes(bytes, face_info.index) else {
+        let Ok(face) = FontFace::from_shared(bytes, face_info.index) else {
             continue;
         };
         let family = face_info

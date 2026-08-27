@@ -1287,7 +1287,6 @@ mod tests {
     /// B.5 prereq: verify fontcull retains cmap after subsetting.
     /// Requires a real TTF fixture — gated with #[ignore] until one is added.
     #[test]
-    #[ignore = "B.5-cmap: needs testing/fixtures/subset-test.ttf — add a minimal real TTF to un-ignore"]
     fn subset_font_bytes_retains_cmap() {
         use std::fs;
         let fixture = concat!(

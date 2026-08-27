@@ -507,8 +507,8 @@ fn layout_tokens_into_lines(
     // into the right margin on most paragraphs and the page printed with a
     // 4mm right margin against a 15mm left one. A quarter em still absorbs
     // sub-glyph rounding, which is the whole of the drift this guards.
-    let tolerance = (available_width * WRAP_TOLERANCE_RATIO)
-        .min(default_font_size * font_scale * 0.25);
+    let tolerance =
+        (available_width * WRAP_TOLERANCE_RATIO).min(default_font_size * font_scale * 0.25);
     let mut lines: Vec<WrappedLine> = Vec::new();
     let mut current_line: Vec<Token> = Vec::new();
     let mut current_width = 0.0_f64;
@@ -962,7 +962,10 @@ mod hangul_wrap_tests {
         // 「플랫폼을」 into 「플랫」/「폼을」 is what every Korean word
         // processor turns off.
         let out = lines("인메모리 플랫폼을 24개월 안에 개발한다", 120.0);
-        assert!(out.len() > 1, "줄이 나뉘지 않아 시험이 성립하지 않는다: {out:?}");
+        assert!(
+            out.len() > 1,
+            "줄이 나뉘지 않아 시험이 성립하지 않는다: {out:?}"
+        );
         for word in ["인메모리", "플랫폼을", "24개월", "안에", "개발한다"] {
             let whole = out.iter().filter(|l| l.contains(word)).count();
             assert_eq!(whole, 1, "「{word}」가 한 줄에 온전히 있지 않다: {out:?}");

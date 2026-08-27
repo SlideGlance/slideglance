@@ -10,16 +10,17 @@
 //! ## Self-borrow
 //!
 //! [`ttf_parser::Face`] borrows from its source `&[u8]`, so a `Face`
-//! cannot be stored alongside the `Vec<u8>` it parses without a
+//! cannot be stored alongside the buffer it parses without a
 //! self-referential structure. We sidestep the problem by re-parsing
 //! on each call — `Face::parse` only walks the table directory and is
-//! cheap. [`FontFace`] owns the bytes and exposes scalar / per-glyph
-//! helpers that internally re-parse.
+//! cheap. [`FontFace`] holds the bytes behind an `Arc` and exposes
+//! scalar / per-glyph helpers that internally re-parse.
 //!
 //! Higher layers (e.g. [`crate::OpentypeTextMeasurer`]) keep a
 //! `FontFace` per loaded family and call its measurement helpers.
 
 use std::fmt;
+use std::sync::Arc;
 
 use ttf_parser::{Face, FaceParsingError, GlyphId, Tag};
 
@@ -52,12 +53,20 @@ impl From<FaceParsingError> for FontError {
     }
 }
 
-/// Owned font bytes + face index.
+/// Shared font bytes + face index.
 ///
-/// Owns the raw font data (`Vec<u8>`) so it can be moved between
+/// Holds the raw font data behind an `Arc` so it can be moved between
 /// threads, cached, and serialized to disk. Construct with
 /// [`FontFace::from_bytes`] which validates that the data parses;
 /// subsequent metric / glyph queries re-parse internally.
+///
+/// The buffer is shared rather than owned because callers hold one
+/// face per family-name alias and one per face of a collection. A
+/// deep copy at either point multiplies the file: a host font walk
+/// that reaches a 162 MB CJK collection with 35 faces produces
+/// gigabytes of identical bytes. Cloning a `FontFace`, and building
+/// several faces from one buffer via [`FontFace::from_shared`], cost
+/// a reference count.
 ///
 /// `face_index` is 0 for plain TTF / OTF; TTC containers use higher
 /// indices. Use [`crate::ttc`] to enumerate TTC faces.
@@ -67,7 +76,7 @@ impl From<FaceParsingError> for FontError {
 /// reconstructs the parsed face.
 #[derive(Clone, Debug)]
 pub struct FontFace {
-    data: Vec<u8>,
+    data: Arc<Vec<u8>>,
     face_index: u32,
     /// Variation axis settings: `(tag, value)` pairs accumulated via
     /// [`Self::set_variation`]. Empty for non-variable faces.
@@ -76,8 +85,26 @@ pub struct FontFace {
 
 impl FontFace {
     /// Parses `data` as a TTF / OTF face at `face_index` and validates
-    /// it. Returns the owning wrapper on success.
+    /// it. Returns the wrapper on success.
+    ///
+    /// Takes sole ownership of the buffer. Reach for
+    /// [`FontFace::from_shared`] when several faces read the same
+    /// bytes — every face of a collection, for one.
     pub fn from_bytes(data: Vec<u8>, face_index: u32) -> Result<Self, FontError> {
+        Self::from_shared(Arc::new(data), face_index)
+    }
+
+    /// Parses `face_index` out of a buffer other faces also read.
+    ///
+    /// A collection indexes natively, so each of its faces borrows the
+    /// whole file. Sharing one `Arc` keeps the file in memory once
+    /// however many faces are built from it.
+    ///
+    /// # Errors
+    ///
+    /// [`FontError::Parse`] when the bytes do not hold a face at
+    /// `face_index`.
+    pub fn from_shared(data: Arc<Vec<u8>>, face_index: u32) -> Result<Self, FontError> {
         Face::parse(&data, face_index)?;
         Ok(Self {
             data,
@@ -89,7 +116,14 @@ impl FontFace {
     /// Borrows the underlying bytes (e.g. for serialization).
     #[must_use]
     pub fn data(&self) -> &[u8] {
-        &self.data
+        self.data.as_slice()
+    }
+
+    /// Returns the shared buffer, for callers building sibling faces
+    /// out of the same file.
+    #[must_use]
+    pub fn shared_data(&self) -> Arc<Vec<u8>> {
+        Arc::clone(&self.data)
     }
 
     /// Face index passed to [`Self::from_bytes`].
@@ -396,10 +430,56 @@ pub fn all_face_family_names(data: &[u8]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
 
     // Smoke / error-path tests only here. Real-font integration tests
     // live in `tests/opentype_integration.rs` once the embedded-font
     // fixture extraction path lands.
+
+    fn fixture(name: &str) -> Vec<u8> {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../testing/fixtures/fonts/");
+        std::fs::read(format!("{path}{name}")).expect("font fixture")
+    }
+
+    /// A cloned face must point at the same buffer, never a copy.
+    ///
+    /// Callers register one face under every family-name alias it
+    /// exposes, so a deep clone multiplies a font file by its alias
+    /// count. On a host walk that reaches `NotoSerifCJK.ttc` (162 MB,
+    /// 35 faces, several aliases each) the copies reach tens of
+    /// gigabytes and the process is killed before it draws a slide.
+    #[test]
+    fn clone_shares_the_buffer() {
+        let face = FontFace::from_bytes(fixture("SlideglanceTest-Regular.ttf"), 0).unwrap();
+        let twin = face.clone();
+        assert_eq!(
+            face.data().as_ptr(),
+            twin.data().as_ptr(),
+            "clone copied the font bytes instead of sharing them"
+        );
+    }
+
+    /// Every face of one collection must share the collection's bytes.
+    ///
+    /// `ttf-parser` indexes a TTC natively, so all faces read from the
+    /// same buffer; handing each one its own copy multiplies the file
+    /// by its face count.
+    #[test]
+    fn collection_faces_share_one_buffer() {
+        let shared = Arc::new(fixture("SlideglanceTest.ttc"));
+        let first = FontFace::from_shared(Arc::clone(&shared), 0).unwrap();
+        let last = FontFace::from_shared(Arc::clone(&shared), 3).unwrap();
+        assert_eq!(
+            first.data().as_ptr(),
+            last.data().as_ptr(),
+            "two faces of one collection hold separate copies"
+        );
+        assert_ne!(
+            first.face_index(),
+            last.face_index(),
+            "fixture should expose distinct faces"
+        );
+    }
 
     #[test]
     fn invalid_bytes_fail_to_parse() {

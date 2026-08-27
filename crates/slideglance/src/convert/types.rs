@@ -5,6 +5,8 @@
 //! from the `convert_to_svg` / `convert_to_png` logic that consumes
 //! it.
 
+use std::sync::Arc;
+
 use slideglance_font::CjkPlatform;
 use slideglance_font::{FontMapping, FontResolver, RenderMode, TextMeasurer};
 use slideglance_png::PngError;
@@ -36,7 +38,12 @@ pub struct FontConfig {
     /// Extra font byte buffers for the auto-built
     /// [`OpentypeTextMeasurer`] only — they are **not** inlined into
     /// the SVG and not handed to the PNG rasterizer.
-    pub measurement_only_fonts: Vec<Vec<u8>>,
+    ///
+    /// Shared rather than owned: a host font walk hands over every
+    /// installed file, the measurer builds one face per face of a
+    /// collection and registers it under every alias, and copying at
+    /// those points turns a 1.5 GB font set into tens of gigabytes.
+    pub measurement_only_fonts: Vec<Arc<Vec<u8>>>,
     /// Output format for inlined font bytes. See [`EmbedFormat`].
     pub embed_format: EmbedFormat,
 }
