@@ -57,7 +57,7 @@
   "dependencies": {
     "@phosphor-icons/react": "catalog:",
     "@slideglance/core": "workspace:*",
-    "mtx-decompressor": "^1.1.6"
+    "mtx-decompressor": "^1.6.0"
   },
   "devDependencies": {
     "@types/react": "catalog:",
