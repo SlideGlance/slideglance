@@ -64,6 +64,7 @@ pub fn parse_slide_layout(
         fmt_scheme,
         None,
         None,
+        0,
     );
 
     let show_master_sp = parse_show_master_sp(raw.show_master_sp.as_deref());

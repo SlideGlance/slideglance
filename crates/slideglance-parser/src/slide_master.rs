@@ -78,6 +78,7 @@ pub fn parse_slide_master(
         fmt_scheme,
         None,
         None,
+        0,
     );
 
     let tx_styles = raw

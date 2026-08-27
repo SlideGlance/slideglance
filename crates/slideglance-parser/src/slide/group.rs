@@ -31,6 +31,7 @@ pub(super) fn build_group(
     fmt_scheme: Option<&FormatScheme>,
     placeholder_styles: Option<&[PlaceholderStyleInfo]>,
     parent_group_fill: Option<&slideglance_model::Fill>,
+    depth: usize,
 ) -> Option<GroupElement> {
     let grp_sp_pr = grp.grp_sp_pr.as_ref()?;
     let xfrm = grp_sp_pr.xfrm.as_ref()?;
@@ -86,6 +87,7 @@ pub(super) fn build_group(
         fmt_scheme,
         placeholder_styles,
         group_fill.as_ref(),
+        depth + 1,
     );
 
     let effects = grp_sp_pr
@@ -136,7 +138,9 @@ pub(crate) struct RawGrpSp {
     #[serde(rename = "nvGrpSpPr")]
     pub nv_grp_sp_pr: Option<RawNvGrpSpPr>,
     #[serde(rename = "grpSpPr")]
-    pub grp_sp_pr: Option<RawGrpSpPr>,
+    /// Boxed: this is 5.7 KB of fill / effect / transform
+    /// options, and a nested group carries one per level.
+    pub grp_sp_pr: Option<Box<RawGrpSpPr>>,
     #[serde(rename = "$value", default)]
     pub children: Vec<SpTreeChild>,
 }
