@@ -30,13 +30,13 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.4.0",
-    "@types/chrome": "^0.1.42",
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@types/chrome": "^0.1.43",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "jsdom": "^29.0.0",
-    "sharp": "^0.34.0",
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-top-level-await": "catalog:",

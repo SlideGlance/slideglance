@@ -15,7 +15,7 @@
     "build:js": "pnpm -r --filter './packages/*' --filter './apps/*' build",
     "prebuild": "pnpm run version:sync",
     "build": "pnpm run build:wasm && pnpm run build:js",
-    "test:rust": "RUST_MIN_STACK=16777216 cargo test --workspace",
+    "test:rust": "cargo test --workspace",
     "test:js": "pnpm -r --filter './packages/*' --filter './apps/*' --if-present test",
     "test": "pnpm run test:rust && pnpm run test:js",
     "fmt:check": "cargo fmt --check",
@@ -31,10 +31,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.3.0",
-    "globals": "^17.6.0",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "jiti": "^2.7.0",
-    "knip": "^6.12.0",
+    "knip": "^6.32.3",
     "prettier": "3.8.3"
   },
   "pnpm": {
@@ -51,7 +51,8 @@
       "tmp@<0.2.6": ">=0.2.6",
       "uuid@<11.1.1": ">=11.1.1",
       "qs@>=6.11.1 <=6.15.1": ">=6.15.2",
-      "rollup@<2.80.0": "4.60.2"
+      "rollup@<2.80.0": "4.60.2",
+      "esbuild": ">=0.28.1"
     }
   }
 }
