@@ -355,7 +355,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn slide_count_returns_after_open() {
         let path = fixture_path();
         assert!(
@@ -389,7 +388,6 @@ mod tests {
     /// names get swapped (e.g. layout vs. notes) — a type-system check
     /// alone won't catch that because both return `Option<&str>`.
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn metadata_accessors_round_trip_through_state() {
         let path = fixture_path();
         assert!(path.exists());

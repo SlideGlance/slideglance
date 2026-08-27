@@ -26,18 +26,30 @@ use serde::de::DeserializeOwned;
 /// # Errors
 ///
 /// - [`XmlError::Read`] if the input is not well-formed XML.
+/// - [`XmlError::TooDeep`] if elements nest past [`MAX_XML_DEPTH`].
 /// - [`XmlError::Deserialize`] if the stripped XML does not match `T`.
 pub fn parse_xml<T: DeserializeOwned>(xml: &str) -> Result<T, XmlError> {
     let stripped = strip_namespaces(xml)?;
     quick_xml::de::from_str(&stripped).map_err(XmlError::Deserialize)
 }
 
+/// Deepest element nesting [`strip_namespaces`] accepts.
+///
+/// The deserializer recurses once per element, and the file decides how
+/// many elements there are, so an unbounded document ends the process
+/// with a stack overflow instead of an error. A slide PowerPoint writes
+/// nests around thirty deep and sixty nested groups reach roughly two
+/// hundred, so this leaves room for anything an editor produces while
+/// keeping the walk inside the smallest stack a thread gets.
+pub const MAX_XML_DEPTH: usize = 256;
+
 /// Returns a copy of `xml` with every XML namespace prefix removed and every
 /// `xmlns`/`xmlns:*` declaration attribute dropped.
 ///
 /// # Errors
 ///
-/// [`XmlError::Read`] if the input is not well-formed XML.
+/// - [`XmlError::Read`] if the input is not well-formed XML.
+/// - [`XmlError::TooDeep`] if elements nest past [`MAX_XML_DEPTH`].
 pub fn strip_namespaces(xml: &str) -> Result<String, XmlError> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(false);
@@ -60,6 +72,9 @@ pub fn strip_namespaces(xml: &str) -> Result<String, XmlError> {
                     .write_event(Event::Start(rewritten))
                     .map_err(XmlError::Write)?;
                 stack.push(local);
+                if stack.len() > MAX_XML_DEPTH {
+                    return Err(XmlError::TooDeep { depth: stack.len() });
+                }
             }
             Ok(Event::Empty(start)) => {
                 let rewritten = rewrite_start(&start)?;
@@ -183,6 +198,11 @@ pub enum XmlError {
     NotUtf8(Utf8Error),
     /// Failed to deserialize the stripped XML into the target type.
     Deserialize(QuickXmlDeError),
+    /// Element nesting exceeded [`MAX_XML_DEPTH`].
+    TooDeep {
+        /// Depth reached when the limit tripped.
+        depth: usize,
+    },
 }
 
 impl fmt::Display for XmlError {
@@ -193,6 +213,10 @@ impl fmt::Display for XmlError {
             Self::Write(e) => write!(f, "xml write io error: {e}"),
             Self::NotUtf8(e) => write!(f, "stripped xml not utf-8: {e}"),
             Self::Deserialize(e) => write!(f, "xml deserialize error: {e}"),
+            Self::TooDeep { depth } => write!(
+                f,
+                "xml nests {depth} elements deep, past the {MAX_XML_DEPTH} limit"
+            ),
         }
     }
 }
@@ -205,6 +229,7 @@ impl std::error::Error for XmlError {
             Self::Write(e) => Some(e),
             Self::NotUtf8(e) => Some(e),
             Self::Deserialize(e) => Some(e),
+            Self::TooDeep { .. } => None,
         }
     }
 }

@@ -99,6 +99,7 @@ pub fn parse_slide(
         fmt_scheme,
         Some(placeholder_styles),
         None,
+        0,
     );
 
     let background = raw
@@ -158,6 +159,16 @@ fn build_slide_header_footer(hf: &RawSlideHf) -> SlideHeaderFooter {
 // === Shape tree =========================================================
 
 #[allow(clippy::too_many_arguments)]
+/// Deepest `<p:grpSp>` / `<dgm:drawing>` nesting the parser walks.
+///
+/// Each level costs a frame here and another in the renderer, and the
+/// file decides how many there are, so an unbounded walk lets a deck
+/// end the process with a stack overflow rather than an error. Groups
+/// this deep do not occur in decks PowerPoint writes — a hand-built
+/// tree nested past the ceiling is what this stops.
+pub(crate) const MAX_GROUP_NESTING: usize = 64;
+
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_sp_tree_elements(
     children: &[SpTreeChild],
     rels: &BTreeMap<String, Relationship>,
@@ -168,6 +179,7 @@ pub(crate) fn build_sp_tree_elements(
     fmt_scheme: Option<&FormatScheme>,
     placeholder_styles: Option<&[PlaceholderStyleInfo]>,
     parent_group_fill: Option<&slideglance_model::Fill>,
+    depth: usize,
 ) -> Vec<SlideElement> {
     let mut elements: Vec<SlideElement> = Vec::new();
     for child in children {
@@ -182,6 +194,7 @@ pub(crate) fn build_sp_tree_elements(
             fmt_scheme,
             placeholder_styles,
             parent_group_fill,
+            depth,
         );
     }
     elements
@@ -199,6 +212,7 @@ fn push_sp_tree_child(
     fmt_scheme: Option<&FormatScheme>,
     placeholder_styles: Option<&[PlaceholderStyleInfo]>,
     parent_group_fill: Option<&slideglance_model::Fill>,
+    depth: usize,
 ) {
     match child {
         SpTreeChild::Sp(sp) => {
@@ -227,6 +241,12 @@ fn push_sp_tree_child(
             }
         }
         SpTreeChild::GrpSp(grp) => {
+            // Past the ceiling the subtree is dropped rather than
+            // descended into. Losing a group nested this deep beats
+            // losing the process.
+            if depth >= MAX_GROUP_NESTING {
+                return;
+            }
             if let Some(group) = group::build_group(
                 grp,
                 rels,
@@ -237,6 +257,7 @@ fn push_sp_tree_child(
                 fmt_scheme,
                 placeholder_styles,
                 parent_group_fill,
+                depth,
             ) {
                 elements.push(SlideElement::Group(group));
             }
@@ -250,6 +271,7 @@ fn push_sp_tree_child(
                 resolver,
                 font_scheme,
                 fmt_scheme,
+                depth,
             ) {
                 elements.push(element);
             }
@@ -270,6 +292,7 @@ fn push_sp_tree_child(
                         fmt_scheme,
                         placeholder_styles,
                         parent_group_fill,
+                        depth,
                     );
                 }
             }
@@ -450,7 +473,9 @@ pub(crate) struct RawSpTree {
     #[allow(dead_code)]
     pub nv_grp_sp_pr: Option<RawNvGrpSpPr>,
     #[serde(rename = "grpSpPr")]
-    pub grp_sp_pr: Option<RawGrpSpPr>,
+    /// Boxed: this is 5.7 KB of fill / effect / transform
+    /// options, and a nested group carries one per level.
+    pub grp_sp_pr: Option<Box<RawGrpSpPr>>,
     #[serde(rename = "$value", default)]
     pub children: Vec<SpTreeChild>,
 }
@@ -458,23 +483,27 @@ pub(crate) struct RawSpTree {
 /// Source-order children of `<p:spTree>` / `<a:grpSp>`. Mirrors the TS
 /// reference's preserveOrder parsing — quick-xml's `$value` enum collects
 /// every shape variant in document order.
-#[allow(clippy::large_enum_variant)]
+///
+/// Every variant is boxed. `<p:grpSp>` carries children of this same
+/// enum, so the enum's own size is what one nesting level costs on the
+/// stack — twice over, since serde's generated `visit_map` holds a
+/// candidate beside the value it builds. Inline, `RawSp` alone made
+/// this 32 KB and twenty nested groups overflowed a 2 MB thread while
+/// parsing. Boxed, a level costs a pointer.
 #[derive(Debug, Deserialize)]
 pub(crate) enum SpTreeChild {
     #[serde(rename = "sp")]
-    Sp(RawSp),
+    Sp(Box<RawSp>),
     #[serde(rename = "pic")]
-    Pic(RawPic),
+    Pic(Box<RawPic>),
     #[serde(rename = "cxnSp")]
-    CxnSp(RawCxnSp),
-    /// `<p:grpSp>` is recursive; it carries children of the same enum so we
-    /// box it to break the cycle.
+    CxnSp(Box<RawCxnSp>),
     #[serde(rename = "grpSp")]
     GrpSp(Box<RawGrpSp>),
     #[serde(rename = "graphicFrame")]
-    GraphicFrame(RawGraphicFrame),
+    GraphicFrame(Box<RawGraphicFrame>),
     #[serde(rename = "AlternateContent")]
-    AlternateContent(RawAlternateContent),
+    AlternateContent(Box<RawAlternateContent>),
 }
 
 #[derive(Debug, Default, Deserialize)]

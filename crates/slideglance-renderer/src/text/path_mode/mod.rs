@@ -828,7 +828,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn kern_gate_above_threshold_suppresses_kern() {
         // kern threshold = 1500 hundredths-pt = 15pt.
         // font_size = 12pt < 15pt → kern must NOT be applied.
@@ -880,7 +879,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn kern_gate_at_threshold_applies_kern() {
         // kern threshold = 1200 hundredths-pt = 12pt.
         // font_size = 18pt > 12pt → kern MUST be applied.

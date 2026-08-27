@@ -22,8 +22,7 @@ use std::sync::Arc;
 
 use slideglance_font::{
     BareFamilyClaims, BufferFontResolver, CjkPlatform, FontFace, FontMapping, FontResolver,
-    HeuristicTextMeasurer,
-    OpentypeTextMeasurer, RenderMode, ScriptFontContext, TextMeasurer,
+    HeuristicTextMeasurer, OpentypeTextMeasurer, RenderMode, ScriptFontContext, TextMeasurer,
 };
 use slideglance_model::{Presentation, SlideElement};
 use slideglance_parser::PptxArchive;
@@ -412,7 +411,9 @@ fn subfamily_name(bytes: &[u8]) -> Option<String> {
     let mut fallback: Option<String> = None;
     for i in 0..names.len() {
         let Some(rec) = names.get(i) else { continue };
-        let Some(text) = rec.to_string() else { continue };
+        let Some(text) = rec.to_string() else {
+            continue;
+        };
         let text = text.trim().to_string();
         if text.is_empty() {
             continue;
@@ -431,14 +432,14 @@ fn subfamily_name(bytes: &[u8]) -> Option<String> {
 /// private helper used internally by [`convert_to_svg`].
 pub(crate) fn build_auto_opentype_measurer_pub(
     embedded_faces: &[crate::embedded_fonts::EmbeddedFontFace],
-    measurement_fonts: &[Vec<u8>],
+    measurement_fonts: &[Arc<Vec<u8>>],
 ) -> Option<OpentypeTextMeasurer> {
     build_auto_opentype_measurer(embedded_faces, measurement_fonts)
 }
 
 fn build_auto_opentype_measurer(
     embedded_faces: &[crate::embedded_fonts::EmbeddedFontFace],
-    measurement_fonts: &[Vec<u8>],
+    measurement_fonts: &[Arc<Vec<u8>>],
 ) -> Option<OpentypeTextMeasurer> {
     use std::collections::BTreeMap;
     let mut map: BTreeMap<String, FontFace> = BTreeMap::new();
@@ -481,8 +482,10 @@ fn build_auto_opentype_measurer(
     let mut claims: BareFamilyClaims<FontFace> = BareFamilyClaims::new();
     for bytes in measurement_fonts {
         let face_count = ttf_parser::fonts_in_collection(bytes).unwrap_or(1);
+        // Every face of a collection reads the caller's buffer; none
+        // of them takes a copy of it.
         let mut faces: Vec<FontFace> = (0..face_count)
-            .filter_map(|i| FontFace::from_bytes(bytes.clone(), i).ok())
+            .filter_map(|i| FontFace::from_shared(Arc::clone(bytes), i).ok())
             .collect();
         faces.sort_by_key(|f| (i32::from(f.weight()) - 400).abs());
         for parsed in faces {
@@ -785,7 +788,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_text_mode_sets_render_mode_text_mode() {
         // Default options (no font resolver) must yield TextMode and
         // fallback_used = false on every slide.
@@ -798,7 +800,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_sample_pptx_to_svg_returns_at_least_one_slide() {
         let bytes = fixture_bytes("sample.pptx");
         let out = convert_to_svg(bytes, &ConvertOptions::default()).expect("converted");
@@ -821,7 +822,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_filters_slides_by_number() {
         let bytes = fixture_bytes("sample.pptx");
         let opts = ConvertOptions {
@@ -833,7 +833,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_filters_to_no_match_returns_empty() {
         let bytes = fixture_bytes("sample.pptx");
         let opts = ConvertOptions {
@@ -845,7 +844,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_png_without_font_resolver_errors() {
         let bytes = fixture_bytes("sample.pptx");
         let err = convert_to_png(bytes, &ConvertOptions::default())

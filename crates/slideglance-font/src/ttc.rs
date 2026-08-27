@@ -105,22 +105,24 @@ pub fn extract_first_ttc_face(data: &[u8]) -> Option<Vec<u8>> {
 /// an extra allocation.
 pub fn parse_font_data(data: impl Into<Arc<[u8]>>) -> Result<Vec<FontFace>, FontError> {
     let arc: Arc<[u8]> = data.into();
-    let vec: Vec<u8> = arc.to_vec();
-    if !is_ttc(&vec) {
-        return Ok(vec![FontFace::from_bytes(vec, 0)?]);
+    // One buffer for the whole collection: `ttf-parser` indexes a TTC
+    // natively, so every face reads these same bytes.
+    let shared = Arc::new(arc.to_vec());
+    if !is_ttc(shared.as_slice()) {
+        return Ok(vec![FontFace::from_shared(shared, 0)?]);
     }
-    let count = ttc_face_count(&vec).unwrap_or(0);
+    let count = ttc_face_count(shared.as_slice()).unwrap_or(0);
     let mut faces = Vec::with_capacity(count as usize);
     for i in 0..count {
         // ttf-parser handles TTC indexing natively. Skip faces that
         // fail to parse; the rest are usable.
-        if let Ok(face) = FontFace::from_bytes(vec.clone(), i) {
+        if let Ok(face) = FontFace::from_shared(Arc::clone(&shared), i) {
             faces.push(face);
         }
     }
     if faces.is_empty() {
         // None of the contained faces parsed — surface the first error.
-        FontFace::from_bytes(vec, 0)?;
+        FontFace::from_shared(shared, 0)?;
     }
     Ok(faces)
 }
@@ -246,6 +248,30 @@ fn write_u16(data: &mut [u8], offset: usize, value: u16) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `parse_font_data` must hand every face of a collection the same
+    /// buffer. It already accepts an `Arc<[u8]>` so a caller holding a
+    /// shared buffer avoids an allocation; copying per face inside
+    /// undoes that and scales the file by its face count.
+    #[test]
+    fn parse_font_data_shares_one_buffer_across_faces() {
+        let bytes = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../testing/fixtures/fonts/SlideglanceTest.ttc"
+        ))
+        .expect("font fixture");
+        let faces = parse_font_data(bytes).expect("parse collection");
+        assert!(faces.len() > 1, "fixture should hold several faces");
+        let first = faces[0].data().as_ptr();
+        for face in &faces {
+            assert_eq!(
+                face.data().as_ptr(),
+                first,
+                "face {} holds its own copy of the collection",
+                face.face_index()
+            );
+        }
+    }
 
     /// Builds a synthetic minimal TTF whose bytes round-trip through
     /// our extractor cleanly. Not a *valid* font (ttf-parser will

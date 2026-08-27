@@ -21,8 +21,7 @@ use std::sync::Arc;
 use slideglance::{convert_to_png, convert_to_svg, parse_pptx, AdditionalFont, ConvertOptions};
 use slideglance_font::{
     get_latin_os_defaults, standard_resolver_chain, BareFamilyClaims, BufferFontResolver,
-    CjkPlatform, FontFace,
-    FontMapping, FontResolver,
+    CjkPlatform, FontFace, FontMapping, FontResolver,
 };
 use slideglance_parser::PptxArchive;
 
@@ -223,7 +222,14 @@ fn run_convert_cli(argv: impl Iterator<Item = String>) -> Result<(), String> {
         }
     }
     convert_pipeline(
-        &input, &output, cli.format, slides, cli.width, cli.height, &cli.fonts, cli.pad,
+        &input,
+        &output,
+        cli.format,
+        slides,
+        cli.width,
+        cli.height,
+        &cli.fonts,
+        OutputTarget::Directory { pad: cli.pad },
     )
 }
 
@@ -331,7 +337,7 @@ fn run_render_cli(argv: impl Iterator<Item = String>) -> Result<(), String> {
         cli.width,
         cli.height,
         &cli.fonts,
-        0,
+        OutputTarget::SingleFile,
     )
 }
 
@@ -488,6 +494,21 @@ fn element_type_counts(elements: &[slideglance_model::SlideElement]) -> Vec<(&'s
 // shared pipeline
 // ---------------------------------------------------------------------
 
+/// Where a run puts what it rendered.
+///
+/// `convert` always fills a directory and `render` always writes one
+/// file, so the caller states which. Deciding it from the slide count
+/// instead made `convert --slide N --output <dir>` try to create a file
+/// over an existing directory and fail with `Is a directory`.
+#[derive(Clone, Copy)]
+enum OutputTarget {
+    /// One file per slide inside `output`, named `slide-N.<ext>` with
+    /// slide numbers zero-padded to `pad` digits (0 = no padding).
+    Directory { pad: usize },
+    /// Exactly one file at `output`.
+    SingleFile,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn convert_pipeline(
     input: &Path,
@@ -497,14 +518,18 @@ fn convert_pipeline(
     width: Option<u32>,
     height: Option<u32>,
     fonts: &[PathBuf],
-    pad: usize,
+    target: OutputTarget,
 ) -> Result<(), String> {
     let input_display = input.display();
     let bytes = std::fs::read(input).map_err(|e| format!("read {input_display}: {e}"))?;
 
-    let font_buffers: Vec<Vec<u8>> = fonts
+    let font_buffers: Vec<Arc<Vec<u8>>> = fonts
         .iter()
-        .map(|p| std::fs::read(p).map_err(|e| format!("read font {}: {e}", p.display())))
+        .map(|p| {
+            std::fs::read(p)
+                .map(Arc::new)
+                .map_err(|e| format!("read font {}: {e}", p.display()))
+        })
         .collect::<Result<_, _>>()?;
     // Walk the host font directories. Used for: (1) measurement
     // (`fonts.measurement_only_fonts`), so wrap calculations use real
@@ -524,7 +549,7 @@ fn convert_pipeline(
             let typeface = slideglance_font::all_face_family_names(bytes)
                 .into_iter()
                 .next()?;
-            Some(AdditionalFont::regular(typeface, bytes.clone()))
+            Some(AdditionalFont::regular(typeface, bytes.as_ref().clone()))
         })
         .collect();
     let measurement_only_fonts = host_font_buffers;
@@ -549,22 +574,22 @@ fn convert_pipeline(
     match format {
         OutputFormat::Svg => {
             let rendered = convert_to_svg(bytes, &opts).map_err(|e| e.to_string())?;
-            write_outputs_padded(
+            write_outputs(
                 output,
                 "svg",
                 rendered
                     .into_iter()
                     .map(|s| (s.slide_number, s.svg.into_bytes())),
-                pad,
+                target,
             )
         }
         OutputFormat::Png => {
             let rendered = convert_to_png(bytes, &opts).map_err(|e| e.to_string())?;
-            write_outputs_padded(
+            write_outputs(
                 output,
                 "png",
                 rendered.into_iter().map(|s| (s.slide_number, s.png)),
-                pad,
+                target,
             )
         }
     }
@@ -575,9 +600,9 @@ fn convert_pipeline(
 ///.measurement_fonts` so wrap calculations use real per-glyph
 /// advances. Errors silently — a missing directory just contributes
 /// no fonts; the renderer still works (heuristic measurer fallback).
-fn load_host_font_buffers() -> Vec<Vec<u8>> {
+fn load_host_font_buffers() -> Vec<Arc<Vec<u8>>> {
     use std::path::Path;
-    fn walk(dir: &Path, out: &mut Vec<Vec<u8>>) {
+    fn walk(dir: &Path, out: &mut Vec<Arc<Vec<u8>>>) {
         let Ok(entries) = std::fs::read_dir(dir) else {
             return;
         };
@@ -589,7 +614,10 @@ fn load_host_font_buffers() -> Vec<Vec<u8>> {
                 let ext_lc = ext.to_ascii_lowercase();
                 if matches!(ext_lc.as_str(), "ttf" | "otf" | "ttc") {
                     if let Ok(bytes) = std::fs::read(&path) {
-                        out.push(bytes);
+                        // Read once, shared from here on: the resolver
+                        // and the measurer each register one face per
+                        // face of a collection, under every alias.
+                        out.push(Arc::new(bytes));
                     }
                 }
             }
@@ -603,7 +631,7 @@ fn load_host_font_buffers() -> Vec<Vec<u8>> {
     } else {
         &["/usr/share/fonts", "/usr/local/share/fonts"]
     };
-    let mut out: Vec<Vec<u8>> = Vec::new();
+    let mut out: Vec<Arc<Vec<u8>>> = Vec::new();
     for d in dirs {
         walk(Path::new(d), &mut out);
     }
@@ -644,8 +672,8 @@ fn load_host_font_buffers() -> Vec<Vec<u8>> {
 /// since path-mode rendering bypasses the SVG `font-family=` chain
 /// that `latin_defaults` already injects for browser consumers.
 fn build_resolver(
-    cli_fonts: &[Vec<u8>],
-    host_fonts: &[Vec<u8>],
+    cli_fonts: &[Arc<Vec<u8>>],
+    host_fonts: &[Arc<Vec<u8>>],
 ) -> Result<Option<Box<dyn FontResolver + Send + Sync>>, String> {
     let mut buffer = BufferFontResolver::new();
     let mut claims: BareFamilyClaims<Arc<FontFace>> = BareFamilyClaims::new();
@@ -734,12 +762,15 @@ impl<R: FontResolver> FontResolver for LatinOsDefaultsFallback<R> {
 /// [`build_resolver`].
 fn register_font_buffer(
     buffer: &mut BufferFontResolver,
-    bytes: &[u8],
+    bytes: &Arc<Vec<u8>>,
     claims: &mut BareFamilyClaims<Arc<FontFace>>,
 ) -> Result<(), slideglance_font::FontError> {
     let face_count = ttf_parser::fonts_in_collection(bytes).unwrap_or(1);
     for idx in 0..face_count {
-        let face = FontFace::from_bytes(bytes.to_vec(), idx)?;
+        // Share the file across its faces. `AppleSDGothicNeo.ttc` holds
+        // 18 of them and `NotoSerifCJK.ttc` 35; a copy each is what
+        // pushed a single-slide render past 40 GB.
+        let face = FontFace::from_shared(Arc::clone(bytes), idx)?;
         let parsed =
             ttf_parser::Face::parse(bytes, idx).map_err(slideglance_font::FontError::from)?;
         // An italic face never holds the bare family name either, so it
@@ -769,44 +800,45 @@ fn register_font_buffer(
     Ok(())
 }
 
-#[allow(dead_code)]
-fn write_outputs(
-    output: &Path,
-    extension: &str,
-    items: impl IntoIterator<Item = (u32, Vec<u8>)>,
-) -> Result<(), String> {
-    write_outputs_padded(output, extension, items, 0)
-}
-
 /// Multi-slide write with zero-padded slide numbers (e.g. `slide-001.png`).
 /// Used by callers that want predictable file names for downstream tooling
 /// (the `.compare/` diff framework expects 3-digit padding so 132-slide
 /// listings sort lexicographically).
-fn write_outputs_padded(
+fn write_outputs(
     output: &Path,
     extension: &str,
     items: impl IntoIterator<Item = (u32, Vec<u8>)>,
-    pad: usize,
+    target: OutputTarget,
 ) -> Result<(), String> {
     let collected: Vec<(u32, Vec<u8>)> = items.into_iter().collect();
     if collected.is_empty() {
         return Err("no slides matched the filter".to_string());
     }
-    if collected.len() == 1 && pad == 0 {
-        let (_, bytes) = &collected[0];
-        return write_file(output, bytes);
+    match target {
+        OutputTarget::SingleFile => {
+            if collected.len() > 1 {
+                return Err(format!(
+                    "{} slides matched but --output names one file — use `slideglance convert` for a directory",
+                    collected.len()
+                ));
+            }
+            let (_, bytes) = &collected[0];
+            write_file(output, bytes)
+        }
+        OutputTarget::Directory { pad } => {
+            let display = output.display();
+            std::fs::create_dir_all(output).map_err(|e| format!("mkdir {display}: {e}"))?;
+            for (n, bytes) in &collected {
+                let path = if pad > 0 {
+                    output.join(format!("slide-{n:0pad$}.{extension}"))
+                } else {
+                    output.join(format!("slide-{n}.{extension}"))
+                };
+                write_file(&path, bytes)?;
+            }
+            Ok(())
+        }
     }
-    let display = output.display();
-    std::fs::create_dir_all(output).map_err(|e| format!("mkdir {display}: {e}"))?;
-    for (n, bytes) in &collected {
-        let path = if pad > 0 {
-            output.join(format!("slide-{n:0pad$}.{extension}"))
-        } else {
-            output.join(format!("slide-{n}.{extension}"))
-        };
-        write_file(&path, bytes)?;
-    }
-    Ok(())
 }
 
 fn write_file(path: &Path, bytes: &[u8]) -> Result<(), String> {
@@ -839,4 +871,82 @@ fn parse_format(s: &str) -> Result<OutputFormat, String> {
 
 fn parse_u32(s: &str, flag: &str) -> Result<u32, String> {
     s.parse::<u32>().map_err(|e| format!("{flag} {s}: {e}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scratch(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("slideglance-cli-test-{name}"));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::remove_file(&dir);
+        dir
+    }
+
+    /// `convert` fills a directory however few slides matched.
+    ///
+    /// Deciding that from the slide count instead left
+    /// `convert --slide 1 --output <dir>` trying to create a file over
+    /// the directory, which fails with `Is a directory`.
+    #[test]
+    fn convert_writes_into_a_directory_even_for_one_slide() {
+        let out = scratch("one-slide-dir");
+        std::fs::create_dir_all(&out).unwrap();
+        write_outputs(
+            &out,
+            "svg",
+            vec![(1u32, b"<svg/>".to_vec())],
+            OutputTarget::Directory { pad: 0 },
+        )
+        .expect("write");
+        assert!(out.join("slide-1.svg").is_file(), "expected slide-1.svg");
+        std::fs::remove_dir_all(&out).ok();
+    }
+
+    /// Padding is honoured so listings sort lexicographically.
+    #[test]
+    fn convert_pads_slide_numbers() {
+        let out = scratch("padded");
+        write_outputs(
+            &out,
+            "png",
+            vec![(7u32, b"x".to_vec()), (12u32, b"y".to_vec())],
+            OutputTarget::Directory { pad: 3 },
+        )
+        .expect("write");
+        assert!(out.join("slide-007.png").is_file());
+        assert!(out.join("slide-012.png").is_file());
+        std::fs::remove_dir_all(&out).ok();
+    }
+
+    /// `render` names one file, so more than one result is an error
+    /// rather than a silently dropped slide.
+    #[test]
+    fn single_file_target_rejects_several_slides() {
+        let out = scratch("single").join("deck.svg");
+        let err = write_outputs(
+            &out,
+            "svg",
+            vec![(1u32, b"a".to_vec()), (2u32, b"b".to_vec())],
+            OutputTarget::SingleFile,
+        )
+        .expect_err("two slides into one file must fail");
+        assert!(err.contains("one file"), "{err}");
+    }
+
+    /// An empty result set is an error in both targets — a run that
+    /// matched nothing must not look like a successful render.
+    #[test]
+    fn empty_result_is_an_error() {
+        let out = scratch("empty");
+        let err = write_outputs(
+            &out,
+            "svg",
+            Vec::<(u32, Vec<u8>)>::new(),
+            OutputTarget::Directory { pad: 0 },
+        )
+        .expect_err("no slides must fail");
+        assert!(err.contains("no slides"), "{err}");
+    }
 }

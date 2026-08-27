@@ -24,6 +24,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine as _;
@@ -162,7 +163,9 @@ impl PptxDocument {
     /// `measurement_fonts` are extra TTF / OTF / TTC byte buffers used
     /// **only** for wrap measurement — they are not inlined and not
     /// surfaced as media blobs. Use this to register host system fonts
-    /// without bloating output.
+    /// without bloating output. Each buffer is shared: the measurer
+    /// builds one face per face of a collection and registers it under
+    /// every alias, so an owned buffer would be copied at both points.
     ///
     /// # Errors
     ///
@@ -170,7 +173,7 @@ impl PptxDocument {
     pub fn parse(
         bytes: impl Into<Vec<u8>>,
         additional_fonts: &[AdditionalFont],
-        measurement_fonts: &[Vec<u8>],
+        measurement_fonts: &[Arc<Vec<u8>>],
         embed_fonts: bool,
     ) -> Result<Self, ConvertError> {
         let buffer: Vec<u8> = bytes.into();

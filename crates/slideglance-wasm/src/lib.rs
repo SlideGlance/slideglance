@@ -698,7 +698,10 @@ impl PptxDocument {
         if use_canvas {
             check_canvas_measurer_callbacks();
         }
-        let measurement: Vec<Vec<u8>> = measurement_fonts.into_iter().map(|a| a.to_vec()).collect();
+        let measurement: Vec<Arc<Vec<u8>>> = measurement_fonts
+            .into_iter()
+            .map(|a| Arc::new(a.to_vec()))
+            .collect();
         let inner = RsPptxDocument::parse(bytes, &[], &measurement, true)
             .map_err(|e| JsError::new(&e.to_string()))?;
         Ok(Self {

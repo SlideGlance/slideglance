@@ -144,6 +144,18 @@ parking_lot = "0.12"
 # Test utilities
 tempfile = "3"
 
+# Unoptimized builds give every serde-derive `visit_map` its own large
+# frame — `RawSp` nests `spPr` / `txBody` / `style`, and `<p:grpSp>`
+# recurses through `SpTreeChild`. A deck parses fine in release and
+# overflows a 2 MB test thread in dev, which reads as a broken test
+# rather than a build-profile limit. Light optimization shrinks the
+# frames without slowing compilation noticeably.
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 1
+
 [profile.release]
 opt-level = "z"
 lto = true

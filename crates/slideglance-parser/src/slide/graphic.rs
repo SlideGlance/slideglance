@@ -28,6 +28,7 @@ use super::{
 };
 use crate::xml::parse_xml;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn build_graphic_frame(
     gf: &RawGraphicFrame,
     rels: &BTreeMap<String, Relationship>,
@@ -36,6 +37,7 @@ pub(super) fn build_graphic_frame(
     resolver: &ColorResolver,
     font_scheme: Option<&FontScheme>,
     fmt_scheme: Option<&FormatScheme>,
+    depth: usize,
 ) -> Option<SlideElement> {
     let xfrm = gf.xfrm.as_ref()?;
     let transform = build_transform(xfrm)?;
@@ -97,6 +99,7 @@ pub(super) fn build_graphic_frame(
             fmt_scheme,
             object_name,
             hidden,
+            depth,
         )
         .map(SlideElement::Group);
     }
@@ -116,6 +119,7 @@ pub(super) fn build_smart_art(
     fmt_scheme: Option<&FormatScheme>,
     object_name: Option<String>,
     hidden: bool,
+    depth: usize,
 ) -> Option<GroupElement> {
     let rel_ids = graphic_data.rel_ids.as_ref()?;
     let dm_id = rel_ids.dm.as_deref()?;
@@ -172,6 +176,7 @@ pub(super) fn build_smart_art(
         fmt_scheme,
         None,
         None,
+        depth + 1,
     );
     if children.is_empty() {
         return None;

@@ -125,7 +125,6 @@ fn master_solid_fill_background() {
 }
 
 #[test]
-#[ignore = "pre-existing parser stack overflow"]
 fn placeholder_styles_carry_transform_and_geometry() {
     let xml = r#"<?xml version="1.0"?>
 <p:sldMaster xmlns:p="urn:p" xmlns:a="urn:a">
@@ -168,7 +167,6 @@ fn placeholder_styles_carry_transform_and_geometry() {
 }
 
 #[test]
-#[ignore = "pre-existing parser stack overflow"]
 fn tx_styles_with_only_some_styles_present() {
     let xml = r#"<?xml version="1.0"?>
 <p:sldMaster xmlns:p="urn:p" xmlns:a="urn:a">
@@ -190,7 +188,6 @@ fn tx_styles_with_only_some_styles_present() {
 }
 
 #[test]
-#[ignore = "pre-existing parser stack overflow"]
 fn master_elements_share_slide_shape_tree_walker() {
     let xml = r#"<?xml version="1.0"?>
 <p:sldMaster xmlns:p="urn:p" xmlns:a="urn:a">

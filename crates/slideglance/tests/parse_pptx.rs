@@ -317,3 +317,74 @@ fn notes_are_attached_to_slide() {
         Some("Speaker notes here")
     );
 }
+
+/// Build a slide whose shape tree nests `depth` groups around one shape.
+fn nested_group_deck(depth: usize) -> Vec<u8> {
+    let mut inner = String::from(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="99" name="deep"/></p:nvSpPr><p:spPr/></p:sp>"#,
+    );
+    for _ in 0..depth {
+        inner = format!(
+            r#"<p:grpSp><p:nvGrpSpPr/><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/><a:chOff x="0" y="0"/><a:chExt cx="100" cy="100"/></a:xfrm></p:grpSpPr>{inner}</p:grpSp>"#
+        );
+    }
+    let slide = format!(
+        r#"<?xml version="1.0"?>
+<p:sld xmlns:p="urn:p" xmlns:a="urn:a">
+  <p:cSld><p:spTree>{inner}</p:spTree></p:cSld>
+</p:sld>"#
+    );
+    make_pptx(&[
+        ("ppt/presentation.xml", PRESENTATION.as_bytes()),
+        (
+            "ppt/_rels/presentation.xml.rels",
+            PRESENTATION_RELS.as_bytes(),
+        ),
+        ("ppt/theme/theme1.xml", THEME.as_bytes()),
+        ("ppt/slideMasters/slideMaster1.xml", SLIDE_MASTER.as_bytes()),
+        (
+            "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+            SLIDE_MASTER_RELS.as_bytes(),
+        ),
+        ("ppt/slideLayouts/slideLayout1.xml", SLIDE_LAYOUT.as_bytes()),
+        (
+            "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+            SLIDE_LAYOUT_RELS.as_bytes(),
+        ),
+        ("ppt/slides/slide1.xml", slide.as_bytes()),
+        ("ppt/slides/_rels/slide1.xml.rels", SLIDE_RELS.as_bytes()),
+    ])
+}
+
+/// Nesting an editor could plausibly produce still parses.
+///
+/// The ceiling exists to survive hostile input, not to reject decks
+/// people actually build, so the depth a shape-grouping spree reaches
+/// has to stay well inside it.
+#[test]
+fn deeply_nested_groups_within_the_ceiling_parse() {
+    let pres = parse_pptx(nested_group_deck(64)).expect("64 nested groups must parse");
+    assert_eq!(pres.slides.len(), 1);
+    assert!(
+        !pres.slides[0].slide.elements.is_empty(),
+        "the group tree should be present"
+    );
+}
+
+/// Nesting past the ceiling returns an error instead of ending the
+/// process.
+///
+/// `<p:grpSp>` recurses through `SpTreeChild` and the deserializer
+/// recurses with it, so the file decides how many frames are used.
+/// Unbounded, a deck built with enough levels overflows the stack —
+/// which aborts rather than failing, taking any host process with it.
+#[test]
+fn nesting_past_the_ceiling_is_an_error_not_an_abort() {
+    let err = parse_pptx(nested_group_deck(2000))
+        .expect_err("nesting this deep must be refused, not walked");
+    let text = err.to_string();
+    assert!(
+        text.contains("deep") || text.contains("limit"),
+        "error should name the nesting limit: {text}"
+    );
+}
