@@ -1945,7 +1945,6 @@ mod tests {
     // T1 (KDD-9): effective_ascender_ratio reflects the value that
     // ttf_parser::Face::ascender() returns. For DejaVuSans.ttf this
     // should be a positive ratio well within (0, 1.5].
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn from_face_effective_ascender_ratio_is_positive() {
         let font_data = std::fs::read(concat!(

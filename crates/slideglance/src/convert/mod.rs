@@ -788,7 +788,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_text_mode_sets_render_mode_text_mode() {
         // Default options (no font resolver) must yield TextMode and
         // fallback_used = false on every slide.
@@ -801,7 +800,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_sample_pptx_to_svg_returns_at_least_one_slide() {
         let bytes = fixture_bytes("sample.pptx");
         let out = convert_to_svg(bytes, &ConvertOptions::default()).expect("converted");
@@ -824,7 +822,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_filters_slides_by_number() {
         let bytes = fixture_bytes("sample.pptx");
         let opts = ConvertOptions {
@@ -836,7 +833,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_svg_filters_to_no_match_returns_empty() {
         let bytes = fixture_bytes("sample.pptx");
         let opts = ConvertOptions {
@@ -848,7 +844,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn convert_to_png_without_font_resolver_errors() {
         let bytes = fixture_bytes("sample.pptx");
         let err = convert_to_png(bytes, &ConvertOptions::default())

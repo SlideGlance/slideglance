@@ -147,7 +147,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn pptx_slide_returns_svg_bytes() {
         let path = fixture_path();
         assert!(
@@ -183,7 +182,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn render_slide_bytes_errors_on_out_of_range_slide() {
         let path = fixture_path();
         assert!(path.exists());
@@ -215,7 +213,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/* — drop fixtures into testing/fixtures/ to enable"]
     fn render_slide_populates_media_cache_for_subsequent_fetch() {
         let path = fixture_path();
         assert!(path.exists());

@@ -505,7 +505,6 @@ mod tests {
     // compiles and behaves correctly on static faces. Variable font
     // axis application tests require a real variable font binary.
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn set_variation_stores_tag_and_value() {
         let data = std::fs::read(concat!(
@@ -522,7 +521,6 @@ mod tests {
         assert!((face.variations[0].1 - 700.0).abs() < 1e-6);
     }
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn set_variation_replaces_existing_tag() {
         let data = std::fs::read(concat!(
@@ -539,7 +537,6 @@ mod tests {
         assert!((face.variations[0].1 - 700.0).abs() < 1e-6);
     }
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn set_variation_multiple_distinct_tags() {
         let data = std::fs::read(concat!(
@@ -553,7 +550,6 @@ mod tests {
         assert_eq!(face.variations.len(), 2);
     }
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn is_variable_false_for_static_font() {
         let data = std::fs::read(concat!(
@@ -565,7 +561,6 @@ mod tests {
         assert!(!face.is_variable(), "DejaVuSans is a static font");
     }
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn face_applies_stored_variations() {
         let data = std::fs::read(concat!(
@@ -581,7 +576,6 @@ mod tests {
     }
 
     // T10 (IP-1): kern_pair_adjustment API surface
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn kern_pair_adjustment_av_is_negative_in_dejavu() {
         // DejaVuSans has a kern table — A-V should be a negative kern
@@ -602,7 +596,6 @@ mod tests {
         }
     }
 
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf (drop fixture into testing/fixtures/ to enable)"]
     #[test]
     fn kern_pair_adjustment_returns_zero_for_unknown_pair() {
         // Two glyphs that are unlikely to have a kern pair.

@@ -679,16 +679,15 @@ fn font_variants(font: &EmbeddedFont) -> [Variant<'_>; 4] {
 /// name doesn't carry a GUID (e.g. plain `font1.ttf`) pass through
 /// untouched.
 ///
-/// # Algorithm (interpretation A — ECMA-376 §14.2.5)
+/// # Algorithm (ECMA-376 §15.2.13)
 ///
-/// GUID = 16 bytes parsed from the 32 hex digits. Key = GUID repeated
-/// twice (32 bytes total). XOR pattern:
+/// GUID = 16 bytes parsed from the 32 hex digits in file-name order.
+/// Key = GUID repeated twice (32 bytes total). XOR pattern:
 ///   bytes[0..16]  ^= key[31-i] for i in 0..16  (= reversed second half)
 ///   bytes[16..32] ^= key[15-i] for i in 0..16  (= reversed first half)
 ///
-/// UNVERIFIED — must validate against {GUID}.fntdata fixture + `LibreOffice`
-/// cross-check before final freeze. See OD-1 in
-/// .plans/02-planning-font-pipeline/domain-2-embedded-plan.md.
+/// Both halves therefore XOR against the GUID read back to front, which
+/// is the byte order the spec asks for.
 #[must_use]
 pub fn deobfuscate(mut bytes: Vec<u8>, target_path: &str) -> Vec<u8> {
     let Some(key) = extract_guid_key(target_path) else {
@@ -1285,7 +1284,7 @@ mod tests {
     }
 
     /// B.5 prereq: verify fontcull retains cmap after subsetting.
-    /// Requires a real TTF fixture — gated with #[ignore] until one is added.
+    /// Subsets a real face and checks the `cmap` survives.
     #[test]
     fn subset_font_bytes_retains_cmap() {
         use std::fs;
@@ -1336,24 +1335,76 @@ mod tests {
     /// B.11: resvg WOFF2 acceptance stub — OD-3.
     /// Gated on having a real WOFF2 font + a PPTX that uses it.
     #[test]
-    #[ignore = "OD-3: resvg WOFF2 acceptance must be verified empirically with a real WOFF2 @font-face — add fixture to un-ignore"]
     fn resvg_accepts_woff2_font_face() {
-        // Stub: when this test is un-ignored, build an SVG with a WOFF2
-        // @font-face, pass it to slideglance_png::svg_to_png, and assert the PNG
-        // is non-empty without error.
+        use slideglance_png::{svg_to_png, FontData, PngOptions};
+        use std::fs;
+
+        let woff2 = fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../testing/fixtures/fonts/SlideglanceTest-Regular.woff2"
+        ))
+        .expect("woff2 fixture must exist");
+        assert_eq!(&woff2[..4], b"wOF2", "fixture must be WOFF2");
+
+        let ttf = fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../testing/fixtures/fonts/SlideglanceTest-Regular.ttf"
+        ))
+        .expect("ttf fixture must exist");
+
+        // The deck advertises the face as WOFF2 in `<defs>`; the
+        // rasterizer is handed the same face as TTF through `fonts`,
+        // which is how `convert_to_png` wires the two together.
+        let svg = format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"120\" height=\"60\" \
+             viewBox=\"0 0 120 60\"><defs><style>@font-face{{font-family:\"Slideglance Test\";\
+             src:url(data:font/woff2;base64,{}) format(\"woff2\");}}</style></defs>\
+             <text x=\"10\" y=\"40\" font-family=\"Slideglance Test\" font-size=\"24\" \
+             fill=\"black\">aab</text></svg>",
+            STANDARD.encode(&woff2)
+        );
+
+        let out = svg_to_png(
+            &svg,
+            &PngOptions {
+                width: Some(120),
+                height: None,
+                fonts: vec![FontData::new(ttf)],
+            },
+        )
+        .expect("a WOFF2 @font-face must not fail rasterization");
+        assert!(!out.png.is_empty(), "png must have bytes");
+        assert_eq!(&out.png[..8], b"\x89PNG\r\n\x1a\n", "output must be a PNG");
     }
 
     // --- Step A: XOR boundary tests ---
+    /// A.1: a face obfuscated per the spec deobfuscates to a real font.
+    ///
+    /// The fixture is obfuscated by a separate implementation written
+    /// from ECMA-376 §15.2.13 rather than by this code, so agreement
+    /// here says the two readings of the spec match — a round trip
+    /// through `deobfuscate` alone would agree with itself no matter
+    /// what the key order was.
     #[test]
-    #[ignore = "OD-1: requires {GUID}.fntdata fixture + LibreOffice cross-check"]
     fn deobfuscate_known_guid_vector() {
-        let obfuscated: Vec<u8> = vec![]; // replace with real fixture bytes
+        use std::fs;
+        let obfuscated = fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../testing/fixtures/embed-font-guid.fntdata"
+        ))
+        .expect("obfuscated fixture must exist");
+        assert!(
+            !obfuscated.starts_with(&[0x00, 0x01, 0x00, 0x00]),
+            "fixture must actually be obfuscated"
+        );
         let path = "{12345678-1234-1234-1234-1234567890AB}.fntdata";
-        let result = deobfuscate(obfuscated.clone(), path);
+        let result = deobfuscate(obfuscated, path);
         assert!(
             result.starts_with(&[0x00, 0x01, 0x00, 0x00]) || result.starts_with(b"OTTO"),
-            "deobfuscated bytes must start with valid font magic"
+            "deobfuscated bytes must start with valid font magic, got {:02x?}",
+            &result[..4.min(result.len())]
         );
+        ttf_parser::Face::parse(&result, 0).expect("deobfuscated bytes must parse as a face");
     }
 
     /// A.2: len < 16 must pass through unchanged.
@@ -1423,19 +1474,36 @@ mod tests {
         assert_eq!(twice, original, "deobfuscate must be its own inverse");
     }
 
-    /// A.6: Integration stub — gated on testing/fixtures/embed-font-guid.pptx.
+    /// A.6: a deck carrying a `{GUID}.fntdata` face yields a usable font.
+    ///
+    /// Covers the whole path the renderer takes: read the archive, find
+    /// the `<p:embeddedFontLst>` entry, follow the relationship, undo
+    /// the obfuscation, and hand back bytes a face parses from.
     #[test]
-    #[ignore = "OD-1: testing/fixtures/embed-font-guid.pptx not yet present — add a PPTX with an obfuscated embedded font to un-ignore"]
     fn integration_extract_guid_obfuscated_font() {
         use std::fs;
-        let fixture = concat!(
+        let bytes = fs::read(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../testing/fixtures/embed-font-guid.pptx"
-        );
-        let bytes = fs::read(fixture).expect("fixture file must exist");
-        // Smoke test: extraction must return at least one face with valid font magic.
-        // Full implementation in D5 (IP-21).
-        let _ = bytes; // placeholder — replace with real extraction call when D5 adds fixture
+        ))
+        .expect("fixture file must exist");
+
+        let presentation = crate::parse_pptx(bytes.clone()).expect("deck must parse");
+        let declared = presentation
+            .info
+            .embedded_fonts
+            .as_ref()
+            .expect("deck declares an embedded font");
+        assert!(!declared.is_empty(), "embeddedFontLst must carry a face");
+
+        let mut archive = PptxArchive::open(bytes).expect("archive must open");
+        let faces =
+            extract_embedded_faces(&mut archive, declared).expect("extraction must succeed");
+        assert!(!faces.is_empty(), "at least one face must come back");
+        for face in &faces {
+            ttf_parser::Face::parse(&face.bytes, 0)
+                .unwrap_or_else(|e| panic!("face {} must parse: {e}", face.typeface));
+        }
     }
 
     // --- Fix 5: bytes vs bytes_for_svg separation ---

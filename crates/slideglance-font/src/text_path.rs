@@ -400,7 +400,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf — drop fixture into testing/fixtures/fonts/ to enable"]
     fn kerned_path_av_differs_from_unkerned() {
         // DejaVuSans kern table has A-V = -131 font units. At 18pt the
         // second path command's x-origin shifts left by -131 * scale.
@@ -414,7 +413,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf — drop fixture into testing/fixtures/fonts/ to enable"]
     fn kerned_path_with_kern_disabled_matches_original() {
         // apply_kern=false must produce the same output as
         // text_to_svg_path_with_precision.
@@ -425,7 +423,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs testing/fixtures/fonts/DejaVuSans.ttf — drop fixture into testing/fixtures/fonts/ to enable"]
     fn kerned_path_empty_text_is_empty() {
         let face = load_dejavu();
         assert_eq!(
