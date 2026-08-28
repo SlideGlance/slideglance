@@ -385,6 +385,8 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `alignSelf` | alignSelf (auto\|start\|center\|end\|stretch) |  |  |
 | `backgroundColor` | color |  |  |
 | `backgroundImage` | json |  | Background image source/sizing. |
+| `bandedRowFill` | color |  | Fill for every other body row (zebra striping), counted after headerRows. |
+| `bold` | boolean |  | Default cell bold. |
 | `border` | border |  | Border style (color/width/dashType). |
 | `borderBottom` | border |  | Bottom-only border (color/width/dashType). Composes additively with `border`. |
 | `borderLeft` | border |  | Left-only border (color/width/dashType). Composes additively with `border`. |
@@ -393,17 +395,25 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
 | `cellBorder` | border |  |  |
+| `cellBorderSides` | string (all\|no-outer-vertical\|horizontal-only) |  | Which cell borders to draw: all (default), no-outer-vertical (grid with open left/right table edges), horizontal-only (horizontal rules only). |
 | `cellMargin` | padding |  |  |
+| `color` | color |  | Default cell text color. |
 | `columns` | json |  | Column definitions (array). |
 | `defaultRowHeight` | number |  |  |
 | `flexBasis` | length |  | Yoga flex-basis override (number, percentage, or 'max'). |
 | `flexGrow` | number |  | Yoga flex-grow override (defaults to context-aware behavior). |
 | `flexShrink` | number |  | Yoga flex-shrink override (defaults to 1 inside stacks). |
+| `fontFamily` | string |  | Default cell font family. |
+| `fontSize` | number |  | Default cell font size (px). |
 | `group` | string |  | Bundle this node and its descendants into one PowerPoint group (<p:grpSp>). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements. |
 | `h` | length |  | Height (number, percentage, or 'max'). |
+| `headerRows` | number |  | Leading rows treated as headers; excluded from the banding rhythm. |
+| `highlight` | color |  | Default cell highlight color. |
 | `id` | string |  | Author-facing identifier for cross-references (e.g. <Connector from="..." to="..."/>). Must be unique within a slide; XML-friendly chars only (no colon). |
 | `isDecorative` | boolean |  |  |
+| `italic` | boolean |  | Default cell italic. |
 | `left` | number |  |  |
+| `letterSpacing` | number |  | Default cell tracking (em). |
 | `margin` | padding |  | Outer margin (number or per-side object). |
 | `maxH` | number |  |  |
 | `maxW` | number |  |  |
@@ -415,7 +425,11 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `right` | number |  |  |
 | `rows` | json |  | Row definitions (array). |
 | `shadow` | shadow |  |  |
+| `strike` | boolean |  | Default cell strikethrough. |
+| `textAlign` | string |  | Default cell horizontal alignment. |
 | `top` | number |  |  |
+| `underline` | underline |  | Default cell underline. |
+| `verticalAlign` | string |  | Default cell vertical alignment. |
 | `w` | length |  | Width (number, percentage, or 'max'). |
 | `x` | number |  | Absolute x (used inside <Layer>). |
 | `y` | number |  | Absolute y (used inside <Layer>). |

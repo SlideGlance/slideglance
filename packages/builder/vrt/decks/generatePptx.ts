@@ -34,6 +34,7 @@ import {
   page37TableCellBorderXml,
   page38D4SchemaAdditionsXml,
   pageConnectorXml,
+  page40TableStylingXml,
 } from "./slides/index.js";
 
 export async function generatePptx(outputPath: string): Promise<void> {
@@ -71,6 +72,7 @@ export async function generatePptx(outputPath: string): Promise<void> {
     page37TableCellBorderXml,
     page38D4SchemaAdditionsXml,
     pageConnectorXml,
+    page40TableStylingXml,
   ].join("\n");
 
   const { pptx } = await buildPptx(

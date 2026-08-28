@@ -143,11 +143,10 @@ function convertTableChildren(
           }
           cells.push(cellAttrs);
         }
-        const row: Record<string, unknown> = { cells };
-        if (rowAttrs.h !== undefined) {
-          row.h = rowAttrs.h;
-        }
-        rows.push(row);
+        // Carry every row attribute through — `cells` last so a stray
+        // `cells` attribute cannot displace the parsed <Td> list. Row-level
+        // text style and fill are inherited by the cells at render time.
+        rows.push({ ...rowAttrs, cells });
         break;
       }
       default:

@@ -6,6 +6,7 @@ import {
   backgroundImageSchema,
   borderDashSchema,
   borderStyleSchema,
+  cellBorderSidesSchema,
   bulletNumberTypeSchema,
   fillStyleSchema,
   flexWrapSchema,
@@ -261,9 +262,14 @@ export const svgNodeSchema = baseNodeSchema.extend({
 
 export type SvgNode = z.infer<typeof svgNodeSchema>;
 
-const tableCellSchema = z.object({
-  text: z.string(),
-  runs: z.array(textRunSchema).optional(),
+/**
+ * Text styling a table can set at any level. A cell resolves each of
+ * these against, in order: the cell, its row, its column, the table, and
+ * finally the deck's default text style. Without this an author repeats
+ * the same attributes on every `<Td>` — a ten-row table meant setting
+ * `fontSize` thirty times.
+ */
+const tableTextStyleSchema = z.object({
   fontSize: z.number().optional(),
   fontFamily: z.string().optional(),
   color: z.string().optional(),
@@ -274,10 +280,25 @@ const tableCellSchema = z.object({
   highlight: z.string().optional(),
   textAlign: z.enum(["left", "center", "right"]).optional(),
   verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
+  letterSpacing: z.number().optional(),
+});
+
+const tableCellSchema = tableTextStyleSchema.extend({
+  text: z.string(),
+  runs: z.array(textRunSchema).optional(),
   backgroundColor: z.string().optional(),
   colspan: z.number().int().min(1).optional(),
   rowspan: z.number().int().min(1).optional(),
-  letterSpacing: z.number().optional(),
+  /**
+   * Per-edge border for this cell alone, overriding the table's
+   * `cellBorder` / `cellBorderSides` on that edge. This is how a rule
+   * above a totals row or a thick line under a header gets drawn — the
+   * table-wide setting cannot single out one edge of one cell.
+   */
+  borderTop: borderStyleSchema.optional(),
+  borderRight: borderStyleSchema.optional(),
+  borderBottom: borderStyleSchema.optional(),
+  borderLeft: borderStyleSchema.optional(),
   margin: paddingSchema.optional(),
   // CSS-familiar alias of `margin` for table cells. PPTX table cells have
   // no concept of outer spacing — what PowerPoint calls cell `margin` is
@@ -287,25 +308,43 @@ const tableCellSchema = z.object({
   padding: paddingSchema.optional(),
 });
 
-const tableRowSchema = z.object({
+const tableRowSchema = tableTextStyleSchema.extend({
   cells: z.array(tableCellSchema),
   height: z.number().optional(),
   h: lengthSchema.optional(),
+  /** Fill for every cell in the row — the header-row idiom. */
+  backgroundColor: z.string().optional(),
 });
 
-const tableColumnSchema = z.object({
+const tableColumnSchema = tableTextStyleSchema.extend({
   width: lengthSchema.optional(),
   w: lengthSchema.optional(),
+  /** Fill for every cell in the column. */
+  backgroundColor: z.string().optional(),
 });
 
-export const tableNodeSchema = baseNodeSchema.extend({
-  type: z.literal("table"),
-  columns: z.array(tableColumnSchema),
-  rows: z.array(tableRowSchema),
-  defaultRowHeight: z.number().optional(),
-  cellBorder: borderStyleSchema.optional(),
-  cellMargin: paddingSchema.optional(),
-});
+export const tableNodeSchema = baseNodeSchema
+  .extend(tableTextStyleSchema.shape)
+  .extend({
+    type: z.literal("table"),
+    columns: z.array(tableColumnSchema),
+    rows: z.array(tableRowSchema),
+    defaultRowHeight: z.number().optional(),
+    cellBorder: borderStyleSchema.optional(),
+    cellBorderSides: cellBorderSidesSchema.optional(),
+    cellMargin: paddingSchema.optional(),
+    /**
+     * Fill applied to every other body row, counting from the first row
+     * after `headerRows`. Zebra striping is a readability device for wide
+     * tables and is otherwise a `backgroundColor` on every second `<Tr>`.
+     */
+    bandedRowFill: z.string().optional(),
+    /**
+     * How many leading rows are header rows. They are excluded from the
+     * banding rhythm so the stripes start with the first body row.
+     */
+    headerRows: z.number().int().min(0).optional(),
+  });
 
 export const shapeNodeSchema = baseNodeSchema.extend({
   type: z.literal("shape"),

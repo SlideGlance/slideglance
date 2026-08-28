@@ -1121,6 +1121,16 @@
         <xs:documentation>Background image source/sizing.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="bandedRowFill" type="b:Color" use="optional">
+      <xs:annotation>
+        <xs:documentation>Fill for every other body row (zebra striping), counted after headerRows.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="bold" type="b:Boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell bold.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="border" type="b:BorderStyle" use="optional">
       <xs:annotation>
         <xs:documentation>Border style (color/width/dashType).</xs:documentation>
@@ -1149,11 +1159,28 @@
     </xs:attribute>
     <xs:attribute name="bottom" type="xs:double" use="optional"/>
     <xs:attribute name="cellBorder" type="b:BorderStyle" use="optional"/>
+    <xs:attribute name="cellBorderSides" use="optional">
+      <xs:annotation>
+        <xs:documentation>Which cell borders to draw: all (default), no-outer-vertical (grid with open left/right table edges), horizontal-only (horizontal rules only).</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="all"/>
+          <xs:enumeration value="no-outer-vertical"/>
+          <xs:enumeration value="horizontal-only"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
     <xs:attribute name="cellMargin" type="b:Padding" use="optional"/>
     <xs:attribute name="cellMargin.top" type="xs:double" use="optional"/>
     <xs:attribute name="cellMargin.right" type="xs:double" use="optional"/>
     <xs:attribute name="cellMargin.bottom" type="xs:double" use="optional"/>
     <xs:attribute name="cellMargin.left" type="xs:double" use="optional"/>
+    <xs:attribute name="color" type="b:Color" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell text color.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="columns" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation>Column definitions (array).</xs:documentation>
@@ -1175,6 +1202,16 @@
         <xs:documentation>Yoga flex-shrink override (defaults to 1 inside stacks).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="fontFamily" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell font family.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="fontSize" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell font size (px).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="group" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation>Bundle this node and its descendants into one PowerPoint group (&lt;p:grpSp&gt;). Use `true` for an anonymous group or a string for a stable group id; nested groupings stack into nested grpSp elements.</xs:documentation>
@@ -1185,13 +1222,33 @@
         <xs:documentation>Height (number, percentage, or 'max').</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="headerRows" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Leading rows treated as headers; excluded from the banding rhythm.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="highlight" type="b:Color" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell highlight color.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="id" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation>Author-facing identifier for cross-references (e.g. &lt;Connector from="..." to="..."/&gt;). Must be unique within a slide; XML-friendly chars only (no colon).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="isDecorative" type="b:Boolean" use="optional"/>
+    <xs:attribute name="italic" type="b:Boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell italic.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="left" type="xs:double" use="optional"/>
+    <xs:attribute name="letterSpacing" type="xs:double" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell tracking (em).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="margin" type="b:Padding" use="optional">
       <xs:annotation>
         <xs:documentation>Outer margin (number or per-side object).</xs:documentation>
@@ -1234,7 +1291,27 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="shadow" type="b:ShadowStyle" use="optional"/>
+    <xs:attribute name="strike" type="b:Boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell strikethrough.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="textAlign" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell horizontal alignment.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="top" type="xs:double" use="optional"/>
+    <xs:attribute name="underline" type="b:Underline" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell underline.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="verticalAlign" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Default cell vertical alignment.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="w" type="b:Length" use="optional">
       <xs:annotation>
         <xs:documentation>Width (number, percentage, or 'max').</xs:documentation>

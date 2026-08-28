@@ -182,7 +182,36 @@ Inline SVG, rasterized to PNG at build time so the result embeds as a real Power
 </Table>
 ```
 
-`<Col w>` sizes columns; `<Tr>` is a row; `<Td>` is a cell. `colspan` and `rowspan` work as in HTML. Per-cell borders are set via `cellBorder.top`, `cellBorder.bottom`, `cellBorder.left`, `cellBorder.right`.
+`<Col w>` sizes columns; `<Tr>` is a row; `<Td>` is a cell. `colspan` and `rowspan` work as in HTML.
+
+**Cell text styling cascades.** `fontSize`, `fontFamily`, `color`, `bold`, `italic`, `underline`, `strike`, `highlight`, `textAlign`, `verticalAlign`, and `letterSpacing` can be set on `<Table>`, `<Col>`, `<Tr>`, or `<Td>`. A cell resolves each one in the order cell → row → column → table → the deck's default text style, so a right-aligned number column is one attribute on `<Col>` rather than one per cell. `backgroundColor` cascades the same way from `<Col>` / `<Tr>` / `<Td>`.
+
+```xml
+<Table fontSize="12" cellBorder.color="CBD5E1" cellBorder.width="1"
+       bandedRowFill="F1F5F9" headerRows="1">
+  <Col w="200" />
+  <Col w="120" textAlign="right" />
+  <Tr bold="true" backgroundColor="0F172A" color="FFFFFF">
+    <Td>Item</Td>
+    <Td>Amount</Td>
+  </Tr>
+  <Tr><Td>Alpha</Td><Td>1,200</Td></Tr>
+  <Tr><Td>Beta</Td><Td>3,400</Td></Tr>
+  <Tr bold="true">
+    <Td borderTop.color="0F172A" borderTop.width="2">Total</Td>
+    <Td borderTop.color="0F172A" borderTop.width="2">4,600</Td>
+  </Tr>
+</Table>
+```
+
+| Attribute | On | Effect |
+| --- | --- | --- |
+| `cellBorder` | `<Table>` | The grid: colour, width, dash for every cell edge. |
+| `cellBorderSides` | `<Table>` | `all` (default), `no-outer-vertical` (grid with the table's left and right edges open), `horizontal-only` (rules only). |
+| `borderTop` / `borderRight` / `borderBottom` / `borderLeft` | `<Td>` | One edge of one cell, overriding the grid — a rule above a totals row. |
+| `bandedRowFill` | `<Table>` | Fill for every other body row. |
+| `headerRows` | `<Table>` | Leading rows excluded from the banding rhythm. |
+| `cellMargin` | `<Table>` | Inner padding for every cell; `<Td padding>` overrides it. |
 
 ### `<Shape>`
 

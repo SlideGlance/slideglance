@@ -36,3 +36,4 @@ export {
 export { page32CenterAlignHStackXml } from "./centerAlignHStack.js";
 export { page33CustomFontXml, page34CustomFontWrapXml } from "./customFont.js";
 export { page38D4SchemaAdditionsXml } from "./d4SchemaAdditions.js";
+export { page40TableStylingXml } from "./tableStyling.js";

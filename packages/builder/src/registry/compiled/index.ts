@@ -279,7 +279,33 @@ const tableCompiled = defineNode({
     rows: { coerce: "json", doc: "Row definitions (array)." },
     defaultRowHeight: { coerce: "number" },
     cellBorder: { coerce: "border", dotNotation: true },
+    cellBorderSides: {
+      coerce: "string",
+      enum: ["all", "no-outer-vertical", "horizontal-only"],
+      doc: "Which cell borders to draw: all (default), no-outer-vertical (grid with open left/right table edges), horizontal-only (horizontal rules only).",
+    },
     cellMargin: { coerce: "padding", dotNotation: true },
+    bandedRowFill: {
+      coerce: "color",
+      doc: "Fill for every other body row (zebra striping), counted after headerRows.",
+    },
+    headerRows: {
+      coerce: "number",
+      doc: "Leading rows treated as headers; excluded from the banding rhythm.",
+    },
+    // Cell text defaults. A cell resolves each against Td -> Tr -> Col ->
+    // Table -> the deck's default text style.
+    fontSize: { coerce: "number", doc: "Default cell font size (px)." },
+    fontFamily: { coerce: "string", doc: "Default cell font family." },
+    color: { coerce: "color", doc: "Default cell text color." },
+    bold: { coerce: "boolean", doc: "Default cell bold." },
+    italic: { coerce: "boolean", doc: "Default cell italic." },
+    underline: { coerce: "underline", dotNotation: true, doc: "Default cell underline." },
+    strike: { coerce: "boolean", doc: "Default cell strikethrough." },
+    highlight: { coerce: "color", doc: "Default cell highlight color." },
+    textAlign: { coerce: "string", doc: "Default cell horizontal alignment." },
+    verticalAlign: { coerce: "string", doc: "Default cell vertical alignment." },
+    letterSpacing: { coerce: "number", doc: "Default cell tracking (em)." },
   },
   children: {
     columns: {
