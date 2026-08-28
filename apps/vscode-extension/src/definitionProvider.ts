@@ -73,20 +73,55 @@ function lineCharFromIndex(
 
 // ===== Workspace-wide template & style indices =====
 //
-// Cached because provideDocumentLinks runs on every edit and a workspace
-// scan per call would chew CPU on larger decks. Invalidated by the
-// file-system watcher and the text-edit hook registered in
-// `registerNavigationProviders`. Built in a single pass because templates
-// and styles share the same scan path.
+// `provideDocumentLinks` runs on every edit, so the index is cached per
+// file rather than as one workspace-wide blob. An edit marks a single
+// file stale and the next lookup re-reads that file alone; only a
+// create / delete — which changes the file list, and with it the
+// "first definer wins" order — forces a fresh `findFiles`. A scan per
+// keystroke would re-read every `.sgx` / `.xml` in the workspace on the
+// same thread the preview build runs on, so the two would compete.
 interface NameIndex {
   templates: Map<string, DefLocation>;
   styles: Map<string, DefLocation>;
 }
 
-let indexCache: NameIndex | undefined;
+/**
+ * Workspace file list in `findFiles` order. That order decides which
+ * declaration wins a duplicate name, so it is preserved across
+ * incremental re-reads. `undefined` means "not scanned yet".
+ */
+let indexedFiles: string[] | undefined;
+/**
+ * Parsed definitions per file, keyed by absolute path. Every path in
+ * `indexedFiles` gets an entry — an unreadable file gets an empty one —
+ * so membership here answers "is this file part of the index?".
+ */
+const fileIndices = new Map<string, NameIndex>();
+/** Files whose content changed since they were last parsed. */
+const staleFiles = new Set<string>();
+/** Merged view over `fileIndices`; dropped whenever anything changes. */
+let mergedIndex: NameIndex | undefined;
+/** Bumped on every full invalidation so a scan can tell it went stale. */
+let indexGeneration = 0;
 
+/** Drop everything — the file list itself may have changed. */
 function invalidateIndex(): void {
-  indexCache = undefined;
+  indexGeneration++;
+  indexedFiles = undefined;
+  fileIndices.clear();
+  staleFiles.clear();
+  mergedIndex = undefined;
+}
+
+/** Re-read this one file on the next lookup. */
+function invalidateFile(fsPath: string): void {
+  // Only files the workspace scan covers can contribute to the index.
+  // Anything else — an editor opened from outside the workspace, an
+  // untitled buffer, a path under an excluded folder — is not part of
+  // it and must not trigger a rescan on every keystroke.
+  if (!fileIndices.has(fsPath)) return;
+  staleFiles.add(fsPath);
+  mergedIndex = undefined;
 }
 
 function recordMatch(
@@ -109,26 +144,61 @@ function recordMatch(
   });
 }
 
-async function getIndex(): Promise<NameIndex> {
-  if (indexCache) return indexCache;
+/** Read one file and collect the names it declares. */
+function parseFile(fsPath: string): NameIndex {
   const templates = new Map<string, DefLocation>();
   const styles = new Map<string, DefLocation>();
-  const files = await vscode.workspace.findFiles(
-    "**/*.{sgx,xml}",
-    "**/node_modules/**",
-  );
-  for (const uri of files) {
-    const content = readFileContent(uri.fsPath);
-    if (!content) continue;
+  const content = readFileContent(fsPath);
+  if (content) {
     for (const m of content.matchAll(TEMPLATE_DEF_RE)) {
-      recordMatch(templates, m, content, uri.fsPath);
+      recordMatch(templates, m, content, fsPath);
     }
     for (const m of content.matchAll(STYLE_DEF_RE)) {
-      recordMatch(styles, m, content, uri.fsPath);
+      recordMatch(styles, m, content, fsPath);
     }
   }
-  indexCache = { templates, styles };
-  return indexCache;
+  return { templates, styles };
+}
+
+async function getIndex(): Promise<NameIndex> {
+  if (mergedIndex) return mergedIndex;
+
+  while (!indexedFiles) {
+    const generation = indexGeneration;
+    const files = await vscode.workspace.findFiles(
+      "**/*.{sgx,xml}",
+      "**/node_modules/**",
+    );
+    // A create or delete landing mid-scan makes the list stale before it
+    // is ever used, so scan again instead of indexing it.
+    if (generation !== indexGeneration) continue;
+    indexedFiles = files.map((uri) => uri.fsPath);
+    fileIndices.clear();
+    staleFiles.clear();
+    for (const fsPath of indexedFiles) staleFiles.add(fsPath);
+  }
+
+  for (const fsPath of staleFiles) {
+    fileIndices.set(fsPath, parseFile(fsPath));
+  }
+  staleFiles.clear();
+
+  const templates = new Map<string, DefLocation>();
+  const styles = new Map<string, DefLocation>();
+  for (const fsPath of indexedFiles) {
+    const entry = fileIndices.get(fsPath);
+    if (!entry) continue;
+    // First definer wins across files too, matching the within-file
+    // precedence `recordMatch` applies.
+    for (const [name, def] of entry.templates) {
+      if (!templates.has(name)) templates.set(name, def);
+    }
+    for (const [name, def] of entry.styles) {
+      if (!styles.has(name)) styles.set(name, def);
+    }
+  }
+  mergedIndex = { templates, styles };
+  return mergedIndex;
 }
 
 // ===== Per-attribute helpers =====
@@ -364,22 +434,23 @@ export function registerNavigationProviders(
     vscode.commands.registerCommand(OPEN_AT_COMMAND, openAt),
   );
 
-  // Invalidate on saved edits and on file-system events so the cached
-  // template index reflects renames / new templates / deletes promptly.
+  // Invalidate on file-system events so the index reflects renames / new
+  // templates / deletes promptly. A content change touches one file; a
+  // create or delete changes the file list, so it drops everything.
   const watcher = vscode.workspace.createFileSystemWatcher("**/*.{sgx,xml}");
-  watcher.onDidChange(invalidateIndex);
-  watcher.onDidCreate(invalidateIndex);
-  watcher.onDidDelete(invalidateIndex);
+  watcher.onDidChange((uri) => invalidateFile(uri.fsPath));
+  watcher.onDidCreate(() => invalidateIndex());
+  watcher.onDidDelete(() => invalidateIndex());
   context.subscriptions.push(watcher);
 
   // Unsaved edits in open editors also affect template positions — the
-  // cache reads via `readFileContent`, which prefers open buffers, so we
-  // drop the cache on every text edit to a `.xml` / `.sgx` document.
+  // index reads via `readFileContent`, which prefers open buffers, so an
+  // edit re-reads that one file on the next lookup.
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((e) => {
       const fp = e.document.uri.fsPath;
       if (fp.endsWith(".sgx") || fp.endsWith(".xml")) {
-        invalidateIndex();
+        invalidateFile(fp);
       }
     }),
   );

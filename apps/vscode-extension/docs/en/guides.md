@@ -3,10 +3,11 @@ title: vscode-extension — Guides
 lang: en
 kind: guides
 app: vscode-extension
-last_verified_commit: 93952eafcabba0eb4e38b1d79738462835c3e5c3
+last_verified_commit: ffd91b05b9e540c1d1c4dd3b8533f3485bcf20da
 source_files:
   - apps/vscode-extension/src/extension.ts
   - apps/vscode-extension/src/preview.ts
+  - apps/vscode-extension/src/coalescingRunner.ts
   - apps/vscode-extension/src/webview/
 ---
 
@@ -39,6 +40,33 @@ Iterate on the extension host and webview with a quick reload cycle.
 The `.sgx` preview pane re-renders as you edit and save, with
 incremental keystroke updates that preserve unchanged slides.
 Diagnostic squiggles appear in the editor for schema violations.
+
+## Keep working while a large deck renders
+
+### Goal
+
+Understand what the preview does when a build outruns the slow-render
+notice, and tune when that notice appears.
+
+### Steps
+
+1. Open a deck large enough that a rebuild takes more than 15 seconds,
+   or lower `slideglance.preview.slowRenderNoticeMs` in settings to see
+   the notice sooner.
+2. Edit the `.sgx` and wait. After the configured interval the preview
+   shows a corner badge saying the build is still running; the deck
+   already on screen stays interactive and its diagnostics stay put.
+3. Keep editing while the badge is up. Edits that arrive during a build
+   do not start a second one — they collapse into a single rebuild that
+   starts when the current build ends, so only the newest source is
+   ever built.
+4. Set the value to `0` to hide the notice entirely.
+
+### Expected result
+
+The badge clears and the deck updates when the build finishes. A render
+is never abandoned for taking too long: the builder has no cancellation,
+so giving up would spend the same CPU and discard the finished deck.
 
 ## Add a click-to-source mapping for a new node type
 
@@ -81,5 +109,5 @@ Ship a new build to the Visual Studio Marketplace.
 ### Expected result
 
 The new version appears on the
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=simplecore.slide-builder)
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=slideglance.slide-builder)
 within a few minutes.

@@ -3,7 +3,7 @@ title: vscode-extension
 lang: en
 kind: index
 app: vscode-extension
-last_verified_commit: 93952eafcabba0eb4e38b1d79738462835c3e5c3
+last_verified_commit: ffd91b05b9e540c1d1c4dd3b8533f3485bcf20da
 source_files:
   - apps/vscode-extension/package.json
   - apps/vscode-extension/src/
@@ -25,16 +25,20 @@ XML DSL) plus a `.pptx` viewer powered by
 Provides click-to-source from the rendered slide and one-command
 PPTX export.
 
-It declares [`redhat.vscode-xml`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)
-as an extension dependency, so VS Code installs it automatically. That
-extension consumes the bundled `builder.xsd` (registered through an XML
-catalog) to provide `.sgx` schema validation and autocomplete.
+[`redhat.vscode-xml`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)
+is a soft dependency: when it is present the extension registers the
+bundled `builder.xsd` with it through an XML catalog, giving `.sgx`
+schema validation and autocomplete. When it is absent the extension
+offers the install once and every other feature works unchanged. It is
+deliberately not an `extensionDependencies` entry — VS Code would then
+hold this extension's activation until that one's language server had
+booted.
 
 ## Install
 
 ```text
 Search "SlideGlance PPTX Viewer" in the Marketplace
-or: code --install-extension simplecore.slide-builder
+or: code --install-extension slideglance.slide-builder
 ```
 
 ## Run it (development)

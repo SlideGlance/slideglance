@@ -18,6 +18,11 @@
  *      Show an error overlay (e.g. parse / build failure). Clears the
  *      previous deck so the user does not click on stale slides.
  *
+ *  - host → webview  `{ type: 'status', message: string | null }`
+ *      A build is still running (`string`) or has finished (`null`).
+ *      Unlike `error` this leaves the deck on screen — a slow build is
+ *      not a failed one, and the result still arrives.
+ *
  *  - webview → host  `{ type: 'revealSource', objectName: string }`
  *      Click on a slide element with `data-object-name="node#N"`. Host
  *      resolves the source position and reveals the editor.
@@ -249,6 +254,10 @@ function App(): JSX.Element {
   const [src, setSrc] = useState<Uint8Array | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Host-reported progress for a build that outran the slow-render
+  // notice threshold. Purely informational: the deck stays interactive
+  // and the build's result still lands when it completes.
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
   // 1-based slide indices the host computed as "changed since the
   // last successful render". Forwarded to slideglance/viewer as
   // `invalidatedSlides`; the viewer flushes only those cache entries
@@ -322,7 +331,8 @@ function App(): JSX.Element {
             invalidatedSlides?: number[];
             deckGeneration?: number;
           }
-        | { type: "error"; message: string };
+        | { type: "error"; message: string }
+        | { type: "status"; message: string | null };
       if (!msg || typeof msg !== "object") return;
       if (msg.type === "pptx") {
         const bytes =
@@ -342,6 +352,8 @@ function App(): JSX.Element {
         }
       } else if (msg.type === "error") {
         setErrorMsg(msg.message);
+      } else if (msg.type === "status") {
+        setStatusMsg(msg.message);
       }
     }
     window.addEventListener("message", onMessage);
@@ -384,7 +396,7 @@ function App(): JSX.Element {
   }
 
   if (!controller || !src) {
-    return <LoadingOverlay />;
+    return <LoadingOverlay note={statusMsg} />;
   }
 
   return (
@@ -397,19 +409,53 @@ function App(): JSX.Element {
     // setSrc → buildPptx → re-render sequence (the deck loader's
     // setCurrentSlide(1) / setZoom(1) / setPan(0) reset block stays
     // skipped within a generation).
-    <PptxPresentation
-      key={deckGeneration}
-      controller={controller}
-      name={name}
-      src={src}
-      incrementalUpdate
-      invalidatedSlides={invalidatedSlides}
-      style={{ width: "100%", height: "100%" }}
-    />
+    <>
+      <PptxPresentation
+        key={deckGeneration}
+        controller={controller}
+        name={name}
+        src={src}
+        incrementalUpdate
+        invalidatedSlides={invalidatedSlides}
+        style={{ width: "100%", height: "100%" }}
+      />
+      {statusMsg ? <StatusBadge message={statusMsg} /> : null}
+    </>
   );
 }
 
-function LoadingOverlay(): JSX.Element {
+/**
+ * Corner badge for a build that is still running. Non-modal and
+ * click-through so the deck underneath stays usable.
+ */
+function StatusBadge({ message }: { message: string }): JSX.Element {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        right: 12,
+        bottom: 12,
+        maxWidth: 360,
+        padding: "8px 12px",
+        borderRadius: 4,
+        background: "var(--vscode-editorWidget-background, #252526)",
+        border: "1px solid var(--vscode-editorWidget-border, #454545)",
+        color: "var(--vscode-descriptionForeground, #999)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.35)",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      {message}
+    </div>
+  );
+}
+
+function LoadingOverlay({ note }: { note?: string | null }): JSX.Element {
   return (
     <div
       style={{
@@ -439,6 +485,9 @@ function LoadingOverlay(): JSX.Element {
       />
       <style>{`@keyframes builder-spin { to { transform: rotate(360deg); } }`}</style>
       <div>Rendering preview…</div>
+      {note ? (
+        <div style={{ maxWidth: 360, textAlign: "center" }}>{note}</div>
+      ) : null}
     </div>
   );
 }

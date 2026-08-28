@@ -17,6 +17,7 @@
     "src/**/*",
     "esbuild.mjs",
     "vite.webview.config.ts",
+    "vitest.config.ts",
     "eslint.config.mts"
   ]
 }

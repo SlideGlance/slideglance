@@ -7,7 +7,9 @@
  *    React shell (Vite-bundled output under `dist/webview/`).
  * 2. Watch the active slide builder XML document (`.sgx` or `.xml` with
  *    the slideglance namespace) for changes, debounce, and rebuild a
- *    fresh PPTX via the builder on every settled edit.
+ *    fresh PPTX via the builder on every settled edit. One build runs at
+ *    a time; edits that land while it runs collapse into a single
+ *    rebuild that starts when it ends.
  * 3. Stream the PPTX bytes to the webview.
  * 4. Receive `revealSource` clicks from the webview (a click on any
  *    SVG element carrying `data-object-name="node#N"`) and reveal the
@@ -30,22 +32,26 @@ import {
   type DiagnosticCode,
   type BuilderSourceMap,
 } from "@slideglance/builder";
+import { CoalescingRunner } from "./coalescingRunner.js";
 import { createFsImportResolver } from "./importResolver.js";
 import { buildWebviewHtml } from "./webviewHtml.js";
 
 const DEBOUNCE_MS = 500;
-// A deck's render time scales with its page count, so no single constant fits
-// both a five-slide sample and a hundred-page document. 15 s was short enough
-// that a long deck reported a timeout the author could not tell from a hang.
-const DEFAULT_RENDER_TIMEOUT_MS = 180_000;
+// How long a build may run before the preview says it is still working.
+// This is a notice, not a deadline: the build keeps running and its result
+// is still delivered. Abandoning it would buy nothing — the builder has no
+// cancellation, so the CPU is spent either way and giving up only discards
+// the finished deck, which on a loaded machine reads as a failed render.
+const DEFAULT_SLOW_RENDER_NOTICE_MS = 15_000;
 
-function renderTimeoutMs(): number {
+/** `0` (or a negative override) hides the notice entirely. */
+function slowRenderNoticeMs(): number {
   const configured = vscode.workspace
     .getConfiguration("slideglance.preview")
-    .get<number>("renderTimeoutMs");
-  return typeof configured === "number" && configured > 0
+    .get<number>("slowRenderNoticeMs");
+  return typeof configured === "number" && configured >= 0
     ? configured
-    : DEFAULT_RENDER_TIMEOUT_MS;
+    : DEFAULT_SLOW_RENDER_NOTICE_MS;
 }
 const DEFAULT_SLIDE_WIDTH = 1280;
 const DEFAULT_SLIDE_HEIGHT = 720;
@@ -143,6 +149,20 @@ interface BuildNoop {
 interface RenderSnapshot {
   commonHash: string;
   slideHashes: string[];
+}
+
+/** One queued rebuild. */
+interface RenderRequest {
+  /** Source XML to build. */
+  content: string;
+  /** Document `content` was read from, captured at queue time. */
+  uri: vscode.Uri;
+  /**
+   * Ignore the previous render's snapshot so the webview receives a full
+   * reload instead of a slide-level diff. Set by an explicit refresh and
+   * by a swap to a different document.
+   */
+  full: boolean;
 }
 
 /** SHA-1 keyed change detection — not adversarial, just collision-rare. */
@@ -308,7 +328,14 @@ export class PreviewPanel {
   private readonly extensionUri: vscode.Uri;
   private documentUri: vscode.Uri;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  private renderGeneration = 0;
+  /**
+   * Serializes rebuilds. A build cannot be cancelled, so two overlapping
+   * ones only slow each other down on the extension host's single thread
+   * while at most one of the two decks is ever shown.
+   */
+  private readonly renders: CoalescingRunner<RenderRequest>;
+  /** Latest slow-render notice, replayed once the webview reports ready. */
+  private currentStatus: string | undefined;
   /**
    * Monotonic counter the webview uses as a React `key` on the viewer
    * shell. Bumped only when the *deck identity* changes (new document
@@ -378,13 +405,11 @@ export class PreviewPanel {
     const inst = PreviewPanel.instance;
     if (!inst || inst.disposed) return;
     if (inst.debounceTimer) clearTimeout(inst.debounceTimer);
-    // Drop the cached snapshot so the next render reports a full
-    // (rather than incremental) reload — refresh exists so the user
-    // can recover from a stale viewer state. Bump the deck generation
-    // so the webview also remounts the viewer shell.
-    inst.lastRender = undefined;
+    // Ask for a full (rather than incremental) reload — refresh exists
+    // so the user can recover from a stale viewer state. Bump the deck
+    // generation so the webview also remounts the viewer shell.
     inst.deckGeneration++;
-    void inst.renderFromTargetUri();
+    void inst.renderFromTargetUri(true);
   }
 
   static createOrShow(
@@ -393,20 +418,19 @@ export class PreviewPanel {
   ): void {
     if (PreviewPanel.instance) {
       const oldUri = PreviewPanel.instance.documentUri;
-      if (oldUri.toString() !== document.uri.toString()) {
+      const swapped = oldUri.toString() !== document.uri.toString();
+      if (swapped) {
         PreviewPanel.diagnosticCollection?.delete(oldUri);
-        // Different file → drop the snapshot so the next render is
-        // sent as a full reload, flushing the viewer's slide cache.
-        // Bump the deck generation so the webview unmounts the existing
-        // `<PptxPresentation>` and remounts a fresh one — fully resets
-        // currentSlide / zoom / pan / search / dialog state that would
-        // otherwise leak from the previous deck.
-        PreviewPanel.instance.lastRender = undefined;
+        // Different file → send a full reload, flushing the viewer's
+        // slide cache. Bump the deck generation so the webview unmounts
+        // the existing `<PptxPresentation>` and remounts a fresh one —
+        // fully resets currentSlide / zoom / pan / search / dialog state
+        // that would otherwise leak from the previous deck.
         PreviewPanel.instance.deckGeneration++;
       }
       PreviewPanel.instance.documentUri = document.uri;
       PreviewPanel.instance.panel.reveal(vscode.ViewColumn.Beside);
-      void PreviewPanel.instance.render(document.getText());
+      PreviewPanel.instance.render(document.getText(), swapped);
       return;
     }
 
@@ -441,7 +465,7 @@ export class PreviewPanel {
     const isTarget = inst.documentUri.toString() === document.uri.toString();
     if (inst.debounceTimer) clearTimeout(inst.debounceTimer);
     inst.debounceTimer = setTimeout(() => {
-      if (isTarget) void inst.render(document.getText());
+      if (isTarget) inst.render(document.getText());
       else void inst.renderFromTargetUri();
     }, DEBOUNCE_MS);
   }
@@ -454,6 +478,13 @@ export class PreviewPanel {
     this.panel = panel;
     this.extensionUri = extensionUri;
     this.documentUri = document.uri;
+    this.renders = new CoalescingRunner<RenderRequest>(
+      (request) => this.runBuild(request),
+      (err) =>
+        PreviewPanel.log(
+          `render failed: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+    );
 
     panel.webview.options = {
       enableScripts: true,
@@ -482,13 +513,13 @@ export class PreviewPanel {
       }
     });
 
-    void this.render(document.getText());
+    this.render(document.getText());
   }
 
-  private async renderFromTargetUri(): Promise<void> {
+  private async renderFromTargetUri(full = false): Promise<void> {
     try {
       const doc = await vscode.workspace.openTextDocument(this.documentUri);
-      await this.render(doc.getText());
+      this.render(doc.getText(), full);
     } catch (err) {
       PreviewPanel.log(
         `renderFromTargetUri failed: ${
@@ -498,29 +529,65 @@ export class PreviewPanel {
     }
   }
 
-  private async render(content: string): Promise<void> {
-    const generation = ++this.renderGeneration;
+  /**
+   * Queue a rebuild for `content`. Returns at once — the build runs
+   * behind `this.renders`, which holds one build in flight and collapses
+   * everything queued behind it into the newest request.
+   */
+  private render(content: string, full = false): void {
+    this.renders.submit({ content, uri: this.documentUri, full });
+  }
 
-    const buildPromise = buildPptxFromXml(
-      content,
-      this.documentUri.fsPath,
-      this.lastRender,
-      this.importedPaths,
-    );
-    const timeoutMs = renderTimeoutMs();
-    const timeoutPromise = new Promise<BuildError>((resolve) => {
-      setTimeout(
-        () =>
-          resolve({
-            type: "error",
-            message: `Preview render timed out after ${timeoutMs}ms.`,
-          }),
-        timeoutMs,
+  private async runBuild(request: RenderRequest): Promise<void> {
+    // The panel can close while a build is in flight, leaving the next
+    // request queued behind it. Building for a closed panel only burns
+    // the extension host's thread.
+    if (this.disposed) return;
+
+    // Drop the snapshot here rather than where the refresh was asked
+    // for. Builds are serialized, so nothing can write a fresh snapshot
+    // between this line and the build below; clearing it at request
+    // time would let a build already in flight put one back, and the
+    // refresh would then come out as a no-op.
+    if (request.full) this.lastRender = undefined;
+
+    // The notice fires *beside* the build rather than racing it: a race
+    // settles on whichever lands first, and when that is the notice the
+    // finished deck is thrown away. Giving up buys nothing — the builder
+    // has no cancellation, so the work runs to completion either way.
+    const noticeMs = slowRenderNoticeMs();
+    const noticeTimer =
+      noticeMs > 0
+        ? setTimeout(() => {
+            if (this.disposed) return;
+            PreviewPanel.log(`render still running after ${noticeMs} ms`);
+            this.sendStatus(
+              `Still rendering — this build has been running for over ${Math.round(
+                noticeMs / 1000,
+              )}s. The preview updates as soon as it finishes.`,
+            );
+          }, noticeMs)
+        : undefined;
+
+    let result: BuildSuccess | BuildError | BuildEmpty | BuildNoop;
+    try {
+      result = await buildPptxFromXml(
+        request.content,
+        request.uri.fsPath,
+        this.lastRender,
+        this.importedPaths,
       );
-    });
-    const result = await Promise.race([buildPromise, timeoutPromise]);
+    } finally {
+      if (noticeTimer !== undefined) clearTimeout(noticeTimer);
+      this.sendStatus(undefined);
+    }
 
-    if (this.disposed || generation !== this.renderGeneration) return;
+    if (this.disposed) return;
+    // A newer request arrived while this one built, so this deck is
+    // stale before it can be shown. Return without recording a snapshot:
+    // one the webview never received would make the next diff skip the
+    // very slides the webview is missing.
+    if (this.renders.hasPending) return;
 
     if (result.type === "noop") {
       // Hashes match the previous render — nothing to ship.
@@ -530,7 +597,7 @@ export class PreviewPanel {
       this.queueOrSend({ error: "No slides to preview" });
       this.sourceMap = undefined;
       this.lastRender = undefined;
-      PreviewPanel.diagnosticCollection?.delete(this.documentUri);
+      PreviewPanel.diagnosticCollection?.delete(request.uri);
       return;
     }
     if (result.type === "error") {
@@ -538,7 +605,7 @@ export class PreviewPanel {
       this.queueOrSend({ error: result.message });
       this.sourceMap = undefined;
       this.lastRender = undefined;
-      PreviewPanel.diagnosticCollection?.delete(this.documentUri);
+      PreviewPanel.diagnosticCollection?.delete(request.uri);
       return;
     }
 
@@ -560,7 +627,7 @@ export class PreviewPanel {
       slideHashes: result.slideHashes,
     };
     this.sourceMap = result.sourceMap;
-    const fileName = path.basename(this.documentUri.fsPath);
+    const fileName = path.basename(request.uri.fsPath);
     this.queueOrSend({
       bytes: result.bytes,
       name: fileName,
@@ -570,11 +637,11 @@ export class PreviewPanel {
 
     if (result.diagnostics.length > 0) {
       PreviewPanel.diagnosticCollection?.set(
-        this.documentUri,
+        request.uri,
         toVsDiagnostics(result.diagnostics),
       );
     } else {
-      PreviewPanel.diagnosticCollection?.delete(this.documentUri);
+      PreviewPanel.diagnosticCollection?.delete(request.uri);
     }
   }
 
@@ -596,10 +663,33 @@ export class PreviewPanel {
   }
 
   private flushPending(): void {
+    // Replay the notice too. Until the first deck lands the webview shows
+    // a bare spinner, which is exactly where a long build is hardest to
+    // tell apart from a hang.
+    if (this.currentStatus !== undefined) this.postStatus(this.currentStatus);
     if (!this.pendingPayload) return;
     const next = this.pendingPayload;
     this.pendingPayload = undefined;
     this.send(next);
+  }
+
+  /**
+   * Report that a build is taking a while, or withdraw that report with
+   * `undefined`. Deliberately non-destructive: the deck already on screen
+   * and its diagnostics stay put while the build runs on.
+   */
+  private sendStatus(message: string | undefined): void {
+    if (this.currentStatus === message) return;
+    this.currentStatus = message;
+    this.postStatus(message);
+  }
+
+  private postStatus(message: string | undefined): void {
+    if (this.disposed || !this.webviewReady) return;
+    void this.panel.webview.postMessage({
+      type: "status",
+      message: message ?? null,
+    });
   }
 
   private send(

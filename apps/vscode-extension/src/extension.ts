@@ -7,6 +7,8 @@ import { generatePptxBuffer } from "./exportPptx.js";
 import { PptxViewerProvider } from "./pptxViewer.js";
 
 const ACTIVE_CONTEXT = "slideBuilder.isActive";
+const XML_EXTENSION_ID = "redhat.vscode-xml";
+const XML_PROMPT_SHOWN_KEY = "slideBuilder.xmlExtensionPromptShown";
 
 function refreshActiveContext(editor: vscode.TextEditor | undefined): void {
   const active = editor ? isSlideXmlDocument(editor.document) : false;
@@ -21,6 +23,33 @@ interface XMLExtensionApi {
   removeXMLCatalogs?(catalogs: string[]): void;
 }
 
+// `.sgx` schema validation and completion come from RedHat's vscode-xml,
+// which this extension deliberately does NOT declare in
+// `extensionDependencies`. VS Code activates every declared dependency to
+// completion before activating the dependent one, and that extension's
+// `activate` waits on a Java runtime probe and a LemMinX language-server
+// boot — seconds during which none of this extension's commands,
+// diagnostics, or navigation exist yet. Offering the install once keeps
+// schema support one click away while everything else starts immediately.
+async function offerXmlExtensionInstall(
+  context: vscode.ExtensionContext,
+): Promise<void> {
+  if (context.globalState.get<boolean>(XML_PROMPT_SHOWN_KEY) === true) return;
+  // Record before awaiting the dialog so a second window opening at the
+  // same time does not raise a second prompt.
+  await context.globalState.update(XML_PROMPT_SHOWN_KEY, true);
+  const install = "Install";
+  const choice = await vscode.window.showInformationMessage(
+    "Install the RedHat XML extension for .sgx schema validation and autocomplete. Preview, export, and navigation work without it.",
+    install,
+  );
+  if (choice !== install) return;
+  await vscode.commands.executeCommand(
+    "workbench.extensions.installExtension",
+    XML_EXTENSION_ID,
+  );
+}
+
 // Registers an OASIS XML catalog (written next to dist/extension.js by
 // esbuild's xmlCatalogPlugin) so RedHat's vscode-xml resolves the
 // `urn:slideglance:builder:v1` namespace and the unpkg schemaLocation
@@ -29,11 +58,11 @@ interface XMLExtensionApi {
 async function registerXmlCatalog(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  const xmlExtension = vscode.extensions.getExtension("redhat.vscode-xml");
+  let xmlExtension = vscode.extensions.getExtension(XML_EXTENSION_ID);
   if (!xmlExtension) {
-    // Listed in extensionDependencies, so absence is an environment
-    // anomaly worth surfacing rather than failing silently.
-    return;
+    await offerXmlExtensionInstall(context);
+    xmlExtension = vscode.extensions.getExtension(XML_EXTENSION_ID);
+    if (!xmlExtension) return;
   }
   const api = (await xmlExtension.activate()) as XMLExtensionApi | undefined;
   if (!api || typeof api.addXMLCatalogs !== "function") {
@@ -55,21 +84,12 @@ async function registerXmlCatalog(
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const outputChannel = vscode.window.createOutputChannel("SlideGlance");
-  context.subscriptions.push(outputChannel);
-  PreviewPanel.setOutputChannel(outputChannel);
-
-  void registerXmlCatalog(context);
-
-  const diagnosticCollection =
-    vscode.languages.createDiagnosticCollection("slidebuilder");
-  context.subscriptions.push(diagnosticCollection);
-  PreviewPanel.setDiagnosticCollection(diagnosticCollection);
-
-  registerNavigationProviders(context);
-
-  // Drive the editor/title menu visibility by whether the active document
-  // declares the slideglance/builder namespace on its root element.
+  // Set the context key before anything that touches the file system or
+  // another extension. It drives the editor/title menu visibility for
+  // `.xml` documents that opt in through the slideglance namespace —
+  // `.sgx` files get their buttons from `resourceExtname` in the manifest
+  // and never wait for this — so every millisecond spent ahead of it is a
+  // millisecond those buttons are missing.
   refreshActiveContext(vscode.window.activeTextEditor);
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -82,6 +102,25 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
   );
+
+  const outputChannel = vscode.window.createOutputChannel("SlideGlance");
+  context.subscriptions.push(outputChannel);
+  PreviewPanel.setOutputChannel(outputChannel);
+
+  registerXmlCatalog(context).catch((err: unknown) => {
+    outputChannel.appendLine(
+      `[pom] XML catalog registration failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  });
+
+  const diagnosticCollection =
+    vscode.languages.createDiagnosticCollection("slidebuilder");
+  context.subscriptions.push(diagnosticCollection);
+  PreviewPanel.setDiagnosticCollection(diagnosticCollection);
+
+  registerNavigationProviders(context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("slideBuilder.openPreview", () => {

@@ -31,7 +31,7 @@ Both modes share the same renderer, so what you see in preview is what your reci
 ## Requirements
 
 - **VS Code 1.85.0 or newer.**
-- **[Red Hat XML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)** — declared as an extension dependency, so VS Code installs it automatically alongside this one. It powers `.sgx` schema validation and autocomplete from the bundled XSD. No other setup is required.
+- **[Red Hat XML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml)** (optional) — powers `.sgx` schema validation and autocomplete from the bundled XSD. This extension offers the install the first time it starts without it; preview, export, and click-to-source work either way. It is not declared as a hard dependency because VS Code would hold this extension's startup until that one's language server had booted.
 - **No account, no network.** Rendering and PPTX export run entirely on your machine via WebAssembly — nothing is uploaded.
 
 ---
