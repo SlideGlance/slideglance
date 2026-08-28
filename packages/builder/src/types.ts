@@ -284,7 +284,13 @@ const tableTextStyleSchema = z.object({
 });
 
 const tableCellSchema = tableTextStyleSchema.extend({
-  text: z.string(),
+  /**
+   * Cell text. Optional so an empty cell is `<Td/>`: a table with gaps
+   * in it is ordinary, and requiring the attribute pushed authors to
+   * write `text=" "` — a space that is not empty, carries the cell's
+   * line height, and shows up in a copy of the deck's text.
+   */
+  text: z.string().optional(),
   runs: z.array(textRunSchema).optional(),
   backgroundColor: z.string().optional(),
   colspan: z.number().int().min(1).optional(),

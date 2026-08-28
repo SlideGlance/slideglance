@@ -18,6 +18,7 @@ import { renderPptx } from "./renderPptx/renderPptx.ts";
 import { wrapPptxWriteWithConnectors } from "./renderPptx/postProcess/wrapWrite.ts";
 import { freeYogaTree } from "./shared/freeYogaTree.ts";
 import { toPositioned } from "./toPositioned/toPositioned.ts";
+import { reuseSlideLayout } from "./reuseLayout.ts";
 import { mergeDefaultTextStyles } from "./defaultTextStyle.ts";
 import {
   BuilderNode,
@@ -37,6 +38,13 @@ export interface BuildPptxResult {
    * the source file/line for rendered pptxgenjs objects.
    */
   sourceMap?: BuilderSourceMap;
+  /**
+   * The positioned slides this build produced, in slide order. Pass them
+   * back as `reuseSlideLayout` on the next build of the same deck to
+   * skip laying out the slides whose source did not change — that pass
+   * is where a build spends nearly all of its time.
+   */
+  positionedSlides?: PositionedNode[];
   /**
    * Structured lint report when `options.lint?.enabled` is true.
    * Same diagnostics that get merged into `diagnostics`, plus per-deck
@@ -70,6 +78,14 @@ export interface BuildPptxOptions {
    * tools (e.g. the builder-vscode preview) to offer jump-to-source on clicks.
    */
   trackSourcePos?: boolean;
+  /**
+   * Layout from a previous build, one entry per slide index, `undefined`
+   * where the slide must be laid out again. Supply an entry only for a
+   * slide whose source is unchanged — the caller owns that judgement
+   * (the VS Code preview compares per-slide content hashes). A tree that
+   * does not line up is laid out normally rather than trusted.
+   */
+  reuseSlideLayout?: readonly (PositionedNode | undefined)[];
   /**
    * Additional URL schemes to allow on top of the defaults (https/http/mailto/tel).
    * The defaults are always enforced. Supply only the extra schemes to permit
@@ -357,13 +373,17 @@ export async function buildPptx(
     ...Object.keys(masterContentNodes ?? {}),
   ];
 
-  for (const node of nodes) {
-    const positioned = await positionNode(
-      node,
-      resolvedSlideSize,
-      options?.autoFit !== false,
-      ctx,
-    );
+  for (const [index, node] of nodes.entries()) {
+    const cached = options?.reuseSlideLayout?.[index];
+    const reused = cached ? reuseSlideLayout(node, cached) : undefined;
+    const positioned =
+      reused ??
+      (await positionNode(
+        node,
+        resolvedSlideSize,
+        options?.autoFit !== false,
+        ctx,
+      ));
     positionedPages.push(positioned);
   }
 
@@ -469,5 +489,6 @@ export async function buildPptx(
     diagnostics,
     ...(document.sourceMap ? { sourceMap: document.sourceMap } : {}),
     ...(lintReport ? { lintReport } : {}),
+    positionedSlides: positionedPages,
   };
 }

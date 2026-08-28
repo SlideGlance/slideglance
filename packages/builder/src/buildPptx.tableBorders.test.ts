@@ -247,3 +247,20 @@ describe("buildPptx — per-edge cell borders", () => {
     expect(cells[1]).toContain('<a:srgbClr val="CCCCCC"/>');
   });
 });
+
+describe("buildPptx — empty cells", () => {
+  it("accepts a <Td> with no text at all", async () => {
+    const slide = await slideXmlOf(`
+      <Table cellBorder.color="#cccccc" cellBorder.width="1">
+        <Col w="150"/><Col w="150"/>
+        <Tr><Td>filled</Td><Td/></Tr>
+      </Table>
+    `);
+    const cells = realCells(slide);
+    expect(cells).toHaveLength(2);
+    // The empty cell is a real cell — it keeps its borders and its fill
+    // box, it just has nothing in it.
+    expect(cells[1]).toContain("<a:tcPr");
+    expect(cells[1]).not.toContain("<a:t> </a:t>");
+  });
+});

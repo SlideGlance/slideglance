@@ -306,7 +306,7 @@ export function renderTableNode(
       }
 
       return {
-        text: cell.text,
+        text: cell.text ?? "",
         options: cellOptions,
       };
     }),

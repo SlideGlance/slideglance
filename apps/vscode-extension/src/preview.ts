@@ -31,6 +31,7 @@ import {
   type Diagnostic,
   type DiagnosticCode,
   type BuilderSourceMap,
+  type PositionedNode,
 } from "@slideglance/builder";
 import { CoalescingRunner } from "./coalescingRunner.js";
 import { createFsImportResolver } from "./importResolver.js";
@@ -131,6 +132,8 @@ interface BuildSuccess {
   commonHash: string;
   /** Per-slide content hash. Length === slide count. */
   slideHashes: string[];
+  /** Laid-out slides, kept so the next build can skip unchanged ones. */
+  positionedSlides: PositionedNode[] | undefined;
 }
 
 /**
@@ -176,6 +179,14 @@ interface BuildNoop {
 interface RenderSnapshot {
   commonHash: string;
   slideHashes: string[];
+  /**
+   * Layout from the build that produced these hashes. Handed back to the
+   * next build for the slides whose hash still matches — laying a slide
+   * out is where a build spends nearly all of its time, so a one-word
+   * edit in a twenty-page deck goes from re-measuring twenty pages to
+   * re-measuring one.
+   */
+  positionedSlides?: PositionedNode[];
 }
 
 /** One queued rebuild. */
@@ -302,6 +313,21 @@ async function buildPptxFromXml(
       previous ? diffSlides(previous, { commonHash, slideHashes }) : undefined,
     );
 
+    // Reuse the layout of every slide whose content hash is unchanged.
+    // Only valid when the deck-wide inputs (slide size, masters, default
+    // text style, slide count) are identical too — they feed every
+    // slide's boxes, and `commonHash` covers exactly that set.
+    const reuseSlideLayout =
+      previous?.positionedSlides &&
+      previous.commonHash === commonHash &&
+      previous.slideHashes.length === slideHashes.length
+        ? slideHashes.map((hash, i) =>
+            previous.slideHashes[i] === hash
+              ? previous.positionedSlides?.[i]
+              : undefined,
+          )
+        : undefined;
+
     const built = await buildPptx(
       content,
       { w: slideWidth, h: slideHeight },
@@ -311,6 +337,7 @@ async function buildPptxFromXml(
         resolveImport: importResolver,
         sourcePath: documentPath,
         equalize: true,
+        ...(reuseSlideLayout ? { reuseSlideLayout } : {}),
       },
     );
     const bytes = await built.pptx.write({ outputType: "uint8array" });
@@ -324,6 +351,7 @@ async function buildPptxFromXml(
       sourceMap: built.sourceMap,
       commonHash,
       slideHashes,
+      positionedSlides: built.positionedSlides,
     };
   } catch (err) {
     return toBuildError(err, documentPath);
@@ -771,6 +799,9 @@ export class PreviewPanel {
     this.lastRender = {
       commonHash: result.commonHash,
       slideHashes: result.slideHashes,
+      ...(result.positionedSlides
+        ? { positionedSlides: result.positionedSlides }
+        : {}),
     };
     this.sourceMap = result.sourceMap;
     const fileName = path.basename(request.uri.fsPath);

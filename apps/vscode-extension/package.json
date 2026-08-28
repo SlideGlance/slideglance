@@ -125,7 +125,7 @@
   "scripts": {
     "build:host": "node esbuild.mjs",
     "build:webview": "vite build --config vite.webview.config.ts",
-    "build:deps": "pnpm -r --filter '...slide-builder' --if-present build",
+    "build:deps": "pnpm --filter @slideglance/measure --filter @slideglance/core --filter @slideglance/viewer --filter @slideglance/builder --if-present build",
     "build": "pnpm run build:webview && pnpm run build:host",
     "watch:host": "node esbuild.mjs --watch",
     "lint": "eslint",

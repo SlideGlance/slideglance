@@ -5695,9 +5695,6 @@
                       ]
                     }
                   },
-                  "required": [
-                    "text"
-                  ],
                   "additionalProperties": false
                 }
               },
