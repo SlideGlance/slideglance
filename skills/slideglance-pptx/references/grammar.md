@@ -216,13 +216,45 @@ Inline SVG, rasterized to PNG at build time.
 </Table>
 ```
 
-`colspan` and `rowspan` work as in HTML. Per-side cell borders via
-`cellBorder.top` / `cellBorder.bottom` / `cellBorder.left` /
-`cellBorder.right`. `<Td>` accepts both `padding` and `margin` as
-aliases for the cell's inner spacing (PPTX table cells have no
-outer-spacing concept). See
+`colspan` and `rowspan` work as in HTML. `<Td>` accepts both
+`padding` and `margin` as aliases for the cell's inner spacing (PPTX
+table cells have no outer-spacing concept). See
 `packages/builder/src/parseXml/childAttributeSpecs.ts` for the
 authoritative `<Td>` attribute list.
+
+**Cell text styling cascades.** `fontSize`, `fontFamily`, `color`,
+`bold`, `italic`, `underline`, `strike`, `highlight`, `textAlign`,
+`verticalAlign` and `letterSpacing` are accepted on `<Table>`,
+`<Col>`, `<Tr>` and `<Td>`; a cell resolves each in the order
+cell → row → column → table → the deck's default text style.
+`backgroundColor` cascades the same way from `<Col>` / `<Tr>` /
+`<Td>`. A right-aligned number column is one attribute on `<Col>`,
+not one per cell.
+
+| Attribute | On | Effect |
+| --- | --- | --- |
+| `cellBorder` | `<Table>` | The grid — colour, width, dash for every cell edge. |
+| `cellBorderSides` | `<Table>` | `all` (default) · `no-outer-vertical` (grid with the table's left and right edges open) · `horizontal-only` (rules only). |
+| `borderTop` / `borderRight` / `borderBottom` / `borderLeft` | `<Td>` | One edge of one cell, overriding the grid — the rule above a totals row. |
+| `bandedRowFill` | `<Table>` | Fill for every other body row. |
+| `headerRows` | `<Table>` | Leading rows kept out of the banding rhythm. |
+
+```xml
+<Table fontSize="12" cellBorder.color="CBD5E1" cellBorder.width="1"
+       cellBorderSides="no-outer-vertical"
+       bandedRowFill="F1F5F9" headerRows="1">
+  <Col w="200" />
+  <Col w="120" textAlign="right" />
+  <Tr bold="true" backgroundColor="0F172A" color="FFFFFF">
+    <Td>Item</Td><Td>Amount</Td>
+  </Tr>
+  <Tr><Td>Alpha</Td><Td>1,200</Td></Tr>
+  <Tr bold="true">
+    <Td borderTop.color="0F172A" borderTop.width="2">Total</Td>
+    <Td borderTop.color="0F172A" borderTop.width="2">1,200</Td>
+  </Tr>
+</Table>
+```
 
 **JSON form** — `<Col>` / `<Tr>` / `<Td>` element notation can be
 replaced wholesale by `columns="…"` / `rows="…"` JSON arrays on
