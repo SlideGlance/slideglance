@@ -53,7 +53,9 @@ function resolveCellMarginPt(
 type TableRowNode = TablePositionedNode["rows"][number];
 type TableCellNode = TableRowNode["cells"][number];
 type TableColumnNode = TablePositionedNode["columns"][number];
-type BorderSpec = { color: string; pt: number; type: string } | { type: "none" };
+type BorderSpec =
+  | { color: string; pt: number; type: string }
+  | { type: "none" };
 
 /** Where a cell actually sits once spans are accounted for. */
 interface CellPlacement {
@@ -108,7 +110,9 @@ function resolveCellStyle(
   row: TableRowNode,
   column: TableColumnNode | undefined,
   node: TablePositionedNode,
-  defaultTextStyle: RenderContext["buildContext"]["defaultTextStyle"] | undefined,
+  defaultTextStyle:
+    | RenderContext["buildContext"]["defaultTextStyle"]
+    | undefined,
 ) {
   const fontSizePx =
     cell.fontSize ??
@@ -131,18 +135,28 @@ function resolveCellStyle(
       node.color ??
       defaultTextStyle?.color,
     bold:
-      cell.bold ?? row.bold ?? column?.bold ?? node.bold ?? defaultTextStyle?.bold,
+      cell.bold ??
+      row.bold ??
+      column?.bold ??
+      node.bold ??
+      defaultTextStyle?.bold,
     italic:
       cell.italic ??
       row.italic ??
       column?.italic ??
       node.italic ??
       defaultTextStyle?.italic,
-    underline: cell.underline ?? row.underline ?? column?.underline ?? node.underline,
+    underline:
+      cell.underline ?? row.underline ?? column?.underline ?? node.underline,
     strike: cell.strike ?? row.strike ?? column?.strike ?? node.strike,
-    highlight: cell.highlight ?? row.highlight ?? column?.highlight ?? node.highlight,
+    highlight:
+      cell.highlight ?? row.highlight ?? column?.highlight ?? node.highlight,
     textAlign:
-      cell.textAlign ?? row.textAlign ?? column?.textAlign ?? node.textAlign ?? "left",
+      cell.textAlign ??
+      row.textAlign ??
+      column?.textAlign ??
+      node.textAlign ??
+      "left",
     verticalAlign:
       cell.verticalAlign ??
       row.verticalAlign ??
@@ -258,7 +272,9 @@ export function renderTableNode(
         node.cellMargin,
       );
       const charSpacing =
-        style.letterSpacing !== undefined ? style.letterSpacing * 100 : undefined;
+        style.letterSpacing !== undefined
+          ? style.letterSpacing * 100
+          : undefined;
 
       const cellOptions: Record<string, unknown> = {
         fontSize: pxToPt(style.fontSizePx),
@@ -329,7 +345,10 @@ export function renderTableNode(
 
   // Per-cell border arrays already carry everything (grid, open sides,
   // per-edge overrides); the table-wide option would only fight them.
-  if (node.cellBorder && !tableRows.some((row) => row.some((c) => c.options.border))) {
+  if (
+    node.cellBorder &&
+    !tableRows.some((row) => row.some((c) => c.options.border))
+  ) {
     tableOptions.border = toBorderSpec(node.cellBorder);
   }
 

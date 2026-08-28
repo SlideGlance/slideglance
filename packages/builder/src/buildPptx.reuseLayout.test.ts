@@ -21,7 +21,9 @@ function deck(editedSlide?: number): string {
         </Table>
       </VStack>
     </Slide>`;
-  return `<SlideGlance xmlns="urn:slideglance:builder:v1"><Document size="A4"/>${[1, 2, 3]
+  return `<SlideGlance xmlns="urn:slideglance:builder:v1"><Document size="A4"/>${[
+    1, 2, 3,
+  ]
     .map(page)
     .join("")}</SlideGlance>`;
 }

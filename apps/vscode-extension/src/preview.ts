@@ -373,7 +373,8 @@ function toBuildError(err: unknown, documentPath: string): BuildError {
     err instanceof Error && err.name === "ParseXmlError"
       ? ((err as Error & { errors?: unknown }).errors ?? [])
       : undefined;
-  if (!Array.isArray(errors)) return { type: "error", message, kind: "internal" };
+  if (!Array.isArray(errors))
+    return { type: "error", message, kind: "internal" };
 
   const issues = errors
     .filter((e): e is string => typeof e === "string")
@@ -665,10 +666,7 @@ export class PreviewPanel {
         // A click on a validation error. `file` is absent when the
         // parser reported a line without a file, which means the root
         // document.
-        this.revealAt(
-          typeof m.file === "string" ? m.file : undefined,
-          m.line,
-        );
+        this.revealAt(typeof m.file === "string" ? m.file : undefined, m.line);
         return;
       }
     });

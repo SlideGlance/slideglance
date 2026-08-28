@@ -113,16 +113,16 @@ Disable when you want pixel-perfect control and prefer overflow over shrinking.
 
 ### Text frames and the PowerPoint autofit setting
 
-A `<Text>`, `<Ul>`, or `<Ol>` frame **whose height came from its own text** carries PowerPoint's **Resize shape to fit text** body property (`<a:spAutoFit/>`). That is the contract the layout engine applied: the frame width is fixed and text wraps inside it, while the frame height follows the text. In PowerPoint, *Format Shape → Text Options → Text Box* shows **Resize shape to fit text** selected, so a recipient who edits a paragraph keeps the frame height matching its content.
+A `<Text>`, `<Ul>`, or `<Ol>` frame **whose height came from its own text** carries PowerPoint's **Resize shape to fit text** body property (`<a:spAutoFit/>`). That is the contract the layout engine applied: the frame width is fixed and text wraps inside it, while the frame height follows the text. In PowerPoint, _Format Shape → Text Options → Text Box_ shows **Resize shape to fit text** selected, so a recipient who edits a paragraph keeps the frame height matching its content.
 
 A frame whose height came from anywhere else keeps **Do Not Autofit**:
 
-| Frame | Setting |
-| --- | --- |
-| `<Text>` / `<Ul>` / `<Ol>` sized by its own text | Resize shape to fit text |
-| `h`, `minH`, `maxH`, or `flexGrow` on the node | Do Not Autofit |
-| Stretched to a taller sibling by the row's `alignItems` | Do Not Autofit |
-| `<Shape>`, `<Master>` objects | Do Not Autofit |
+| Frame                                                   | Setting                  |
+| ------------------------------------------------------- | ------------------------ |
+| `<Text>` / `<Ul>` / `<Ol>` sized by its own text        | Resize shape to fit text |
+| `h`, `minH`, `maxH`, or `flexGrow` on the node          | Do Not Autofit           |
+| Stretched to a taller sibling by the row's `alignItems` | Do Not Autofit           |
+| `<Shape>`, `<Master>` objects                           | Do Not Autofit           |
 
 The distinction is not cosmetic. `spAutoFit` states that the box height is a function of the text, and a consumer acting on it collapses a frame that was sized to something else — a `<Text h="60">` colour block would flatten to one line of type.
 

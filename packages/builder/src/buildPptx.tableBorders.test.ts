@@ -227,7 +227,9 @@ describe("buildPptx — per-edge cell borders", () => {
     `);
     const cells = realCells(slide);
     // The totals cell draws its top edge and leaves its other three off.
-    expect(cells[2]).toMatch(/<a:lnT[^>]*>(?![\s\S]*?<a:noFill\/>[\s\S]*?<\/a:lnT>)/);
+    expect(cells[2]).toMatch(
+      /<a:lnT[^>]*>(?![\s\S]*?<a:noFill\/>[\s\S]*?<\/a:lnT>)/,
+    );
     expect(cells[2]).toContain('<a:srgbClr val="111111"/>');
     // Its neighbour was never given a border and keeps none of its own.
     expect(cells[3]).not.toContain('<a:srgbClr val="111111"/>');

@@ -304,11 +304,18 @@ const tableCompiled = defineNode({
     color: { coerce: "color", doc: "Default cell text color." },
     bold: { coerce: "boolean", doc: "Default cell bold." },
     italic: { coerce: "boolean", doc: "Default cell italic." },
-    underline: { coerce: "underline", dotNotation: true, doc: "Default cell underline." },
+    underline: {
+      coerce: "underline",
+      dotNotation: true,
+      doc: "Default cell underline.",
+    },
     strike: { coerce: "boolean", doc: "Default cell strikethrough." },
     highlight: { coerce: "color", doc: "Default cell highlight color." },
     textAlign: { coerce: "string", doc: "Default cell horizontal alignment." },
-    verticalAlign: { coerce: "string", doc: "Default cell vertical alignment." },
+    verticalAlign: {
+      coerce: "string",
+      doc: "Default cell vertical alignment.",
+    },
     letterSpacing: { coerce: "number", doc: "Default cell tracking (em)." },
   },
   children: {

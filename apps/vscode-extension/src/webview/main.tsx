@@ -615,7 +615,10 @@ function ErrorOverlay({ error }: { error: PreviewError }): JSX.Element {
           }}
         >
           {shown.map((issue, i) => (
-            <IssueRow key={`${issue.file ?? ""}:${issue.line ?? 0}:${i}`} issue={issue} />
+            <IssueRow
+              key={`${issue.file ?? ""}:${issue.line ?? 0}:${i}`}
+              issue={issue}
+            />
           ))}
           {hidden > 0 ? (
             <li>

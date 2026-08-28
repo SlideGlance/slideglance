@@ -47,9 +47,7 @@ export class CoalescingRunner<T> {
     const superseded = this.pending;
     this.pending = {
       value:
-        superseded && this.merge
-          ? this.merge(superseded.value, input)
-          : input,
+        superseded && this.merge ? this.merge(superseded.value, input) : input,
     };
     if (!this.running) void this.drain();
   }

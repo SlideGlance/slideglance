@@ -31,7 +31,8 @@ function isSupportedImage(buffer: Uint8Array): boolean {
   // SVG is text; skip a UTF-8 BOM and any leading whitespace, then look
   // for the document or root element.
   let i = startsWith(0xef, 0xbb, 0xbf) ? 3 : 0;
-  while (i < buffer.length && buffer[i] !== undefined && buffer[i]! <= 0x20) i++;
+  while (i < buffer.length && buffer[i] !== undefined && buffer[i]! <= 0x20)
+    i++;
   return ascii(i, "<?xml") || ascii(i, "<svg") || ascii(i, "<!--");
 }
 
