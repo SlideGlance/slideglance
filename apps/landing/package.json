@@ -1,6 +1,6 @@
 {
   "name": "@slideglance/landing",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "license": "MIT",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
   "description": "Static landing page for slideglance, deployed to GitHub Pages.",

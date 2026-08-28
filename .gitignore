@@ -86,3 +86,5 @@ output/
 
 # Packaged VS Code extension bundles (reproducible via `vsce package`)
 *.vsix
+# npm pack output
+*.tgz

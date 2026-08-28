@@ -6,10 +6,26 @@ documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-28
+
+### Added
+
+- **The preview says which pages it is rebuilding.** Thumbnails of the
+  slides a save touches carry an in-flight marker until the build lands;
+  a change to something deck-wide marks every page.
+- **Refresh confirms it ran**, stamped with the time. A rebuild that
+  produces identical output leaves the screen untouched, which until now
+  was indistinguishable from a dead button.
+- **Failures say whose fault they are.** A parse failure lists one row
+  per problem and each row opens that file at that line; anything else
+  states plainly that the document is not at fault. Long lists collapse
+  past 30 entries.
 
 ### Changed
 
+- **A rebuild only re-measures the slides that changed.** Laying slides
+  out is where a build spends nearly all of its time, so a one-word edit
+  in a twenty-page deck went from re-measuring twenty pages to one.
 - **A slow preview render is reported, not abandoned.** The render
   deadline used to surface as an error and discard the build; the build
   itself kept running, so a large deck or a loaded machine spent the CPU
@@ -67,5 +83,5 @@ Initial public release.
 - The extension icon now renders correctly in the README on the
   Marketplace listing.
 
-[Unreleased]: https://github.com/SlideGlance/slideglance/compare/v0.1.3...HEAD
+[0.2.0]: https://github.com/SlideGlance/slideglance/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/SlideGlance/slideglance/releases/tag/v0.1.3
