@@ -338,6 +338,7 @@ export const thumbnailIndexStyle: CSSProperties = {
 
 export const thumbnailFrameStyle: CSSProperties = {
   flex: "1 1 auto",
+  position: "relative",
   background: "white",
   borderRadius: 3,
   overflow: "hidden",
@@ -394,6 +395,7 @@ export const thumbnailTileActiveStyle: CSSProperties = {
 
 export const thumbnailTileFrameStyle: CSSProperties = {
   width: "100%",
+  position: "relative",
   background: "white",
   borderRadius: 4,
   overflow: "hidden",
@@ -457,6 +459,33 @@ export const loadingOverlayStyle: CSSProperties = {
   color: "var(--pptx-shell-fg, #ececec)",
   fontSize: 15,
   pointerEvents: "none",
+};
+
+/**
+ * Overlay marking a thumbnail whose slide is being rebuilt. Anchored in
+ * the corner so the slide underneath stays readable, and click-through
+ * so the tile remains selectable while its rebuild runs.
+ */
+export const thumbnailPendingStyle: CSSProperties = {
+  position: "absolute",
+  right: 4,
+  top: 4,
+  display: "grid",
+  placeItems: "center",
+  width: 18,
+  height: 18,
+  borderRadius: "50%",
+  background: "var(--pptx-thumb-tile, rgba(20, 20, 26, 0.85))",
+  pointerEvents: "none",
+};
+
+export const thumbnailSpinnerStyle: CSSProperties = {
+  width: 12,
+  height: 12,
+  borderRadius: "50%",
+  border: "2px solid var(--pptx-shell-border, rgba(255, 255, 255, 0.25))",
+  borderTopColor: "var(--pptx-shell-accent, #6aa3ff)",
+  animation: "pptx-loading-spin 0.9s linear infinite",
 };
 
 export const loadingSpinnerStyle: CSSProperties = {

@@ -30,7 +30,9 @@ import {
   thumbnailFrameStyle,
   thumbnailIndexStyle,
   thumbnailInnerStyle,
+  thumbnailPendingStyle,
   thumbnailPlaceholderStyle,
+  thumbnailSpinnerStyle,
   thumbnailTileActiveStyle,
   thumbnailTileFrameStyle,
   thumbnailTileStyle,
@@ -52,6 +54,14 @@ export interface ThumbnailProps {
    * even when individual slides parse at slightly different aspects.
    */
   layout?: "row" | "tile";
+  /**
+   * The host is rebuilding this slide right now. The tile keeps showing
+   * the slide it already has — replacing it with a spinner would hide
+   * the very content the rebuild is about to change — and marks it as
+   * in-flight instead, so a rebuild that lands on identical output is
+   * still visibly a rebuild.
+   */
+  pending?: boolean;
 }
 
 export function Thumbnail(props: ThumbnailProps): JSX.Element {
@@ -62,6 +72,7 @@ export function Thumbnail(props: ThumbnailProps): JSX.Element {
     getThumbnail,
     aspectFallback,
     layout = "row",
+    pending = false,
   } = props;
   const [svg, setSvg] = useState<string | null>(null);
   const [aspect, setAspect] = useState<number>(aspectFallback);
@@ -166,9 +177,23 @@ export function Thumbnail(props: ThumbnailProps): JSX.Element {
         ) : (
           <div style={thumbnailPlaceholderStyle}>…</div>
         )}
+        {pending && <PendingMarker />}
       </div>
       {isTile && <span style={thumbnailCaptionStyle}>{slide}</span>}
     </button>
+  );
+}
+
+/**
+ * Corner spinner for a thumbnail whose slide is being rebuilt. Sits over
+ * the tile's own content rather than replacing it, and is inert to
+ * pointer events so the tile stays clickable.
+ */
+function PendingMarker(): JSX.Element {
+  return (
+    <div style={thumbnailPendingStyle} aria-hidden="true">
+      <div style={thumbnailSpinnerStyle} />
+    </div>
   );
 }
 
@@ -189,6 +214,11 @@ export interface ThumbnailSidebarProps {
    * `slideCache` itself is flushed.
    */
   deckKey: string;
+  /**
+   * 1-based slides the host is rebuilding right now, or `"all"` for a
+   * deck-wide rebuild.
+   */
+  pendingSlides?: readonly number[] | "all";
 }
 
 export const ThumbnailSidebar = memo(function ThumbnailSidebar(
@@ -201,7 +231,11 @@ export const ThumbnailSidebar = memo(function ThumbnailSidebar(
     getThumbnail,
     aspectFallback,
     deckKey,
+    pendingSlides,
   } = props;
+  const pendingAll = pendingSlides === "all";
+  const pendingSet =
+    !pendingAll && pendingSlides?.length ? new Set(pendingSlides) : undefined;
   return (
     <div style={thumbStripStyle}>
       {Array.from({ length: slideCount }, (_, i) => {
@@ -215,6 +249,7 @@ export const ThumbnailSidebar = memo(function ThumbnailSidebar(
             getThumbnail={getThumbnail}
             aspectFallback={aspectFallback}
             layout="tile"
+            pending={pendingAll || (pendingSet?.has(n) ?? false)}
           />
         );
       })}

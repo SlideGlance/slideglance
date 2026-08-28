@@ -32,7 +32,7 @@
  *      it queued while the webview was still loading.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import {
   PptxPresentation,
@@ -253,11 +253,14 @@ function App(): JSX.Element {
   const [controller, setController] = useState<SlideController | null>(null);
   const [src, setSrc] = useState<Uint8Array | null>(null);
   const [name, setName] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<PreviewError | null>(null);
   // Host-reported progress for a build that outran the slow-render
   // notice threshold. Purely informational: the deck stays interactive
   // and the build's result still lands when it completes.
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  // Slides the host is rebuilding: an explicit list, or "all" for a
+  // change every slide depends on. Empty array once the build lands.
+  const [pendingSlides, setPendingSlides] = useState<number[] | "all">([]);
   // 1-based slide indices the host computed as "changed since the
   // last successful render". Forwarded to slideglance/viewer as
   // `invalidatedSlides`; the viewer flushes only those cache entries
@@ -297,11 +300,17 @@ function App(): JSX.Element {
           const detail = ev.message
             ? `${ev.message}${ev.filename ? ` (${ev.filename}:${ev.lineno}:${ev.colno})` : ""}`
             : "Worker error (no message)";
-          setErrorMsg(`Preview worker error: ${detail}`);
+          setErrorMsg({
+            message: `Preview worker error: ${detail}`,
+            kind: "internal",
+          });
         });
         worker.addEventListener("messageerror", () => {
           if (cancelled) return;
-          setErrorMsg("Preview worker message could not be deserialized.");
+          setErrorMsg({
+            message: "Preview worker message could not be deserialized.",
+            kind: "internal",
+          });
         });
         const c = await createWorkerController(worker);
         if (cancelled) {
@@ -312,7 +321,10 @@ function App(): JSX.Element {
       } catch (err) {
         if (cancelled) return;
         const msg = err instanceof Error ? err.message : String(err);
-        setErrorMsg(`Failed to start preview worker: ${msg}`);
+        setErrorMsg({
+          message: `Failed to start preview worker: ${msg}`,
+          kind: "internal",
+        });
       }
     })();
     return () => {
@@ -331,8 +343,14 @@ function App(): JSX.Element {
             invalidatedSlides?: number[];
             deckGeneration?: number;
           }
-        | { type: "error"; message: string }
-        | { type: "status"; message: string | null };
+        | {
+            type: "error";
+            message: string;
+            kind?: "document" | "internal";
+            issues?: BuildIssue[];
+          }
+        | { type: "status"; message: string | null }
+        | { type: "pending"; slides: number[] | null };
       if (!msg || typeof msg !== "object") return;
       if (msg.type === "pptx") {
         const bytes =
@@ -351,9 +369,17 @@ function App(): JSX.Element {
           setDeckGeneration((prev) => (incoming > prev ? incoming : prev));
         }
       } else if (msg.type === "error") {
-        setErrorMsg(msg.message);
+        setErrorMsg({
+          message: msg.message,
+          kind: msg.kind ?? "internal",
+          issues: msg.issues,
+        });
       } else if (msg.type === "status") {
         setStatusMsg(msg.message);
+      } else if (msg.type === "pending") {
+        // `null` means the host is rebuilding the whole deck; the
+        // thumbnails resolve that against the live slide count.
+        setPendingSlides(msg.slides ?? "all");
       }
     }
     window.addEventListener("message", onMessage);
@@ -392,7 +418,7 @@ function App(): JSX.Element {
   }, []);
 
   if (errorMsg) {
-    return <ErrorOverlay message={errorMsg} />;
+    return <ErrorOverlay error={errorMsg} />;
   }
 
   if (!controller || !src) {
@@ -417,6 +443,7 @@ function App(): JSX.Element {
         src={src}
         incrementalUpdate
         invalidatedSlides={invalidatedSlides}
+        pendingSlides={pendingSlides}
         style={{ width: "100%", height: "100%" }}
       />
       {statusMsg ? <StatusBadge message={statusMsg} /> : null}
@@ -492,7 +519,47 @@ function LoadingOverlay({ note }: { note?: string | null }): JSX.Element {
   );
 }
 
-function ErrorOverlay({ message }: { message: string }): JSX.Element {
+/** One problem the parser reported, with where to find it. */
+interface BuildIssue {
+  text: string;
+  file?: string;
+  line?: number;
+}
+
+interface PreviewError {
+  message: string;
+  /**
+   * `"document"` — the deck's XML is wrong; the list below says where.
+   * `"internal"` — the extension or the builder failed, and editing the
+   * deck will not help.
+   */
+  kind: "document" | "internal";
+  issues?: BuildIssue[];
+}
+
+/** Issues rendered before the list collapses behind a "show all". */
+const ISSUE_PREVIEW_COUNT = 30;
+
+function baseName(file: string): string {
+  const parts = file.split(/[\\/]/);
+  return parts[parts.length - 1] || file;
+}
+
+/**
+ * The failure screen.
+ *
+ * Two things it has to answer at a glance: is this my document or is the
+ * tooling broken, and where do I go to fix it. A parse failure lists one
+ * clickable row per problem; anything else says plainly that the deck is
+ * not at fault and keeps the raw text for a bug report.
+ */
+function ErrorOverlay({ error }: { error: PreviewError }): JSX.Element {
+  const [expanded, setExpanded] = useState(false);
+  const issues = error.issues ?? [];
+  const document = error.kind === "document";
+  const shown = expanded ? issues : issues.slice(0, ISSUE_PREVIEW_COUNT);
+  const hidden = issues.length - shown.length;
+
   return (
     <div
       style={{
@@ -500,26 +567,165 @@ function ErrorOverlay({ message }: { message: string }): JSX.Element {
         height: "100%",
         boxSizing: "border-box",
         overflow: "auto",
+        color: "var(--vscode-foreground, #ccc)",
+        fontSize: 12,
+        lineHeight: 1.55,
       }}
     >
       <div
         style={{
           background:
-            "color-mix(in srgb, var(--vscode-errorForeground, #f48771) 12%, transparent)",
+            "color-mix(in srgb, var(--vscode-errorForeground, #f48771) 10%, transparent)",
           border:
-            "1px solid color-mix(in srgb, var(--vscode-errorForeground, #f48771) 55%, transparent)",
+            "1px solid color-mix(in srgb, var(--vscode-errorForeground, #f48771) 45%, transparent)",
           borderRadius: 4,
           padding: "12px 14px",
-          color: "var(--vscode-errorForeground, #f48771)",
-          whiteSpace: "pre-wrap",
-          fontFamily: "var(--vscode-editor-font-family, monospace)",
-          fontSize: 12,
-          lineHeight: 1.55,
         }}
       >
-        <strong style={{ fontWeight: 700 }}>Error:</strong> {message}
+        <div
+          style={{
+            color: "var(--vscode-errorForeground, #f48771)",
+            fontWeight: 600,
+            fontSize: 13,
+            marginBottom: 4,
+          }}
+        >
+          {document
+            ? issues.length > 0
+              ? `This deck has ${issues.length} problem${issues.length > 1 ? "s" : ""} to fix`
+              : "This deck could not be read"
+            : "The preview failed to build"}
+        </div>
+        <div style={{ opacity: 0.85 }}>
+          {document
+            ? "The XML is not valid, so nothing was rendered. Fix the entries below and the preview rebuilds on save."
+            : "This is a failure in the extension or the builder, not in your document. Editing the deck will not clear it — the message below belongs in a bug report."}
+        </div>
       </div>
+
+      {document && issues.length > 0 ? (
+        <ul
+          style={{
+            listStyle: "none",
+            margin: "12px 0 0",
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {shown.map((issue, i) => (
+            <IssueRow key={`${issue.file ?? ""}:${issue.line ?? 0}:${i}`} issue={issue} />
+          ))}
+          {hidden > 0 ? (
+            <li>
+              <button
+                onClick={() => setExpanded(true)}
+                style={{
+                  marginTop: 6,
+                  background: "none",
+                  border: "none",
+                  padding: "4px 6px",
+                  color: "var(--vscode-textLink-foreground, #3794ff)",
+                  cursor: "pointer",
+                  font: "inherit",
+                }}
+              >
+                Show {hidden} more
+              </button>
+            </li>
+          ) : null}
+        </ul>
+      ) : (
+        <pre
+          style={{
+            margin: "12px 0 0",
+            whiteSpace: "pre-wrap",
+            fontFamily: "var(--vscode-editor-font-family, monospace)",
+            color: "var(--vscode-descriptionForeground, #999)",
+          }}
+        >
+          {error.message}
+        </pre>
+      )}
     </div>
+  );
+}
+
+/**
+ * One problem. Clicking opens the file at the line when the parser knew
+ * one; without a location the row is plain text rather than a link that
+ * goes nowhere.
+ */
+function IssueRow({ issue }: { issue: BuildIssue }): JSX.Element {
+  const locatable = issue.line !== undefined;
+  const location = locatable
+    ? `${issue.file ? baseName(issue.file) : "line"} ${issue.line}`
+    : null;
+
+  const body = (
+    <>
+      {location ? (
+        <span
+          style={{
+            flex: "0 0 auto",
+            fontFamily: "var(--vscode-editor-font-family, monospace)",
+            color: "var(--vscode-textLink-foreground, #3794ff)",
+            textDecoration: "underline",
+          }}
+          title={issue.file}
+        >
+          {location}
+        </span>
+      ) : null}
+      <span style={{ color: "var(--vscode-foreground, #ccc)" }}>
+        {issue.text}
+      </span>
+    </>
+  );
+
+  const rowStyle: CSSProperties = {
+    display: "flex",
+    gap: 10,
+    alignItems: "baseline",
+    width: "100%",
+    textAlign: "left",
+    padding: "3px 6px",
+    borderRadius: 3,
+    background: "none",
+    border: "none",
+    font: "inherit",
+    fontSize: 12,
+  };
+
+  if (!locatable) {
+    return (
+      <li>
+        <div style={rowStyle}>{body}</div>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <button
+        style={{ ...rowStyle, cursor: "pointer" }}
+        onClick={() =>
+          vscode.postMessage({
+            type: "revealAt",
+            file: issue.file,
+            line: issue.line,
+          })
+        }
+        title={
+          issue.file
+            ? `Open ${issue.file}:${issue.line}`
+            : `Go to line ${issue.line}`
+        }
+      >
+        {body}
+      </button>
+    </li>
   );
 }
 

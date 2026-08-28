@@ -180,6 +180,15 @@ export interface PptxPresentationProps {
    */
   noPrefetch?: boolean;
   /**
+   * 1-based slides the host is currently rebuilding, or `"all"` when
+   * the rebuild covers the whole deck. Their thumbnails carry an
+   * in-flight marker so an authoring host can say which pages a save is
+   * regenerating — including the case where the rebuild produces
+   * identical output and nothing on screen would otherwise move.
+   * Slides outside the deck are ignored.
+   */
+  pendingSlides?: readonly number[] | "all";
+  /**
    * Fired exactly once after the first slide's SVG has been appended
    * to the DOM (the moment a user can see content). Hosts use this to
    * dismiss their own loading overlays without having to guess at a
@@ -268,6 +277,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     resolveMeta,
     noPrefetch = false,
     onReady,
+    pendingSlides,
   } = props;
   // One-shot guard for `onReady` — the SVG mount effect re-runs on
   // every layout / sidebar / notes / view-mode change, but the host
@@ -923,6 +933,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
             getThumbnail={requestSlide}
             aspectFallback={aspect}
             deckKey={name ?? ""}
+            pendingSlides={pendingSlides}
           />
         </aside>
 

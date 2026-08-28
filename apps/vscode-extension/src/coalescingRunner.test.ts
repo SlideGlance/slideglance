@@ -121,6 +121,55 @@ describe("CoalescingRunner", () => {
   });
 });
 
+describe("CoalescingRunner — merging superseded inputs", () => {
+  it("folds a superseded input into the one replacing it", async () => {
+    const seen: { text: string; full: boolean }[] = [];
+    const gate = deferred();
+    let jobs = 0;
+    const runner = new CoalescingRunner<{ text: string; full: boolean }>(
+      async (input) => {
+        seen.push(input);
+        if (++jobs === 1) await gate.promise;
+      },
+      fail,
+      (superseded, next) => ({ ...next, full: superseded.full || next.full }),
+    );
+
+    runner.submit({ text: "a", full: false });
+    await flush();
+    // Both queue behind the running job: the newest text wins while the
+    // full-rebuild demand survives being superseded.
+    runner.submit({ text: "b", full: true });
+    runner.submit({ text: "c", full: false });
+    gate.resolve();
+    await flush();
+
+    expect(seen).toEqual([
+      { text: "a", full: false },
+      { text: "c", full: true },
+    ]);
+  });
+
+  it("keeps the newest input verbatim when no merge is supplied", async () => {
+    const seen: string[] = [];
+    const gate = deferred();
+    let jobs = 0;
+    const runner = new CoalescingRunner<string>(async (v) => {
+      seen.push(v);
+      if (++jobs === 1) await gate.promise;
+    }, fail);
+
+    runner.submit("a");
+    await flush();
+    runner.submit("b");
+    runner.submit("c");
+    gate.resolve();
+    await flush();
+
+    expect(seen).toEqual(["a", "c"]);
+  });
+});
+
 function fail(err: unknown): void {
   throw err instanceof Error ? err : new Error(String(err));
 }

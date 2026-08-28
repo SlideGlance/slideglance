@@ -133,9 +133,36 @@ interface BuildSuccess {
   slideHashes: string[];
 }
 
+/**
+ * One thing wrong with the document, with where to find it when the
+ * parser knew. `file` is absolute; it is undefined for the root document
+ * (the panel already knows which file that is).
+ */
+export interface BuildIssue {
+  text: string;
+  file?: string;
+  line?: number;
+}
+
 interface BuildError {
   type: "error";
   message: string;
+  /**
+   * `"document"` — the deck's own XML is wrong and the author fixes it.
+   * `"internal"` — the builder or the extension failed, and no edit to
+   * the document is going to help. The panel says which, because a wall
+   * of red otherwise reads the same either way.
+   */
+  kind: "document" | "internal";
+  /** Present for a document error: one entry per reported problem. */
+  issues?: BuildIssue[];
+}
+
+/** What the panel hands the webview when a build fails. */
+interface ErrorPayload {
+  error: string;
+  kind: "document" | "internal";
+  issues?: BuildIssue[];
 }
 
 interface BuildEmpty {
@@ -152,6 +179,12 @@ interface RenderSnapshot {
 }
 
 /** One queued rebuild. */
+/**
+ * How long the "refreshed" confirmation stays on screen. Long enough to
+ * read the timestamp, short enough not to sit over the deck.
+ */
+const REFRESH_NOTICE_MS = 2500;
+
 interface RenderRequest {
   /** Source XML to build. */
   content: string;
@@ -163,6 +196,12 @@ interface RenderRequest {
    * by a swap to a different document.
    */
   full: boolean;
+  /**
+   * The user asked for this build from the Refresh button. A rebuild
+   * whose output is identical changes nothing on screen, so the panel
+   * confirms it finished — otherwise the button reads as dead.
+   */
+  refresh?: boolean;
 }
 
 /** SHA-1 keyed change detection — not adversarial, just collision-rare. */
@@ -205,6 +244,14 @@ async function buildPptxFromXml(
   documentPath: string,
   previous: RenderSnapshot | undefined,
   importTracker: Set<string>,
+  /**
+   * Called once the change set is known and before the expensive part
+   * starts, so the panel can mark those slides in flight. `undefined`
+   * means the whole deck: either the first render, or a change to
+   * something every slide depends on (slide size, a master, the default
+   * text style, the slide count).
+   */
+  onPlan?: (changedSlides: number[] | undefined) => void,
 ): Promise<BuildSuccess | BuildError | BuildEmpty | BuildNoop> {
   // Reset before each build so removed <Import>s drop out of the set
   // and an emptied document stops triggering rebuilds from prior imports.
@@ -216,6 +263,11 @@ async function buildPptxFromXml(
       resolveImport: importResolver,
       sourcePath: documentPath,
       equalize: true,
+      // This parse runs before the build and is the one that throws on a
+      // malformed document, so it has to be the one carrying source
+      // positions — without it every validation error reaches the panel
+      // as bare text with nothing to click.
+      trackSourcePos: true,
     });
     if (document.nodes.length === 0) return { type: "empty" };
     const slideWidth = document.slideSize?.w ?? DEFAULT_SLIDE_WIDTH;
@@ -246,6 +298,10 @@ async function buildPptxFromXml(
       return { type: "noop" };
     }
 
+    onPlan?.(
+      previous ? diffSlides(previous, { commonHash, slideHashes }) : undefined,
+    );
+
     const built = await buildPptx(
       content,
       { w: slideWidth, h: slideHeight },
@@ -270,11 +326,61 @@ async function buildPptxFromXml(
       slideHashes,
     };
   } catch (err) {
+    return toBuildError(err, documentPath);
+  }
+}
+
+/**
+ * Sorts a thrown value into a document problem the author can fix and a
+ * failure of the tooling itself.
+ *
+ * `ParseXmlError` carries the individual validation errors; each one is
+ * split back into its `file:line: ` prefix (added by the parser when
+ * source positions are tracked) and the message, so the panel can offer
+ * each as a jump into the file.
+ */
+function toBuildError(err: unknown, documentPath: string): BuildError {
+  const message = err instanceof Error ? err.message : String(err);
+  const errors =
+    err instanceof Error && err.name === "ParseXmlError"
+      ? ((err as Error & { errors?: unknown }).errors ?? [])
+      : undefined;
+  if (!Array.isArray(errors)) return { type: "error", message, kind: "internal" };
+
+  const issues = errors
+    .filter((e): e is string => typeof e === "string")
+    .map((raw) => parseIssue(raw, documentPath));
+  return {
+    type: "error",
+    message,
+    kind: "document",
+    issues,
+  };
+}
+
+/**
+ * Splits `path:line: message` or `line N: message` off the front of a
+ * validation error. Anything else comes back as text with no location —
+ * the parser omits the prefix when it has no position for the element.
+ */
+function parseIssue(raw: string, documentPath: string): BuildIssue {
+  const withFile = /^(.+?):(\d+): ([\s\S]*)$/.exec(raw);
+  if (withFile && withFile[1] && withFile[2] && withFile[3] !== undefined) {
     return {
-      type: "error",
-      message: err instanceof Error ? err.message : String(err),
+      text: withFile[3],
+      file: withFile[1],
+      line: Number.parseInt(withFile[2], 10),
     };
   }
+  const bareLine = /^line (\d+): ([\s\S]*)$/.exec(raw);
+  if (bareLine && bareLine[1] && bareLine[2] !== undefined) {
+    return {
+      text: bareLine[2],
+      file: documentPath,
+      line: Number.parseInt(bareLine[1], 10),
+    };
+  }
+  return { text: raw };
 }
 
 /**
@@ -336,6 +442,8 @@ export class PreviewPanel {
   private readonly renders: CoalescingRunner<RenderRequest>;
   /** Latest slow-render notice, replayed once the webview reports ready. */
   private currentStatus: string | undefined;
+  /** Clears the "Refreshed ..." confirmation once it has been read. */
+  private refreshNoticeTimer: ReturnType<typeof setTimeout> | undefined;
   /**
    * Monotonic counter the webview uses as a React `key` on the viewer
    * shell. Bumped only when the *deck identity* changes (new document
@@ -354,7 +462,7 @@ export class PreviewPanel {
         invalidatedSlides?: number[];
         deckGeneration: number;
       }
-    | { error: string }
+    | ErrorPayload
     | undefined;
   private sourceMap: BuilderSourceMap | undefined;
   private lastRender: RenderSnapshot | undefined;
@@ -409,7 +517,7 @@ export class PreviewPanel {
     // so the user can recover from a stale viewer state. Bump the deck
     // generation so the webview also remounts the viewer shell.
     inst.deckGeneration++;
-    void inst.renderFromTargetUri(true);
+    void inst.renderFromTargetUri(true, true);
   }
 
   static createOrShow(
@@ -484,6 +592,14 @@ export class PreviewPanel {
         PreviewPanel.log(
           `render failed: ${err instanceof Error ? err.message : String(err)}`,
         ),
+      // The newest content wins, but a superseded request's demands
+      // survive it: an edit arriving right after the Refresh button must
+      // still drop the snapshot and still confirm when it lands.
+      (superseded, next) => ({
+        ...next,
+        full: superseded.full || next.full,
+        refresh: superseded.refresh || next.refresh,
+      }),
     );
 
     panel.webview.options = {
@@ -495,13 +611,19 @@ export class PreviewPanel {
     panel.onDidDispose(() => {
       this.disposed = true;
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      if (this.refreshNoticeTimer) clearTimeout(this.refreshNoticeTimer);
       PreviewPanel.diagnosticCollection?.delete(this.documentUri);
       PreviewPanel.instance = undefined;
     });
 
     panel.webview.onDidReceiveMessage((message: unknown) => {
       if (!message || typeof message !== "object") return;
-      const m = message as { type?: string; objectName?: string };
+      const m = message as {
+        type?: string;
+        objectName?: string;
+        file?: string;
+        line?: number;
+      };
       if (m.type === "ready") {
         this.webviewReady = true;
         this.flushPending();
@@ -511,15 +633,28 @@ export class PreviewPanel {
         this.revealFromObjectName(m.objectName);
         return;
       }
+      if (m.type === "revealAt" && typeof m.line === "number") {
+        // A click on a validation error. `file` is absent when the
+        // parser reported a line without a file, which means the root
+        // document.
+        this.revealAt(
+          typeof m.file === "string" ? m.file : undefined,
+          m.line,
+        );
+        return;
+      }
     });
 
     this.render(document.getText());
   }
 
-  private async renderFromTargetUri(full = false): Promise<void> {
+  private async renderFromTargetUri(
+    full = false,
+    refresh = false,
+  ): Promise<void> {
     try {
       const doc = await vscode.workspace.openTextDocument(this.documentUri);
-      this.render(doc.getText(), full);
+      this.render(doc.getText(), full, refresh);
     } catch (err) {
       PreviewPanel.log(
         `renderFromTargetUri failed: ${
@@ -534,8 +669,8 @@ export class PreviewPanel {
    * behind `this.renders`, which holds one build in flight and collapses
    * everything queued behind it into the newest request.
    */
-  private render(content: string, full = false): void {
-    this.renders.submit({ content, uri: this.documentUri, full });
+  private render(content: string, full = false, refresh = false): void {
+    this.renders.submit({ content, uri: this.documentUri, full, refresh });
   }
 
   private async runBuild(request: RenderRequest): Promise<void> {
@@ -576,10 +711,12 @@ export class PreviewPanel {
         request.uri.fsPath,
         this.lastRender,
         this.importedPaths,
+        (changedSlides) => this.sendPending(changedSlides),
       );
     } finally {
       if (noticeTimer !== undefined) clearTimeout(noticeTimer);
       this.sendStatus(undefined);
+      this.sendPending([]);
     }
 
     if (this.disposed) return;
@@ -590,11 +727,16 @@ export class PreviewPanel {
     if (this.renders.hasPending) return;
 
     if (result.type === "noop") {
-      // Hashes match the previous render — nothing to ship.
+      // Hashes match the previous render — nothing to ship, which is
+      // exactly when a refresh needs saying so.
+      this.confirmRefresh(request);
       return;
     }
     if (result.type === "empty") {
-      this.queueOrSend({ error: "No slides to preview" });
+      this.queueOrSend({
+        error: "No slides to preview",
+        kind: "document",
+      });
       this.sourceMap = undefined;
       this.lastRender = undefined;
       PreviewPanel.diagnosticCollection?.delete(request.uri);
@@ -602,7 +744,11 @@ export class PreviewPanel {
     }
     if (result.type === "error") {
       PreviewPanel.log(`render error: ${result.message}`);
-      this.queueOrSend({ error: result.message });
+      this.queueOrSend({
+        error: result.message,
+        kind: result.kind,
+        ...(result.issues ? { issues: result.issues } : {}),
+      });
       this.sourceMap = undefined;
       this.lastRender = undefined;
       PreviewPanel.diagnosticCollection?.delete(request.uri);
@@ -643,6 +789,32 @@ export class PreviewPanel {
     } else {
       PreviewPanel.diagnosticCollection?.delete(request.uri);
     }
+
+    this.confirmRefresh(request);
+  }
+
+  /**
+   * Says a Refresh finished, stamped with the time it landed.
+   *
+   * A rebuild that produces the same deck leaves the screen untouched,
+   * so the button is indistinguishable from a dead one. The timestamp
+   * also separates two clicks in a row, which a fixed word would not.
+   * Errors and the empty-deck case skip this — they put their own
+   * message on screen.
+   */
+  private confirmRefresh(request: RenderRequest): void {
+    if (!request.refresh || this.disposed) return;
+    const at = new Date().toLocaleTimeString();
+    this.sendStatus(`Refreshed ${at}`);
+    if (this.refreshNoticeTimer) clearTimeout(this.refreshNoticeTimer);
+    this.refreshNoticeTimer = setTimeout(() => {
+      this.refreshNoticeTimer = undefined;
+      if (this.disposed) return;
+      // Leave a slow-render notice from a later build alone.
+      if (this.currentStatus?.startsWith("Refreshed ")) {
+        this.sendStatus(undefined);
+      }
+    }, REFRESH_NOTICE_MS);
   }
 
   private queueOrSend(
@@ -653,7 +825,7 @@ export class PreviewPanel {
           invalidatedSlides?: number[];
           deckGeneration: number;
         }
-      | { error: string },
+      | ErrorPayload,
   ): void {
     if (!this.webviewReady) {
       this.pendingPayload = payload;
@@ -684,6 +856,20 @@ export class PreviewPanel {
     this.postStatus(message);
   }
 
+  /**
+   * Tells the webview which slides are being rebuilt so their thumbnails
+   * can say so. `undefined` means every slide — a change to something
+   * the whole deck depends on, or the first render. An empty array
+   * clears the marks.
+   */
+  private sendPending(slides: number[] | undefined): void {
+    if (this.disposed || !this.webviewReady) return;
+    void this.panel.webview.postMessage({
+      type: "pending",
+      slides: slides ?? null,
+    });
+  }
+
   private postStatus(message: string | undefined): void {
     if (this.disposed || !this.webviewReady) return;
     void this.panel.webview.postMessage({
@@ -700,12 +886,14 @@ export class PreviewPanel {
           invalidatedSlides?: number[];
           deckGeneration: number;
         }
-      | { error: string },
+      | ErrorPayload,
   ): void {
     if ("error" in payload) {
       void this.panel.webview.postMessage({
         type: "error",
         message: payload.error,
+        kind: payload.kind,
+        ...(payload.issues ? { issues: payload.issues } : {}),
       });
       return;
     }
@@ -718,6 +906,31 @@ export class PreviewPanel {
         ? { invalidatedSlides: payload.invalidatedSlides }
         : {}),
     });
+  }
+
+  /**
+   * Opens `file` (or the previewed document) with the cursor on `line`.
+   * Used by the failure screen so a validation error is one click from
+   * the text that caused it.
+   */
+  private revealAt(file: string | undefined, line: number): void {
+    const targetUri = file ? vscode.Uri.file(file) : this.documentUri;
+    void (async () => {
+      try {
+        const doc = await vscode.workspace.openTextDocument(targetUri);
+        const zeroBased = Math.max(0, line - 1);
+        const range = new vscode.Range(zeroBased, 0, zeroBased, 0);
+        await vscode.window.showTextDocument(doc, {
+          viewColumn: vscode.ViewColumn.One,
+          preserveFocus: false,
+          selection: range,
+        });
+      } catch (err) {
+        PreviewPanel.log(
+          `revealAt failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    })();
   }
 
   private revealFromObjectName(objectName: string): void {

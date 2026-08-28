@@ -15,9 +15,18 @@ export class CoalescingRunner<T> {
   /** Boxed so a legitimately `undefined` input still counts as pending. */
   private pending: { value: T } | undefined;
 
+  /**
+   * @param job Work to run for one input.
+   * @param onError Reports a job that threw; draining continues.
+   * @param merge Folds a superseded input into the one replacing it.
+   *   Without it a request's flags are lost whenever a newer request
+   *   arrives first — a full rebuild collapsed into a later incremental
+   *   edit would quietly downgrade to incremental.
+   */
   constructor(
     private readonly job: (input: T) => Promise<void>,
     private readonly onError: (err: unknown) => void,
+    private readonly merge?: (superseded: T, next: T) => T,
   ) {}
 
   /** True while a job is executing. */
@@ -35,7 +44,13 @@ export class CoalescingRunner<T> {
    * Returns immediately — the job runs on its own.
    */
   submit(input: T): void {
-    this.pending = { value: input };
+    const superseded = this.pending;
+    this.pending = {
+      value:
+        superseded && this.merge
+          ? this.merge(superseded.value, input)
+          : input,
+    };
     if (!this.running) void this.drain();
   }
 
