@@ -1,5 +1,5 @@
 import type { TextMeasurementMode } from "./calcYogaLayout/measureText.ts";
-import type { DefaultTextStyle } from "./types.ts";
+import type { BuilderNode, DefaultTextStyle } from "./types.ts";
 import {
   normalizeDefaultTextStyle,
   type ResolvedDefaultTextStyle,
@@ -37,6 +37,14 @@ export interface BuildContext {
    * layers measure with the same glyph metrics the renderer will paint.
    */
   measurer: TextMeasurer;
+  /**
+   * Height each measured leaf (text, list) last reported from its Yoga
+   * measure callback, keyed by the BuilderNode. Compared against the
+   * height Yoga settled on to tell a frame sized by its own text from one
+   * an explicit height or a cross-axis stretch made taller. Cleared at the
+   * start of every layout pass — auto-fit runs several.
+   */
+  measuredLeafHeights: Map<BuilderNode, number>;
 }
 
 const DEFAULT_HREF_SCHEMES = ["https:", "http:", "mailto:", "tel:"];
@@ -75,5 +83,6 @@ export function createBuildContext(
     },
     defaultLang: options.defaultLang,
     measurer: createMeasurer(options.fonts),
+    measuredLeafHeights: new Map(),
   };
 }

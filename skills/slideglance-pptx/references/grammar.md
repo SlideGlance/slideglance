@@ -512,3 +512,20 @@ shrinks in this order:
 
 Disable with `autoFit: false` in the build options when pixel-perfect
 reproducibility matters more than fit.
+
+### The other autofit — what PowerPoint records on a text frame
+
+Slide-level auto-fit above is a build-time shrink. Separate from it, a
+`<Text>` / `<Ul>` / `<Ol>` frame **sized by its own text** is written
+with PowerPoint's **Resize shape to fit text** (`<a:spAutoFit/>`): the
+frame width is fixed and text wraps inside it, while the frame height
+follows the text.
+
+Everything else keeps **Do Not Autofit** — a frame given `h` / `minH` /
+`maxH` / `flexGrow`, one stretched to a taller sibling by the row's
+`alignItems`, and every `<Shape>` and `<Master>` object. Their box is
+authored geometry, and a consumer acting on `spAutoFit` would flatten
+it to a single line of type.
+
+`autoFit: false` does not change any of this — it only turns off the
+build-time shrink.

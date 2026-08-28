@@ -4,6 +4,7 @@ import {
   createTextOptions,
   convertUnderline,
   convertStrike,
+  textFrameFit,
 } from "../textOptions.ts";
 import {
   resolveFontFamily,
@@ -146,6 +147,7 @@ function renderEmbeddedTextNode(
     rectRadius,
     shadow,
     align: base.align,
+    fit: textFrameFit(node),
     valign: base.valign,
     margin,
     lineSpacingMultiple: base.lineSpacingMultiple,
@@ -189,6 +191,7 @@ export function renderTextNode(
       w: textOptions.w,
       h: textOptions.h,
       align: textOptions.align,
+      fit: textOptions.fit,
       valign: textOptions.valign,
       margin: textOptions.margin,
       lineSpacingMultiple: textOptions.lineSpacingMultiple,

@@ -8,6 +8,10 @@ import {
   resolveTextStyleValue,
 } from "../../defaultTextStyle.ts";
 import { renderTextNode } from "../../renderPptx/nodes/text.ts";
+import {
+  positionTextFrame,
+  recordMeasuredLeafHeight,
+} from "../../toPositioned/textFrameFit.ts";
 
 export const textNodeDef: NodeDefinition = {
   type: "text",
@@ -83,8 +87,12 @@ export const textNodeDef: NodeDefinition = {
         ctx.textMeasurementMode,
       );
 
+      recordMeasuredLeafHeight(node, heightPx, ctx);
       return { width: widthPx, height: heightPx };
     });
+  },
+  toPositioned(pom, absoluteX, absoluteY, layout, ctx) {
+    return positionTextFrame(pom, absoluteX, absoluteY, layout, ctx);
   },
   render(node, ctx) {
     renderTextNode(node as Extract<typeof node, { type: "text" }>, ctx);

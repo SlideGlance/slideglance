@@ -555,10 +555,17 @@ export type PositionedLayerChild = PositionedNode & {
   y: number;
 };
 
+/**
+ * Text frames (text, ul, ol) carry whether their box height came from the
+ * text itself. Only those are written with PowerPoint's "Resize shape to
+ * fit text"; see `toPositioned/textFrameFit.ts`.
+ */
+type TextFrameFit = { heightFollowsContent?: boolean };
+
 export type PositionedNode =
-  | (TextNode & PositionedBase)
-  | (UlNode & PositionedBase)
-  | (OlNode & PositionedBase)
+  | (TextNode & PositionedBase & TextFrameFit)
+  | (UlNode & PositionedBase & TextFrameFit)
+  | (OlNode & PositionedBase & TextFrameFit)
   | (ImageNode & PositionedBase & { imageData?: string })
   | (TableNode & PositionedBase)
   | (VStackNode & PositionedBase & { children: PositionedNode[] })

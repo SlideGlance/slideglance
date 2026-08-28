@@ -5,7 +5,11 @@ import {
   resolveTextStyleValue,
 } from "../../defaultTextStyle.ts";
 import { pxToIn, pxToPt } from "../units.ts";
-import { convertUnderline, convertStrike } from "../textOptions.ts";
+import {
+  convertUnderline,
+  convertStrike,
+  textFrameFit,
+} from "../textOptions.ts";
 import { getContentArea } from "../utils/contentArea.ts";
 import { renderObjectName } from "../utils/objectName.ts";
 import { validateHref } from "../utils/href.ts";
@@ -153,6 +157,7 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       w: pxToIn(content.w),
       h: pxToIn(content.h),
       align: node.textAlign ?? "left",
+      fit: textFrameFit(node),
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
@@ -171,6 +176,7 @@ export function renderUlNode(node: UlPositionedNode, ctx: RenderContext): void {
       fontSize: pxToPt(fontSizePx),
       fontFace: fontFamily,
       align: node.textAlign ?? "left",
+      fit: textFrameFit(node),
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
@@ -230,6 +236,7 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       w: pxToIn(content.w),
       h: pxToIn(content.h),
       align: node.textAlign ?? "left",
+      fit: textFrameFit(node),
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,
@@ -248,6 +255,7 @@ export function renderOlNode(node: OlPositionedNode, ctx: RenderContext): void {
       fontSize: pxToPt(fontSizePx),
       fontFace: fontFamily,
       align: node.textAlign ?? "left",
+      fit: textFrameFit(node),
       valign: node.textVAlign ?? ("top" as const),
       margin: 0,
       lineSpacingMultiple: lineHeight,

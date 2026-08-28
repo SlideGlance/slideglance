@@ -24,6 +24,10 @@ export async function calcYogaLayout(
 ): Promise<YogaNodeMap> {
   const Yoga = await getYoga();
 
+  // Auto-fit re-runs this with shrunken font sizes; stale measurements
+  // from the previous pass would misjudge which frames follow their text.
+  ctx.measuredLeafHeights.clear();
+
   // Prefetch every image size up front (for HTTPS support).
   await prefetchAllImageSizes(root, ctx);
 

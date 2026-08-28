@@ -9,6 +9,10 @@ import {
   resolveTextStyleValue,
 } from "../../defaultTextStyle.ts";
 import { renderUlNode, renderOlNode } from "../../renderPptx/nodes/list.ts";
+import {
+  positionTextFrame,
+  recordMeasuredLeafHeight,
+} from "../../toPositioned/textFrameFit.ts";
 
 function applyListYogaStyle(
   node: BuilderNode,
@@ -79,6 +83,7 @@ function applyListYogaStyle(
       ctx.textMeasurementMode,
     );
 
+    recordMeasuredLeafHeight(node, heightPx, ctx);
     return {
       width: widthPx + bulletIndentPx,
       height: heightPx,
@@ -90,6 +95,9 @@ export const ulNodeDef: NodeDefinition = {
   type: "ul",
   category: "leaf",
   applyYogaStyle: applyListYogaStyle,
+  toPositioned(pom, absoluteX, absoluteY, layout, ctx) {
+    return positionTextFrame(pom, absoluteX, absoluteY, layout, ctx);
+  },
   render(node, ctx) {
     renderUlNode(node as Extract<typeof node, { type: "ul" }>, ctx);
   },
@@ -99,6 +107,9 @@ export const olNodeDef: NodeDefinition = {
   type: "ol",
   category: "leaf",
   applyYogaStyle: applyListYogaStyle,
+  toPositioned(pom, absoluteX, absoluteY, layout, ctx) {
+    return positionTextFrame(pom, absoluteX, absoluteY, layout, ctx);
+  },
   render(node, ctx) {
     renderOlNode(node as Extract<typeof node, { type: "ol" }>, ctx);
   },

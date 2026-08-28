@@ -10,6 +10,28 @@ import { getContentArea } from "./utils/contentArea.ts";
 type TextNode = Extract<PositionedNode, { type: "text" }>;
 
 /**
+ * pptxgenjs `fit` values: PowerPoint's "Resize shape to fit text"
+ * (`<a:spAutoFit/>`) and "Do Not Autofit".
+ *
+ * A text frame whose height came from its own text gets `spAutoFit` — the
+ * box width is fixed, the text wraps inside it, and the height follows the
+ * text, which is the contract the layout engine applied. A frame whose
+ * height was authored or stretched gets `none`, because a consumer acting
+ * on `spAutoFit` (LibreOffice on load, PowerPoint on the first edit) would
+ * collapse it to a single line. `toPositioned/textFrameFit.ts` makes that
+ * call; shapes and master chrome never take it.
+ */
+export const TEXT_FRAME_FIT = "resize" as const;
+export const TEXT_FRAME_NO_FIT = "none" as const;
+
+/** pptxgenjs `fit` for a positioned text frame. */
+export function textFrameFit(node: {
+  heightFollowsContent?: boolean;
+}): typeof TEXT_FRAME_FIT | typeof TEXT_FRAME_NO_FIT {
+  return node.heightFollowsContent ? TEXT_FRAME_FIT : TEXT_FRAME_NO_FIT;
+}
+
+/**
  * Converts the underline property to pptxgenjs format.
  */
 export function convertUnderline(
@@ -59,6 +81,7 @@ export function createTextOptions(
     fontSize: pxToPt(fontSizePx),
     fontFace: fontFamily,
     align: node.textAlign ?? "left",
+    fit: textFrameFit(node),
     // `textVAlign` controls glyph anchor inside the rendered text frame.
     // Defaults to "top" — matches the previous hard-coded behavior. When
     // an HStack stretches a smaller-fontSize sibling to the row's max
