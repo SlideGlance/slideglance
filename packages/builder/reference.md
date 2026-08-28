@@ -394,6 +394,7 @@ Tabular data. Use <Col>/<Tr>/<Td> child elements or the `columns`/`rows` JSON at
 | `borderRight` | border |  | Right-only border (color/width/dashType). Composes additively with `border`. |
 | `borderTop` | border |  | Top-only border (color/width/dashType). Composes additively with `border`. |
 | `bottom` | number |  |  |
+| `cellBackgroundColor` | color |  | Fill for every cell that sets none. Distinct from backgroundColor, which paints behind the whole table. |
 | `cellBorder` | border |  |  |
 | `cellBorderSides` | string (all\|no-outer-vertical\|horizontal-only) |  | Which cell borders to draw: all (default), no-outer-vertical (grid with open left/right table edges), horizontal-only (horizontal rules only). |
 | `cellMargin` | padding |  |  |

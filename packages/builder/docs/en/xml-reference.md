@@ -212,6 +212,9 @@ Inline SVG, rasterized to PNG at build time so the result embeds as a real Power
 | `bandedRowFill` | `<Table>` | Fill for every other body row. |
 | `headerRows` | `<Table>` | Leading rows excluded from the banding rhythm. |
 | `cellMargin` | `<Table>` | Inner padding for every cell; `<Td padding>` overrides it. |
+| `cellBackgroundColor` | `<Table>` | Fill for every cell that sets none. |
+
+> `backgroundColor` on `<Table>` paints the rectangle **behind** the table, not its cells — it is the same node attribute every other element has. Use `cellBackgroundColor` for the cells. This matters when moving a cell style up: `<Td class="header">` and `<Table class="header">` mean different things if that style sets `backgroundColor`.
 
 ### `<Shape>`
 

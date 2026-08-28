@@ -285,6 +285,10 @@ const tableCompiled = defineNode({
       doc: "Which cell borders to draw: all (default), no-outer-vertical (grid with open left/right table edges), horizontal-only (horizontal rules only).",
     },
     cellMargin: { coerce: "padding", dotNotation: true },
+    cellBackgroundColor: {
+      coerce: "color",
+      doc: "Fill for every cell that sets none. Distinct from backgroundColor, which paints behind the whole table.",
+    },
     bandedRowFill: {
       coerce: "color",
       doc: "Fill for every other body row (zebra striping), counted after headerRows.",

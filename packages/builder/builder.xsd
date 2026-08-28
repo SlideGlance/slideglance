@@ -1158,6 +1158,11 @@
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="bottom" type="xs:double" use="optional"/>
+    <xs:attribute name="cellBackgroundColor" type="b:Color" use="optional">
+      <xs:annotation>
+        <xs:documentation>Fill for every cell that sets none. Distinct from backgroundColor, which paints behind the whole table.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="cellBorder" type="b:BorderStyle" use="optional"/>
     <xs:attribute name="cellBorderSides" use="optional">
       <xs:annotation>

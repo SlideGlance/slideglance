@@ -340,6 +340,15 @@ export const tableNodeSchema = baseNodeSchema
     cellBorderSides: cellBorderSidesSchema.optional(),
     cellMargin: paddingSchema.optional(),
     /**
+     * Fill for every cell that does not set one.
+     *
+     * Distinct from the node's own `backgroundColor`, which paints the
+     * rectangle behind the table rather than the cells — moving a cell
+     * style up to `<Table class="…">` silently changes which of the two
+     * an author gets, so the cell one has its own name.
+     */
+    cellBackgroundColor: z.string().optional(),
+    /**
      * Fill applied to every other body row, counting from the first row
      * after `headerRows`. Zebra striping is a readability device for wide
      * tables and is otherwise a `backgroundColor` on every second `<Tr>`.

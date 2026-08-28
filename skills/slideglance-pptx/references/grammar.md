@@ -238,6 +238,13 @@ not one per cell.
 | `borderTop` / `borderRight` / `borderBottom` / `borderLeft` | `<Td>` | One edge of one cell, overriding the grid — the rule above a totals row. |
 | `bandedRowFill` | `<Table>` | Fill for every other body row. |
 | `headerRows` | `<Table>` | Leading rows kept out of the banding rhythm. |
+| `cellBackgroundColor` | `<Table>` | Fill for every cell that sets none. |
+
+**`backgroundColor` on `<Table>` is the node's own background** — the
+rectangle behind the table, not its cells. Lifting a cell style onto the
+table (`<Td class="header">` → `<Table class="header">`) therefore
+changes what a `backgroundColor` in that style does. `<Col>` and `<Tr>`
+take it as a cell fill; `<Table>` takes `cellBackgroundColor`.
 
 ```xml
 <Table fontSize="12" cellBorder.color="CBD5E1" cellBorder.width="1"

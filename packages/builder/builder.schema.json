@@ -5787,6 +5787,9 @@
             }
           ]
         },
+        "cellBackgroundColor": {
+          "type": "string"
+        },
         "bandedRowFill": {
           "type": "string"
         },

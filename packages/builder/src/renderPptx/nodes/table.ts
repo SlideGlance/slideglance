@@ -172,11 +172,13 @@ function resolveCellFill(
   const explicit =
     cell.backgroundColor ?? row.backgroundColor ?? column?.backgroundColor;
   if (explicit) return explicit;
-  if (!node.bandedRowFill) return undefined;
-  const bodyIndex = rowIndex - (node.headerRows ?? 0);
-  // Stripe the second body row and every other one after it, so the
-  // first body row keeps the table's own background.
-  return bodyIndex >= 0 && bodyIndex % 2 === 1 ? node.bandedRowFill : undefined;
+  if (node.bandedRowFill) {
+    const bodyIndex = rowIndex - (node.headerRows ?? 0);
+    // Stripe the second body row and every other one after it, so the
+    // first body row keeps the table's own fill.
+    if (bodyIndex >= 0 && bodyIndex % 2 === 1) return node.bandedRowFill;
+  }
+  return node.cellBackgroundColor;
 }
 
 function toBorderSpec(border: {
