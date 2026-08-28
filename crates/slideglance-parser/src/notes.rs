@@ -16,6 +16,7 @@
 use quick_xml::events::Event;
 use quick_xml::name::QName;
 use quick_xml::reader::Reader;
+use quick_xml::Error as QuickXmlError;
 
 use crate::xml::XmlError;
 
@@ -90,7 +91,17 @@ pub fn parse_notes_text(xml: &str) -> Result<Option<String>, XmlError> {
             }
             Ok(Event::Text(t)) => {
                 if in_t {
-                    let unescaped = t.unescape().map_err(XmlError::Read)?;
+                    // quick-xml 0.41 split what `unescape()` used to do:
+                    // `decode()` turns the raw bytes into text, and the
+                    // free `escape::unescape` resolves the XML entities.
+                    // Decoding without EOL normalisation keeps the run's
+                    // whitespace exactly as authored, which is the whole
+                    // reason this parser reads events itself.
+                    let decoded = t
+                        .decode()
+                        .map_err(|e| XmlError::Read(QuickXmlError::Encoding(e)))?;
+                    let unescaped = quick_xml::escape::unescape(&decoded)
+                        .map_err(|e| XmlError::Read(QuickXmlError::Escape(e)))?;
                     current.push_str(&unescaped);
                 }
             }

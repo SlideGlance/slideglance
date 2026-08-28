@@ -96,7 +96,7 @@ slideglance = { path = "crates/slideglance", version = "0.2.0" }
 
 # ZIP / XML
 zip = { version = "8", default-features = false, features = ["deflate"] }
-quick-xml = { version = "0.37", features = ["serialize"] }
+quick-xml = { version = "0.41", features = ["serialize"] }
 regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
 base64 = { version = "0.22", default-features = false, features = ["std"] }
 

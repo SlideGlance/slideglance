@@ -57,6 +57,13 @@ ignore = [
     "RUSTSEC-2025-0081",  # transitive — tauri stack
     "RUSTSEC-2025-0098",  # transitive — tauri stack
     "RUSTSEC-2025-0100",  # transitive — tauri stack
+    # resvg's text stack. `usvg` shapes text with `rustybuzz`, which parses
+    # fonts with `ttf-parser`; both were marked unmaintained in 2026. They
+    # are notifications, not CVEs, and nothing downstream of us can drop
+    # them while the renderer draws text through resvg. Re-evaluate when
+    # resvg picks a maintained shaper.
+    "RUSTSEC-2026-0192",  # ttf-parser: unmaintained (usvg → rustybuzz)
+    "RUSTSEC-2026-0206",  # rustybuzz: unmaintained (usvg)
 ]
 
 # --- Licenses --------------------------------------------------------------
