@@ -145,7 +145,7 @@
     "@types/node": "^25.9.5",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/vscode": "^1.134.0",
+    "@types/vscode": "^1.85.0",
     "@vitejs/plugin-react": "catalog:",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.2",
