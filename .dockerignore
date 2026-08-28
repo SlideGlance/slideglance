@@ -1,0 +1,13 @@
+# Build context for packages/builder/docker/Dockerfile is the repo root,
+# so everything not ignored here is transferred to the daemon on every
+# build. Keep this list to things the VRT / preview image never reads.
+
+# Rust build output — tens of GB, and the image only runs the JS builder.
+target/
+
+# Git history.
+.git/
+
+# Produced inside the container and mounted back out by docker-compose.
+packages/builder/vrt/decks/output/
+packages/builder/vrt/preview/output/
