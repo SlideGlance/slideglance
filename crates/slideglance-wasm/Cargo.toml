@@ -8,7 +8,7 @@ name = "slideglance-wasm"
 # Every published-style metadata field on this crate therefore lives
 # inline. The `version` is kept in sync with the rest of the
 # workspace by `scripts/sync-versions.mjs` (run on every prebuild).
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"

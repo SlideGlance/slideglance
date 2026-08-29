@@ -1,7 +1,7 @@
 {
   "name": "@slideglance/desktop-viewer",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
   "description": "Tauri 2 desktop app for the slideglance viewer.",

@@ -6,6 +6,24 @@ documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-29
+
+### Added
+
+- **`<SlideNumber count="numbered">` numbers only the pages that carry a
+  folio.** A deck whose cover, contents or appendix show no page number
+  used to print the slide's position in the deck on its first numbered
+  page — 6, where the contents sent the reader to 1. The new mode counts
+  the pages that show a folio, starting at `startAt` (default 1), and
+  writes the result as text. `count="all"` stays the default and keeps
+  PowerPoint's live `slidenum` field.
+
+### Fixed
+
+- **A deck whose page numbering does not start at 1 renders the numbers
+  PowerPoint shows.** `<p:presentation firstSlideNum>` was never read, so
+  the preview counted from 1 no matter what the deck declared.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added

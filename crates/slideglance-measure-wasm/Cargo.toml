@@ -4,7 +4,7 @@ name = "slideglance-measure-wasm"
 # inheritance (`field.workspace = true`); see the same comment in the
 # sibling `slideglance-wasm/Cargo.toml`. The `version` is synced from
 # the root `package.json` by `scripts/sync-versions.mjs`.
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
