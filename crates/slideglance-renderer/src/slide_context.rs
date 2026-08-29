@@ -60,7 +60,10 @@ pub struct Timestamp {
 /// renderer and passed by reference into element renderers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SlideRenderContext {
-    /// 1-based slide number for `slidenum` field substitution.
+    /// The number `<a:fld type="slidenum">` prints. This is the slide's
+    /// 1-based position shifted by `<p:presentation @firstSlideNum>`, so
+    /// it is not an index — a deck declaring `firstSlideNum="0"` prints
+    /// `0` on its first slide.
     pub slide_number: u32,
     /// Total number of slides in the deck. `None` when the renderer is
     /// invoked one slide at a time without that knowledge.

@@ -53,6 +53,13 @@ mod group;
 /// `None` when rendering one slide in isolation; pass `Some(n)` to
 /// expose `slidenum` correctly to text body fields.
 ///
+/// `first_slide_num` is `<p:presentation @firstSlideNum>` (`1` when the
+/// attribute is absent). The printed `slidenum` is
+/// `slide.slide_number - 1 + first_slide_num`, which is how PowerPoint
+/// numbers a deck whose folio does not start at 1. [`Slide::slide_number`]
+/// itself stays the 1-based position, so it remains the key callers
+/// address a slide by.
+///
 /// # Errors
 ///
 /// Propagates [`RendererError::NotImplemented`] from per-element
@@ -64,6 +71,7 @@ pub fn render_slide_to_svg(
     slide: &Slide,
     slide_size: &SlideSize,
     total_slides: Option<u32>,
+    first_slide_num: u32,
     script_fonts: &ScriptFontContext,
     measurer: &dyn TextMeasurer,
     mapping: &FontMapping,
@@ -75,7 +83,13 @@ pub fn render_slide_to_svg(
     let height_px = slide_size.height.to_pixels();
 
     let ctx = SlideRenderContext {
-        slide_number: slide.slide_number,
+        // `slide_number` is 1-based, so subtracting 1 before adding the
+        // deck's first number lands on PowerPoint's value and never
+        // underflows.
+        slide_number: slide
+            .slide_number
+            .saturating_sub(1)
+            .saturating_add(first_slide_num),
         total_slides,
         header_footer: slide.header_footer.clone(),
         timestamp,
@@ -323,9 +337,10 @@ mod tests {
     use slideglance_color::{ResolvedColor, Rgb};
     use slideglance_font::{FontMapping, HeuristicTextMeasurer, ScriptFontContext};
     use slideglance_model::{
-        Background, ConnectorElement, Fill, Geometry, GroupElement, Hyperlink, ImageFill,
-        ImageRect, NoFill, PresetGeometry, ShapeElement, Slide, SlideElement, SlideHeaderFooter,
-        SlideSize, SolidFill, Transform,
+        AutoFit, Background, BodyProperties, ConnectorElement, Fill, Geometry, GroupElement,
+        Hyperlink, ImageFill, ImageRect, NoFill, Paragraph, ParagraphProperties, PresetGeometry,
+        RunProperties, ShapeElement, Slide, SlideElement, SlideHeaderFooter, SlideSize, SolidFill,
+        TextBody, TextRun, TextVerticalType, Transform, VerticalAnchor, WrapMode,
     };
     use slideglance_utils::Emu;
     use std::collections::BTreeMap;
@@ -396,10 +411,15 @@ mod tests {
     }
 
     fn render(slide: &Slide) -> Result<String, RendererError> {
+        render_with_first_num(slide, 1)
+    }
+
+    fn render_with_first_num(slide: &Slide, first_slide_num: u32) -> Result<String, RendererError> {
         render_slide_to_svg(
             slide,
             &small_size(),
             None,
+            first_slide_num,
             &ScriptFontContext::empty(),
             &HeuristicTextMeasurer,
             &FontMapping::new(),
@@ -407,6 +427,42 @@ mod tests {
             None,
             None,
         )
+    }
+
+    /// A shape whose only run is `<a:fld type="slidenum">`, carrying the
+    /// `<a:t>` cache PowerPoint ignores so a test can tell substitution
+    /// apart from the cached text being echoed.
+    fn slide_number_shape(cached: &str) -> ShapeElement {
+        let mut shape = placeholder_shape("sldNum");
+        shape.text_body = Some(TextBody {
+            default_text_color: Some(opaque("#000000")),
+            paragraphs: vec![Paragraph {
+                runs: vec![TextRun {
+                    text: cached.to_string(),
+                    properties: RunProperties::default(),
+                    field_type: Some("slidenum".to_string()),
+                }],
+                properties: ParagraphProperties::default(),
+                end_para_run_properties: None,
+            }],
+            body_properties: BodyProperties {
+                anchor: VerticalAnchor::T,
+                margin_left: Emu::new(0),
+                margin_right: Emu::new(0),
+                margin_top: Emu::new(0),
+                margin_bottom: Emu::new(0),
+                wrap: WrapMode::Square,
+                auto_fit: AutoFit::NoAutofit,
+                font_scale: 1.0,
+                ln_spc_reduction: 0.0,
+                num_col: 1,
+                vert: TextVerticalType::Horz,
+                spc_first_last_para: false,
+                compat_ln_spc: false,
+                prst_tx_warp: None,
+            },
+        });
+        shape
     }
 
     // --- top-level shape ---
@@ -585,6 +641,43 @@ mod tests {
         // group emitted for the placeholder.
         let group_count = svg.matches("<g transform=\"").count();
         assert_eq!(group_count, 0, "{svg}");
+    }
+
+    // --- slidenum field / firstSlideNum ---
+
+    #[test]
+    fn slide_number_field_defaults_to_the_slide_position() {
+        let mut s = slide_with(vec![SlideElement::Shape(slide_number_shape("<#>"))]);
+        s.slide_number = 4;
+        let svg = render(&s).unwrap();
+        assert!(svg.contains(">4</tspan>"), "{svg}");
+    }
+
+    #[test]
+    fn slide_number_field_is_shifted_by_first_slide_num() {
+        let mut s = slide_with(vec![SlideElement::Shape(slide_number_shape("<#>"))]);
+        s.slide_number = 4;
+        // firstSlideNum="10" makes PowerPoint print 13 on the fourth slide.
+        let svg = render_with_first_num(&s, 10).unwrap();
+        assert!(svg.contains(">13</tspan>"), "{svg}");
+    }
+
+    #[test]
+    fn first_slide_num_zero_prints_zero_on_the_first_slide() {
+        let s = slide_with(vec![SlideElement::Shape(slide_number_shape("<#>"))]);
+        assert_eq!(s.slide_number, 1);
+        let svg = render_with_first_num(&s, 0).unwrap();
+        assert!(svg.contains(">0</tspan>"), "{svg}");
+    }
+
+    #[test]
+    fn slide_number_field_ignores_the_cached_text() {
+        // Layouts pptxgenjs writes carry a stale `<a:t>` (e.g. 1002);
+        // PowerPoint recomputes the field and so must the renderer.
+        let s = slide_with(vec![SlideElement::Shape(slide_number_shape("1002"))]);
+        let svg = render(&s).unwrap();
+        assert!(svg.contains(">1</tspan>"), "{svg}");
+        assert!(!svg.contains("1002"), "{svg}");
     }
 
     #[test]

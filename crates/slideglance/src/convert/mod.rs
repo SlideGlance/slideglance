@@ -599,6 +599,7 @@ fn render_all_slides(
             &slide_for_render,
             &presentation.info.slide_size,
             total_slides,
+            presentation.info.first_slide_num,
             &script_fonts,
             measurer,
             &options.mapping,

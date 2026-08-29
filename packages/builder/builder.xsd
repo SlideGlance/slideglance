@@ -3048,9 +3048,11 @@
   <xs:element name="MasterLine" type="b:MasterLine"/>
   <xs:complexType name="SlideNumber">
     <xs:attribute name="color" type="b:Color" use="optional"/>
+    <xs:attribute name="count" type="xs:string" use="optional"/>
     <xs:attribute name="fontFamily" type="xs:string" use="optional"/>
     <xs:attribute name="fontSize" type="xs:double" use="optional"/>
     <xs:attribute name="h" type="xs:double" use="optional"/>
+    <xs:attribute name="startAt" type="xs:double" use="optional"/>
     <xs:attribute name="textAlign" type="xs:string" use="optional"/>
     <xs:attribute name="w" type="xs:double" use="optional"/>
     <xs:attribute name="x" type="xs:double" use="optional"/>

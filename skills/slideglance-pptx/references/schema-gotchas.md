@@ -17,7 +17,7 @@ first.
 | `Unknown attribute "letterSpacing"` etc.             | Old attribute name. See the "Attributes that don't exist" table below or the dot-notation forms.            |
 | `Did you mean "padding"?` (you wrote `paddingTop`)   | Camel-case shorthand isn't accepted — use dot notation: `padding.top="…"`.                                  |
 | `readTagExp returned undefined`                      | `<Foreach items='…'>` JSON contains an unescaped `'` — use `&apos;` or rewrite the prose without apostrophes. |
-| `<Master>.<SlideNumber>: Unknown attribute "format"` | SlideNumber accepts only `x` / `y` / `w` / `h` / `fontSize` / `fontFamily` / `color` / `textAlign`.         |
+| `<Master>.<SlideNumber>: Unknown attribute "format"` | SlideNumber accepts only `x` / `y` / `w` / `h` / `fontSize` / `fontFamily` / `color` / `textAlign` / `count` / `startAt`. |
 | `Unknown attribute "x1"` on `<MasterLine>`           | Endpoint-pair form not supported — use the positioned-rect form (`x, y, w, h, line.color, line.width`).     |
 
 ## Attributes that don't exist (drop them)
@@ -144,9 +144,34 @@ src, x, y, w, h. Nothing else.
 
 ### `<SlideNumber>`
 
-x, y, w, h, fontSize, fontFamily, color, textAlign. **No `format`,
-no `bold`** — pptxgenjs 4.x emits a fixed slide-number placeholder
-with no prefix/suffix surface, so `format` cannot be plumbed through.
+x, y, w, h, fontSize, fontFamily, color, textAlign, count, startAt.
+**No `format`, no `bold`** — pptxgenjs 4.x emits a fixed slide-number
+placeholder with no prefix/suffix surface, so `format` cannot be
+plumbed through.
+
+`count` decides what the printed number counts:
+
+| `count` | What lands on the page |
+| --- | --- |
+| `"all"` (default) | PowerPoint's live `slidenum` field. It counts every slide from 1, and PowerPoint recomputes it whenever the deck is reordered. |
+| `"numbered"` | Static text. Counts only the slides whose master declares a `<SlideNumber>`, starting at `startAt` (default 1). |
+
+**Reach for `count="numbered"` when the deck has pages that carry no
+folio** — a cover, a table of contents, an appendix excluded from a page
+limit. With the default, the first numbered page prints its position in
+the deck (6, say) while the contents sends the reader to 1, and the last
+page overshoots a 100-page limit by however many front-matter pages
+there are.
+
+`startAt` is deck-wide and only applies to `count="numbered"`; a build
+whose numbered masters disagree on it fails with the masters named. The
+live field's start number is `<p:presentation @firstSlideNum>`, which
+pptxgenjs cannot write.
+
+**What `count="numbered"` gives up**: the number is text, so PowerPoint
+does not renumber it after a slide is inserted or moved by hand — rebuild
+from the `.sgx` instead. The shape is also no longer a `sldNum`
+placeholder, so PowerPoint's Header and Footer dialog does not toggle it.
 
 ## `<Document size="…">` conflicts with `<Document w="…" h="…">`
 

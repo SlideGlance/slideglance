@@ -279,7 +279,7 @@ watermarks.
 | `<MasterText>` | Static text box. |
 | `<MasterImage>` | Logo or watermark. |
 | `<MasterLine>` | Decorative line. Positioned-rect form (`x, y, w, h, line.color, line.width`) — NOT endpoint pairs. |
-| `<SlideNumber>` | Auto page number. Accepts `x, y, w, h, fontSize, fontFamily, color`. **No `format`, no `textAlign`.** |
+| `<SlideNumber>` | Auto page number. Accepts `x, y, w, h, fontSize, fontFamily, color, textAlign, count, startAt`. **No `format`, no `bold`.** `count="numbered"` counts only the slides that carry a folio (cover / contents / appendix excluded) — see [`schema-gotchas.md`](./schema-gotchas.md). |
 
 See [`schema-gotchas.md`](./schema-gotchas.md) for the full Master-children attribute table.
 

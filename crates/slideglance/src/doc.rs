@@ -422,6 +422,7 @@ impl PptxDocument {
             &slide_for_render,
             &self.presentation.info.slide_size,
             total_slides,
+            self.presentation.info.first_slide_num,
             &self.script_fonts,
             measurer,
             &options.mapping,

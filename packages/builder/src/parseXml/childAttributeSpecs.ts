@@ -83,6 +83,8 @@ export const CHILD_ATTRIBUTE_SPECS: Record<
     fontFamily: { coerce: "string" },
     color: { coerce: "color" },
     textAlign: { coerce: "string" },
+    count: { coerce: "string" },
+    startAt: { coerce: "number" },
   },
   Col: {
     w: { coerce: "length" },

@@ -765,6 +765,21 @@ export const slideNumberOptionsSchema = z.object({
   fontFamily: z.string().optional(),
   color: z.string().optional(),
   textAlign: z.enum(["left", "center", "right"]).optional(),
+  // What the printed number counts.
+  //
+  // `"all"` (the default) emits PowerPoint's live `slidenum` field, which
+  // counts every slide in the deck from 1. A deck whose cover, contents
+  // and appendix carry no folio then prints the absolute position on its
+  // first numbered page — 6, where the contents sent the reader to 1.
+  //
+  // `"numbered"` counts only the slides whose master declares a
+  // `<SlideNumber>`, starting at `startAt`, and writes the result as
+  // static text. The field is gone, so PowerPoint stops recomputing it
+  // and the viewer prints exactly what PowerPoint shows.
+  count: z.enum(["all", "numbered"]).optional(),
+  // First number printed. `"numbered"` only — the live field's start is
+  // `<p:presentation @firstSlideNum>`, which pptxgenjs cannot write.
+  startAt: z.number().int().min(0).optional(),
 });
 
 const slideMasterBackgroundSchema = z.union([

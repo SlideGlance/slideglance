@@ -14,6 +14,13 @@ use crate::text::DefaultTextStyle;
 pub struct PresentationInfo {
     /// Slide width and height in EMU.
     pub slide_size: SlideSize,
+    /// `<p:presentation @firstSlideNum>` — the number `<a:fld
+    /// type="slidenum">` prints on the first slide. `1` when the
+    /// attribute is absent, which is the OOXML default. PowerPoint
+    /// numbers slide *i* (0-based in `<p:sldIdLst>`) as
+    /// `first_slide_num + i`, so this offset has to reach the renderer
+    /// for the printed folio to match what PowerPoint shows.
+    pub first_slide_num: u32,
     /// `<p:sldId>` relationship IDs, in order.
     pub slide_r_ids: Vec<String>,
     /// Numeric `<p:sldId @id>` values aligned with [`Self::slide_r_ids`]. Used

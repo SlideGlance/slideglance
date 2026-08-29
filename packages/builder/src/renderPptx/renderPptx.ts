@@ -25,6 +25,7 @@ type ImageProps = {
 import type {
   PositionedNode,
   SlideMasterOptions,
+  SlideNumberOptions,
   MasterObject,
 } from "../types.ts";
 import type { BuildContext } from "../buildContext.ts";
@@ -579,8 +580,11 @@ function defineSlideMasterFromOptions(
     masterProps.objects = allObjects;
   }
 
-  // Convert slideNumber
-  if (master.slideNumber) {
+  // Convert slideNumber. `count="numbered"` is deliberately absent here:
+  // that mode prints static text per slide (see `addStaticFolio`), and
+  // registering the placeholder as well would put PowerPoint's live count
+  // on the page next to it.
+  if (master.slideNumber && master.slideNumber.count !== "numbered") {
     masterProps.slideNumber = {
       x: pxToIn(master.slideNumber.x),
       y: pxToIn(master.slideNumber.y),
@@ -602,6 +606,86 @@ function defineSlideMasterFromOptions(
 
   pptx.defineSlideMaster(masterProps);
   return masterName;
+}
+
+/** Default `startAt` when a `count="numbered"` master omits it. */
+const DEFAULT_FOLIO_START = 1;
+
+/**
+ * Collect the masters that number only their own pages, keyed by master
+ * name, and settle the deck-wide first number.
+ *
+ * The counter runs across the whole deck rather than per master — a
+ * proposal's body is split into one master per part, and each part
+ * continues the folio rather than restarting it. So every master that
+ * opts in has to agree on where the count begins.
+ *
+ * @throws when two such masters declare different `startAt` values.
+ */
+function planStaticFolios(masters: SlideMasterOptions[] | undefined): {
+  byMaster: Map<string, SlideNumberOptions>;
+  startAt: number;
+} {
+  const byMaster = new Map<string, SlideNumberOptions>();
+  const starts = new Map<number, string[]>();
+  for (const master of masters ?? []) {
+    if (master.slideNumber?.count !== "numbered") continue;
+    const name = master.title || DEFAULT_MASTER_NAME;
+    byMaster.set(name, master.slideNumber);
+    const start = master.slideNumber.startAt ?? DEFAULT_FOLIO_START;
+    starts.set(start, [...(starts.get(start) ?? []), name]);
+  }
+  if (starts.size > 1) {
+    const shown = [...starts.entries()]
+      .map(([start, names]) => `${start} (${names.join(", ")})`)
+      .join(" vs ");
+    throw new Error(
+      `<SlideNumber count="numbered"> startAt disagrees across masters: ${shown}. ` +
+        `The folio counts the whole deck, so every master that opts in must start it at the same number.`,
+    );
+  }
+  return {
+    byMaster,
+    startAt: [...starts.keys()][0] ?? DEFAULT_FOLIO_START,
+  };
+}
+
+/**
+ * Write the folio as static text on one slide.
+ *
+ * Geometry and type match the placeholder pptxgenjs would have emitted;
+ * what changes is that the number is text rather than a `slidenum`
+ * field, so nothing recomputes it from the slide's position in the deck.
+ * Text insets are left unset so PowerPoint applies the same defaults the
+ * placeholder got, and `valign` is pinned to the top the placeholder
+ * anchors at — `addText` would otherwise centre it and the folio would
+ * move the day a deck switched `count`.
+ */
+function addStaticFolio(
+  slide: ReturnType<PptxGenJSInstance["addSlide"]>,
+  options: SlideNumberOptions,
+  folio: number,
+  buildContext: BuildContext,
+): void {
+  slide.addText(String(folio), {
+    x: pxToIn(options.x),
+    y: pxToIn(options.y),
+    w: options.w ? pxToIn(options.w) : undefined,
+    h: options.h ? pxToIn(options.h) : undefined,
+    fontSize: options.fontSize
+      ? pxToPt(options.fontSize)
+      : buildContext.defaultTextStyle.fontSize !== undefined
+        ? pxToPt(buildContext.defaultTextStyle.fontSize)
+        : undefined,
+    fontFace: resolveFontFamily(
+      options.fontFamily,
+      buildContext.defaultTextStyle,
+    ),
+    color: options.color ?? buildContext.defaultTextStyle.color,
+    align: options.textAlign,
+    valign: "top",
+    objectName: "Slide Number",
+  });
 }
 
 /**
@@ -639,6 +723,9 @@ export async function renderPptx(
     if (docProps.company !== undefined) pptx.company = docProps.company;
     if (docProps.subject !== undefined) pptx.subject = docProps.subject;
   }
+
+  const staticFolios = planStaticFolios(masters);
+  let folio = staticFolios.startAt;
 
   if (masters) {
     for (const master of masters) {
@@ -680,6 +767,16 @@ export async function renderPptx(
       slide.background = rootBackground;
     }
     renderPositionedTree(data, ctx, true);
+
+    // Last, so it lands on top — the same place the live placeholder
+    // occupies in the slide pptxgenjs writes.
+    const folioOptions = masterName
+      ? staticFolios.byMaster.get(masterName)
+      : undefined;
+    if (folioOptions) {
+      addStaticFolio(slide, folioOptions, folio, buildContext);
+      folio += 1;
+    }
   }
 
   return pptx;

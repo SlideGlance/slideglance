@@ -37,6 +37,46 @@ fn falls_back_to_default_when_sld_sz_attrs_missing() {
 }
 
 #[test]
+fn defaults_first_slide_num_to_one_when_attribute_absent() {
+    let xml = r#"
+        <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+            <p:sldSz cx="12192000" cy="6858000"/>
+        </p:presentation>
+    "#;
+    assert_eq!(parse_presentation(xml).unwrap().first_slide_num, 1);
+}
+
+#[test]
+fn parses_explicit_first_slide_num() {
+    let xml = r#"
+        <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                        firstSlideNum="0">
+            <p:sldSz cx="12192000" cy="6858000"/>
+        </p:presentation>
+    "#;
+    assert_eq!(parse_presentation(xml).unwrap().first_slide_num, 0);
+
+    let xml = r#"
+        <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                        firstSlideNum="12"/>
+    "#;
+    assert_eq!(parse_presentation(xml).unwrap().first_slide_num, 12);
+}
+
+#[test]
+fn falls_back_to_one_when_first_slide_num_is_unparsable() {
+    // A malformed value must not fail the whole presentation parse.
+    for value in ["", "  ", "abc", "-3", "1.5"] {
+        let xml = format!(
+            r#"<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                              firstSlideNum="{value}"/>"#
+        );
+        let info = parse_presentation(&xml).expect("parse must succeed");
+        assert_eq!(info.first_slide_num, 1, "value {value:?}");
+    }
+}
+
+#[test]
 fn extracts_slide_id_list_via_raw_scan() {
     let xml = r#"
         <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"

@@ -3,7 +3,7 @@
 
 use std::io::{Cursor, Write};
 
-use slideglance::parse_pptx;
+use slideglance::{parse_pptx, PptxDocument, SlideRenderOptions};
 use slideglance_model::{Fill, SlideElement};
 use zip::write::SimpleFileOptions;
 use zip::CompressionMethod;
@@ -387,4 +387,117 @@ fn nesting_past_the_ceiling_is_an_error_not_an_abort() {
         text.contains("deep") || text.contains("limit"),
         "error should name the nesting limit: {text}"
     );
+}
+
+// ---------------------------------------------------------------------
+// firstSlideNum
+// ---------------------------------------------------------------------
+
+const PRESENTATION_RELS_TWO_SLIDES: &str = r#"<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>
+</Relationships>"#;
+
+/// A slide whose only shape is the `sldNum` placeholder, carrying the
+/// `<a:t>` cache PowerPoint recomputes and ignores.
+const SLIDE_WITH_SLIDE_NUMBER: &str = r#"<?xml version="1.0"?>
+<p:sld xmlns:p="urn:p" xmlns:a="urn:a">
+  <p:cSld>
+    <p:spTree>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr name="Slide Number Placeholder"/>
+          <p:nvPr><p:ph type="sldNum" sz="quarter" idx="4"/></p:nvPr>
+        </p:nvSpPr>
+        <p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="457200"/></a:xfrm></p:spPr>
+        <p:txBody>
+          <a:bodyPr/>
+          <a:p>
+            <a:fld id="{00000000-0000-0000-0000-000000000000}" type="slidenum">
+              <a:rPr lang="en-US"/>
+              <a:t>9999</a:t>
+            </a:fld>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#;
+
+fn deck_with_first_slide_num(attr: &str) -> Vec<u8> {
+    let presentation = format!(
+        r#"<?xml version="1.0"?>
+<p:presentation xmlns:p="urn:p" xmlns:r="urn:r"{attr}>
+  <p:sldSz cx="9144000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId3"/>
+    <p:sldId id="257" r:id="rId4"/>
+  </p:sldIdLst>
+</p:presentation>"#
+    );
+    make_pptx(&[
+        ("ppt/presentation.xml", presentation.as_bytes()),
+        (
+            "ppt/_rels/presentation.xml.rels",
+            PRESENTATION_RELS_TWO_SLIDES.as_bytes(),
+        ),
+        ("ppt/theme/theme1.xml", THEME.as_bytes()),
+        ("ppt/slideMasters/slideMaster1.xml", SLIDE_MASTER.as_bytes()),
+        (
+            "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+            SLIDE_MASTER_RELS.as_bytes(),
+        ),
+        ("ppt/slideLayouts/slideLayout1.xml", SLIDE_LAYOUT.as_bytes()),
+        (
+            "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+            SLIDE_LAYOUT_RELS.as_bytes(),
+        ),
+        ("ppt/slides/slide1.xml", SLIDE_WITH_SLIDE_NUMBER.as_bytes()),
+        ("ppt/slides/_rels/slide1.xml.rels", SLIDE_RELS.as_bytes()),
+        ("ppt/slides/slide2.xml", SLIDE_WITH_SLIDE_NUMBER.as_bytes()),
+        ("ppt/slides/_rels/slide2.xml.rels", SLIDE_RELS.as_bytes()),
+    ])
+}
+
+/// Renders both slides and returns the printed folio of each.
+fn rendered_folios(attr: &str) -> Vec<String> {
+    let doc = PptxDocument::parse(deck_with_first_slide_num(attr), &[], &[], false)
+        .expect("document parses");
+    let options = SlideRenderOptions::default();
+    (1..=doc.slide_count())
+        .map(|n| {
+            let svg = doc
+                .render_slide(n, &options)
+                .expect("render succeeds")
+                .expect("slide exists")
+                .svg;
+            let start = svg.rfind("<tspan").expect("a tspan is emitted");
+            let body = &svg[start..];
+            let open = body.find('>').expect("tspan opens") + 1;
+            let close = body.find("</tspan>").expect("tspan closes");
+            body[open..close].to_string()
+        })
+        .collect()
+}
+
+#[test]
+fn slide_number_field_starts_at_one_without_first_slide_num() {
+    assert_eq!(rendered_folios(""), vec!["1", "2"]);
+}
+
+#[test]
+fn slide_number_field_follows_first_slide_num() {
+    // PowerPoint prints firstSlideNum on the first slide and counts up.
+    assert_eq!(rendered_folios(r#" firstSlideNum="0""#), vec!["0", "1"]);
+    assert_eq!(rendered_folios(r#" firstSlideNum="7""#), vec!["7", "8"]);
+}
+
+#[test]
+fn slide_number_field_never_echoes_the_cached_text() {
+    for folio in rendered_folios(r#" firstSlideNum="3""#) {
+        assert_ne!(folio, "9999");
+    }
 }

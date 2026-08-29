@@ -387,3 +387,166 @@ describe("renderPptx masters", () => {
     ).rejects.toThrow("Table nodes are not supported in true slide masters");
   });
 });
+
+describe('renderPptx <SlideNumber count="numbered">', () => {
+  beforeEach(() => {
+    defineLayout.mockReset();
+    defineSlideMaster.mockReset();
+    addSlide.mockClear();
+  });
+
+  /** A page tree that carries nothing but its master reference. */
+  const page = (master?: string) =>
+    ({
+      type: "vstack",
+      x: 0,
+      y: 0,
+      w: 794,
+      h: 1123,
+      ...(master ? { master } : {}),
+      children: [],
+    }) as never;
+
+  const numberedMaster = (title: string, startAt?: number) => ({
+    title,
+    slideNumber: {
+      x: 374,
+      y: 1081,
+      w: 46,
+      h: 16,
+      fontSize: 9,
+      color: "6B7280",
+      textAlign: "center" as const,
+      count: "numbered" as const,
+      ...(startAt === undefined ? {} : { startAt }),
+    },
+  });
+
+  /** The folio strings passed to addText, slide by slide. */
+  const folios = () =>
+    addSlide.mock.results.map((r) => {
+      const slide = r.value as { addText: ReturnType<typeof vi.fn> };
+      const call = slide.addText.mock.calls.find(
+        (c) => (c[1] as { objectName?: string })?.objectName === "Slide Number",
+      );
+      return call ? (call[0] as string) : null;
+    });
+
+  it("counts only the slides whose master carries a folio", async () => {
+    await renderPptx(
+      [page("COVER"), page("COVER"), page("BODY"), page("BODY"), page("ANNEX")],
+      { w: 794, h: 1123 },
+      createBuildContext({ textMeasurementMode: "fallback" }),
+      [{ title: "COVER" }, numberedMaster("BODY"), { title: "ANNEX" }],
+      "BODY",
+    );
+
+    // The two cover pages and the appendix print nothing; the body pages
+    // start at 1 rather than at their position in the deck (3 and 4).
+    expect(folios()).toEqual([null, null, "1", "2", null]);
+  });
+
+  it("does not register the live placeholder for a numbered master", async () => {
+    await renderPptx(
+      [page("BODY")],
+      { w: 794, h: 1123 },
+      createBuildContext({ textMeasurementMode: "fallback" }),
+      [numberedMaster("BODY")],
+      "BODY",
+    );
+
+    expect(defineSlideMaster.mock.calls[0]?.[0]).not.toHaveProperty(
+      "slideNumber",
+    );
+  });
+
+  it("keeps the live placeholder when count is absent", async () => {
+    await renderPptx(
+      [page("BODY")],
+      { w: 794, h: 1123 },
+      createBuildContext({ textMeasurementMode: "fallback" }),
+      [{ title: "BODY", slideNumber: { x: 374, y: 1081 } }],
+      "BODY",
+    );
+
+    expect(defineSlideMaster.mock.calls[0]?.[0]).toHaveProperty("slideNumber");
+    expect(folios()).toEqual([null]);
+  });
+
+  it("starts the count at startAt", async () => {
+    await renderPptx(
+      [page("BODY"), page("BODY")],
+      { w: 794, h: 1123 },
+      createBuildContext({ textMeasurementMode: "fallback" }),
+      [numberedMaster("BODY", 12)],
+      "BODY",
+    );
+
+    expect(folios()).toEqual(["12", "13"]);
+  });
+
+  it("continues one count across every numbered master", async () => {
+    // A proposal splits its body into one master per part; the folio runs
+    // through them rather than restarting at each.
+    await renderPptx(
+      [page("PART-1"), page("BODY-1"), page("PART-2"), page("BODY-2")],
+      { w: 794, h: 1123 },
+      createBuildContext({ textMeasurementMode: "fallback" }),
+      [
+        numberedMaster("PART-1"),
+        numberedMaster("BODY-1"),
+        numberedMaster("PART-2"),
+        numberedMaster("BODY-2"),
+      ],
+      "BODY-1",
+    );
+
+    expect(folios()).toEqual(["1", "2", "3", "4"]);
+  });
+
+  it("rejects numbered masters that disagree on startAt", async () => {
+    await expect(
+      renderPptx(
+        [page("BODY-1")],
+        { w: 794, h: 1123 },
+        createBuildContext({ textMeasurementMode: "fallback" }),
+        [numberedMaster("BODY-1", 1), numberedMaster("BODY-2", 5)],
+        "BODY-1",
+      ),
+    ).rejects.toThrow(/startAt disagrees across masters/);
+  });
+
+  it("places the folio with the geometry and type the master declared", async () => {
+    await renderPptx(
+      [page("BODY")],
+      { w: 794, h: 1123 },
+      createBuildContext({
+        textMeasurementMode: "fallback",
+        defaultTextStyle: { fontFamily: "Pretendard" },
+      }),
+      [numberedMaster("BODY")],
+      "BODY",
+    );
+
+    const slide = addSlide.mock.results[0]?.value as {
+      addText: ReturnType<typeof vi.fn>;
+    };
+    expect(slide.addText).toHaveBeenCalledWith(
+      "1",
+      expect.objectContaining({
+        x: 374 / 96,
+        y: 1081 / 96,
+        w: 46 / 96,
+        h: 16 / 96,
+        fontSize: 9 * 0.75,
+        fontFace: "Pretendard",
+        color: "6B7280",
+        align: "center",
+        // The live placeholder anchors at the top; the static folio must
+        // sit in the same place or switching `count` moves it.
+        valign: "top",
+        objectName: "Slide Number",
+      }),
+    );
+  });
+});

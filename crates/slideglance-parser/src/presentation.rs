@@ -16,6 +16,8 @@ use crate::xml::{parse_xml, XmlError};
 
 const DEFAULT_SLIDE_WIDTH: i64 = 9_144_000;
 const DEFAULT_SLIDE_HEIGHT: i64 = 5_143_500;
+/// OOXML default for `<p:presentation @firstSlideNum>`.
+const DEFAULT_FIRST_SLIDE_NUM: u32 = 1;
 
 /// Parses `ppt/presentation.xml` into a [`PresentationInfo`].
 ///
@@ -50,6 +52,14 @@ pub fn parse_presentation(xml: &str) -> Result<PresentationInfo, XmlError> {
 
     let sections = parse_section_list(&raw.ext_lst);
 
+    // `firstSlideNum` shifts every printed `<a:fld type="slidenum">`.
+    // Absent, empty, or unparsable falls back to the OOXML default of 1.
+    let first_slide_num = raw
+        .first_slide_num
+        .as_deref()
+        .and_then(|v| v.trim().parse::<u32>().ok())
+        .unwrap_or(DEFAULT_FIRST_SLIDE_NUM);
+
     let default_text_style = raw
         .default_text_style
         .as_ref()
@@ -57,6 +67,7 @@ pub fn parse_presentation(xml: &str) -> Result<PresentationInfo, XmlError> {
 
     Ok(PresentationInfo {
         slide_size,
+        first_slide_num,
         slide_r_ids,
         slide_id_values,
         default_text_style,
@@ -265,6 +276,10 @@ fn parse_section_list(ext_lst: &[RawExtList]) -> Option<Vec<PresentationSection>
 
 #[derive(Debug, Default, Deserialize)]
 struct RawRoot {
+    // Captured as a string rather than a `u32` so a malformed value
+    // falls back to the default instead of failing the whole document.
+    #[serde(rename = "@firstSlideNum")]
+    first_slide_num: Option<String>,
     #[serde(rename = "sldSz")]
     sld_sz: Option<RawSldSz>,
     #[serde(rename = "embeddedFontLst")]
