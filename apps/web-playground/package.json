@@ -1,6 +1,6 @@
 {
   "name": "@slideglance/web-playground",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "author": "Taehwan Kwag <dev@simplecore.kr>",
   "description": "Drag-and-drop SPA for evaluating slideglance against arbitrary .pptx decks.",

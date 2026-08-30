@@ -6,6 +6,35 @@ documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-30
+
+### Added
+
+- **Render buttons in the toolbar and the right-click menu.** `Render
+  page` rebuilds the deck and repaints the page you are on; `Render all`
+  repaints every page and keeps your place. Both build even when the
+  source has not changed — pressing Render says the screen and the
+  source have drifted, and the hashes are what you are disputing.
+- **Right-click copies.** On a shape, `Copy text` takes the text inside
+  it and `Copy edit prompt` takes where it is written: deck, page, file
+  and line range, and the chain of templates it was drawn through, so
+  an LLM can be pointed at the markup rather than the `<Use>` that
+  called it. On a thumbnail the prompt answers about that page.
+
+### Fixed
+
+- **A broken save no longer takes the deck away.** Problems dock over
+  the last build that succeeded instead of replacing it, so the page
+  you were reading, the zoom, and the slide cache survive while you fix
+  the XML — and the preview comes back on its own when you do.
+- **Files written by a build script rebuild the preview.** Only editor
+  events were watched, so a deck whose masters or fragments are
+  generated sat on the state from before the script ran.
+- **Clicking a shape opens the right file.** Shape ids are renumbered on
+  every parse, so adding an element to an early page left later pages
+  showing ids that resolved to another chapter's markup.
+- **Refresh keeps your place** instead of returning to page 1.
+
 ## [0.3.0] - 2026-08-29
 
 ### Added
