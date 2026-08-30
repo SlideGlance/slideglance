@@ -7,6 +7,7 @@
  */
 
 import { allocateNextPomId, getCurrentSourceMap } from "./parseContext.ts";
+import type { BuilderTemplateOrigin } from "./parseContext.ts";
 
 export type XmlNode = XmlElement | XmlTextNode;
 export type XmlTextNode = { "#text": string };
@@ -20,7 +21,12 @@ export interface XmlElement {
  * are injected by `injectSourceAttrs` before XML parsing and must never be
  * surfaced to user-facing validation or POM node construction.
  */
-const SOURCE_POS_ATTR_KEYS = new Set(["__sourceLine", "__sourceFile"]);
+const SOURCE_POS_ATTR_KEYS = new Set([
+  "__sourceLine",
+  "__sourceEndLine",
+  "__sourceFile",
+  "__sourceVia",
+]);
 
 export function isTextNode(node: XmlNode): node is XmlTextNode {
   return "#text" in node;
@@ -76,13 +82,23 @@ export function getAttributes(node: XmlElement): Record<string, string> {
  */
 function readRawSourcePos(node: XmlElement): {
   line: string | undefined;
+  endLine: string | undefined;
   file: string | undefined;
+  via: string | undefined;
 } {
   const rawAttrs = node[":@"];
-  if (!rawAttrs) return { line: undefined, file: undefined };
+  if (!rawAttrs)
+    return {
+      line: undefined,
+      endLine: undefined,
+      file: undefined,
+      via: undefined,
+    };
   return {
     line: rawAttrs["@___sourceLine"],
+    endLine: rawAttrs["@___sourceEndLine"],
     file: rawAttrs["@___sourceFile"],
+    via: rawAttrs["@___sourceVia"],
   };
 }
 
@@ -121,13 +137,34 @@ export function registerSourcePosForElement(
   node: XmlElement,
 ): number | undefined {
   const sourceMap = getCurrentSourceMap();
-  const { line, file } = readRawSourcePos(node);
+  const { line, endLine, file, via } = readRawSourcePos(node);
   if (!sourceMap || !line) return undefined;
   const n = Number(line);
   if (!Number.isFinite(n)) return undefined;
+  const end = Number(endLine);
   const id = allocateNextPomId();
-  sourceMap.set(id, { file: file || undefined, line: n });
+  sourceMap.set(id, {
+    file: file || undefined,
+    line: n,
+    ...(Number.isFinite(end) && end >= n ? { endLine: end } : {}),
+    ...(via ? { via: parseVia(via) } : {}),
+  });
   return id;
+}
+
+/**
+ * Decode the template chain `expandUseElement` stamped on an expanded
+ * node. A malformed value yields no chain rather than failing the
+ * parse — this is navigational metadata, not deck content.
+ */
+function parseVia(raw: string): BuilderTemplateOrigin[] | undefined {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return undefined;
+    return parsed as BuilderTemplateOrigin[];
+  } catch {
+    return undefined;
+  }
 }
 
 export function getChildElements(node: XmlElement): XmlElement[] {

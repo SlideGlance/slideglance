@@ -26,7 +26,11 @@ import {
 } from "./parseContext.ts";
 
 export type { ImportResolver } from "./imports.ts";
-export type { BuilderSourceMap, BuilderSourcePos } from "./parseContext.ts";
+export type {
+  BuilderSourceMap,
+  BuilderSourcePos,
+  BuilderTemplateOrigin,
+} from "./parseContext.ts";
 export type {
   ParseBuilderDocumentOptions,
   ParsedBuilderDocument,

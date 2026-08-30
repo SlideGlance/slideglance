@@ -20,6 +20,7 @@ export type {
   ParseBuilderDocumentOptions,
   ImportResolver,
   BuilderSourceMap,
+  BuilderTemplateOrigin,
   BuilderSourcePos,
 } from "./parseXml/parseXml.ts";
 export type {

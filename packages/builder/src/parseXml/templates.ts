@@ -486,20 +486,66 @@ function substituteAndResolveSlots(
 function overrideSourceAttrsInPlace(
   nodes: XmlNode[],
   rawLine: string | undefined,
+  rawEndLine: string | undefined,
   rawFile: string | undefined,
   skip: Set<XmlNode>,
+  templateName?: string,
 ): void {
   for (const node of nodes) {
     if (isTextNode(node)) continue;
     if (skip.has(node)) continue;
     const existing = node[":@"] ?? {};
     const next: Record<string, string> = { ...existing };
+    // Keep where this markup was actually written before pointing it at
+    // the call site. Without it the template body becomes unreachable:
+    // every expanded node claims the one `<Use>` line, and the file that
+    // draws the shape is nowhere in the record.
+    if (templateName !== undefined) {
+      const ownLine = Number(existing["@___sourceLine"]);
+      if (Number.isFinite(ownLine)) {
+        const ownEnd = Number(existing["@___sourceEndLine"]);
+        const chain: unknown[] = [];
+        const prior = existing["@___sourceVia"];
+        if (prior) {
+          try {
+            const parsed: unknown = JSON.parse(prior);
+            if (Array.isArray(parsed)) {
+              for (const entry of parsed as unknown[]) chain.push(entry);
+            }
+          } catch {
+            // A chain we cannot read is dropped rather than propagated.
+          }
+        }
+        // Innermost first: this expansion is nearer the markup than any
+        // expansion already recorded on the node.
+        chain.unshift({
+          template: templateName,
+          file: existing["@___sourceFile"] || undefined,
+          line: ownLine,
+          ...(Number.isFinite(ownEnd) && ownEnd >= ownLine
+            ? { endLine: ownEnd }
+            : {}),
+        });
+        next["@___sourceVia"] = JSON.stringify(chain);
+      }
+    }
     if (rawLine !== undefined) next["@___sourceLine"] = rawLine;
     else delete next["@___sourceLine"];
     if (rawFile !== undefined) next["@___sourceFile"] = rawFile;
     else delete next["@___sourceFile"];
+    // The `<Use>` site's own span replaces the template body's, which
+    // would otherwise pair an outer opening line with an inner close.
+    if (rawEndLine !== undefined) next["@___sourceEndLine"] = rawEndLine;
+    else delete next["@___sourceEndLine"];
     node[":@"] = next;
-    overrideSourceAttrsInPlace(getRawChildren(node), rawLine, rawFile, skip);
+    overrideSourceAttrsInPlace(
+      getRawChildren(node),
+      rawLine,
+      rawEndLine,
+      rawFile,
+      skip,
+      templateName,
+    );
   }
 }
 
@@ -595,8 +641,10 @@ function expandUseElement(
   overrideSourceAttrsInPlace(
     expanded,
     attrs.__sourceLine,
+    attrs.__sourceEndLine,
     attrs.__sourceFile,
     slotRoots,
+    templateName,
   );
 
   if (depth >= MAX_EXPANSION_DEPTH) {

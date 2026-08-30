@@ -14,9 +14,41 @@ import type { Diagnostic } from "../diagnostics.ts";
  * when the root document was passed as a plain string without `sourcePath`.
  * `line` is 1-based.
  */
+/**
+ * Where a node was written inside a `<Template>` body, and which
+ * template that was.
+ *
+ * A shape drawn on a page can be defined two files away: the line under
+ * the reader's cursor is the `<Use>` that called the template, not the
+ * markup that drew the shape. Both ends are needed — the `<Use>` is
+ * where the arguments live, the template body is where the drawing
+ * lives, and an edit lands in one or the other depending on what is
+ * being changed.
+ */
+export interface BuilderTemplateOrigin {
+  /** `<Template name="…">` the node's markup lives in. */
+  template: string;
+  /** File holding that `<Template>`, when known. */
+  file: string | undefined;
+  /** 1-based line of the node inside the template body. */
+  line: number;
+  /** Line the node's element closes on inside the template body. */
+  endLine?: number;
+}
+
 export interface BuilderSourcePos {
   file: string | undefined;
   line: number;
+  /**
+   * 1-based line the element closes on. Absent when the document was
+   * too malformed to pair the tags — the opening line still stands.
+   */
+  endLine?: number;
+  /**
+   * Template expansions this node came through, innermost first.
+   * Absent for markup the author wrote where it is rendered.
+   */
+  via?: BuilderTemplateOrigin[];
 }
 
 export type BuilderSourceMap = Map<number, BuilderSourcePos>;
