@@ -32,7 +32,13 @@
  *      it queued while the webview was still loading.
  */
 
-import { useEffect, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { createRoot } from "react-dom/client";
 import {
   PptxPresentation,
@@ -284,6 +290,16 @@ function App(): JSX.Element {
   // surfacing as "Failed to execute 'postMessage' on 'Worker':
   // ArrayBuffer at index 0 is already detached."
   const [deckGeneration, setDeckGeneration] = useState(0);
+  // The page the reader is on, kept in a ref rather than state: it
+  // changes on every navigation and nothing in this component's own
+  // output depends on it, so state here would re-render the whole
+  // viewer tree for a number only the remount path and the menu read.
+  const currentSlideRef = useRef(1);
+  const onSlideChange = useCallback((slide: number) => {
+    currentSlideRef.current = slide;
+  }, []);
+  // Anchor + target of the open context menu, or null when closed.
+  const [menu, setMenu] = useState<MenuState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -417,7 +433,88 @@ function App(): JSX.Element {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
-  if (errorMsg) {
+  // Right-click menu. Two shapes: on a slide element it offers the
+  // copy actions plus the render actions; on the surrounding canvas
+  // only the render actions. The browser's own menu is suppressed
+  // either way — inside a webview it offers nothing that applies here.
+  useEffect(() => {
+    function onContextMenu(e: MouseEvent): void {
+      const target = e.target as Element | null;
+      e.preventDefault();
+      // A thumbnail wins over the shape inside it. The tile draws the
+      // same SVG the stage does, so both selectors match, and the one
+      // the reader meant is the page they pointed at.
+      const tile = target?.closest<HTMLElement>("[data-slide-number]") ?? null;
+      const tileSlide = Number(tile?.dataset.slideNumber);
+      const onThumbnail = Number.isFinite(tileSlide) && tileSlide > 0;
+      const hit = target?.closest<HTMLElement>("[data-object-name]") ?? null;
+      const objectName = hit?.dataset.objectName;
+      // `textContent` is empty when the viewer is painting glyph
+      // outlines rather than `<text>` runs; the menu says so rather
+      // than offering a copy that yields nothing.
+      const text = hit ? (hit.textContent ?? "").trim() : "";
+      setMenu({
+        x: e.clientX,
+        y: e.clientY,
+        slide: onThumbnail ? tileSlide : currentSlideRef.current,
+        onThumbnail,
+        ...(onThumbnail || !objectName ? {} : { objectName }),
+        text: onThumbnail ? "" : text,
+      });
+    }
+    document.addEventListener("contextmenu", onContextMenu);
+    return () => document.removeEventListener("contextmenu", onContextMenu);
+  }, []);
+
+  // Any click outside, Escape, or scroll closes the menu — the same
+  // dismissal a native menu has.
+  //
+  // The listener runs in the capture phase because the source-reveal
+  // handler above calls `stopPropagation()` on clicks that land on a
+  // slide shape. A bubble-phase listener never hears those, and the
+  // menu would sit open over the deck the user just clicked.
+  //
+  // Clicks inside the menu are left alone: each item closes the menu
+  // itself once its action has run, so dismissing here would race the
+  // item's own handler for no gain.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e?: Event): void => {
+      const target = e?.target;
+      if (
+        target instanceof Element &&
+        target.closest(`[${MENU_MARKER_ATTR}]`)
+      ) {
+        return;
+      }
+      setMenu(null);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setMenu(null);
+    };
+    const dismiss = (): void => setMenu(null);
+    document.addEventListener("click", close, true);
+    document.addEventListener("keydown", onKey, true);
+    window.addEventListener("blur", dismiss);
+    document.addEventListener("scroll", dismiss, true);
+    return () => {
+      document.removeEventListener("click", close, true);
+      document.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("blur", dismiss);
+      document.removeEventListener("scroll", dismiss, true);
+    };
+  }, [menu]);
+
+  // A broken document does not take the deck away. The bytes on screen
+  // are the last build that succeeded, and keeping them there is what
+  // an author wants while fixing XML — the alternative unmounts the
+  // viewer, throws away the page they were reading, the zoom, and the
+  // slide cache, and makes recovery depend on a clean remount.
+  //
+  // The full-screen form survives for the one case where there is
+  // nothing behind the message: the first build of a document failed,
+  // so no deck was ever shown.
+  if (errorMsg && (!controller || !src)) {
     return <ErrorOverlay error={errorMsg} />;
   }
 
@@ -444,10 +541,209 @@ function App(): JSX.Element {
         incrementalUpdate
         invalidatedSlides={invalidatedSlides}
         pendingSlides={pendingSlides}
+        // Read at render, which for this prop is exactly the remount
+        // the host asked for: the viewer consumes it on mount and on
+        // deck reset, so the reader lands back on the page they were
+        // on instead of page 1.
+        initialSlide={currentSlideRef.current}
+        onSlideChange={onSlideChange}
+        toolbarEnd={<RenderActions currentSlideRef={currentSlideRef} />}
         style={{ width: "100%", height: "100%" }}
       />
       {statusMsg ? <StatusBadge message={statusMsg} /> : null}
+      {errorMsg ? (
+        <ErrorPanel error={errorMsg} onDismiss={() => setErrorMsg(null)} />
+      ) : null}
+      {menu ? <ContextMenu menu={menu} onClose={() => setMenu(null)} /> : null}
     </>
+  );
+}
+
+/** Marks the menu subtree so the outside-click handler can skip it. */
+const MENU_MARKER_ATTR = "data-preview-menu";
+
+interface MenuState {
+  x: number;
+  y: number;
+  /**
+   * Page the menu acts on. The page being read, except on a thumbnail
+   * — there the reader picked a page explicitly and it is that one.
+   */
+  slide: number;
+  /**
+   * True when the menu opened on a thumbnail. The tile renders the
+   * slide's own SVG, so a shape is under the cursor there too, but the
+   * reader pointed at a page and the menu answers about the page.
+   */
+  onThumbnail: boolean;
+  /** `node#N` of the shape under the cursor; absent on the canvas. */
+  objectName?: string;
+  /** Rendered text inside that shape; empty in glyph-outline mode. */
+  text: string;
+}
+
+/** Ask the host to rebuild, and say which pages should be repainted. */
+function requestRerender(scope: "slide" | "all", slide: number): void {
+  vscode.postMessage({ type: "rerender", scope, slide });
+}
+
+/**
+ * Toolbar controls for repainting.
+ *
+ * A build is deterministic, so a rebuild the deck did not ask for is
+ * normally pointless — these exist for the times the screen and the
+ * source have drifted anyway, which is exactly when the reader cannot
+ * tell whether what they are looking at is current.
+ */
+function RenderActions({
+  currentSlideRef,
+}: {
+  currentSlideRef: { current: number };
+}): JSX.Element {
+  return (
+    <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+      <button
+        onClick={() => requestRerender("slide", currentSlideRef.current)}
+        title="Rebuild the deck and repaint the page you are on"
+        style={toolbarButtonStyle}
+      >
+        Render page
+      </button>
+      <button
+        onClick={() => requestRerender("all", currentSlideRef.current)}
+        title="Rebuild the deck and repaint every page, keeping your place"
+        style={toolbarButtonStyle}
+      >
+        Render all
+      </button>
+    </span>
+  );
+}
+
+const toolbarButtonStyle: CSSProperties = {
+  background: "none",
+  border: "1px solid var(--vscode-editorWidget-border, #454545)",
+  borderRadius: 3,
+  padding: "2px 8px",
+  color: "var(--vscode-foreground, #ccc)",
+  cursor: "pointer",
+  font: "inherit",
+  fontSize: 11,
+  whiteSpace: "nowrap",
+};
+
+/**
+ * Right-click menu.
+ *
+ * On a shape it offers the two copies — one aimed at a person, one at
+ * an LLM that has to be told where in the source to edit — plus the
+ * render actions. On the canvas only the render actions apply.
+ */
+function ContextMenu({
+  menu,
+  onClose,
+}: {
+  menu: MenuState;
+  onClose: () => void;
+}): JSX.Element {
+  const slide = menu.slide;
+  const items: {
+    label: string;
+    hint?: string;
+    disabled?: boolean;
+    run: () => void;
+  }[] = [];
+
+  if (menu.onThumbnail) {
+    items.push({
+      label: `Copy edit prompt for page ${slide}`,
+      hint: "deck, page, file, lines, template path",
+      run: () => vscode.postMessage({ type: "copyPagePrompt", slide }),
+    });
+  } else if (menu.objectName !== undefined) {
+    items.push({
+      label: "Copy edit prompt",
+      hint: "page, file, lines, template path",
+      run: () =>
+        vscode.postMessage({
+          type: "copyPrompt",
+          objectName: menu.objectName,
+          slide,
+          text: menu.text,
+        }),
+    });
+    items.push({
+      label: "Copy text",
+      ...(menu.text
+        ? {}
+        : { hint: "no text — the viewer is drawing outlines" }),
+      disabled: !menu.text,
+      run: () => vscode.postMessage({ type: "copyText", text: menu.text }),
+    });
+  }
+  items.push({
+    label: menu.onThumbnail ? `Render page ${slide}` : "Render page",
+    run: () => requestRerender("slide", slide),
+  });
+  items.push({ label: "Render all", run: () => requestRerender("all", slide) });
+
+  return (
+    <div
+      role="menu"
+      {...{ [MENU_MARKER_ATTR]: "" }}
+      style={{
+        position: "fixed",
+        left: Math.min(menu.x, window.innerWidth - 260),
+        top: Math.min(menu.y, window.innerHeight - items.length * 28 - 12),
+        zIndex: 40,
+        minWidth: 220,
+        padding: 4,
+        borderRadius: 4,
+        background: "var(--vscode-menu-background, #252526)",
+        border: "1px solid var(--vscode-menu-border, #454545)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.45)",
+        fontSize: 12,
+      }}
+    >
+      {items.map((item) => (
+        <button
+          key={item.label}
+          role="menuitem"
+          disabled={item.disabled}
+          onClick={() => {
+            item.run();
+            onClose();
+          }}
+          style={{
+            display: "block",
+            width: "100%",
+            textAlign: "left",
+            background: "none",
+            border: "none",
+            borderRadius: 3,
+            padding: "5px 10px",
+            font: "inherit",
+            color: item.disabled
+              ? "var(--vscode-disabledForeground, #7f7f7f)"
+              : "var(--vscode-menu-foreground, #ccc)",
+            cursor: item.disabled ? "default" : "pointer",
+          }}
+        >
+          {item.label}
+          {item.hint ? (
+            <span
+              style={{
+                marginLeft: 8,
+                opacity: 0.6,
+                fontSize: 11,
+              }}
+            >
+              {item.hint}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -553,6 +849,135 @@ function baseName(file: string): string {
  * clickable row per problem; anything else says plainly that the deck is
  * not at fault and keeps the raw text for a bug report.
  */
+/**
+ * Problems from a build that failed, docked over a deck that is still
+ * on screen.
+ *
+ * The deck behind it is the last build that succeeded, which the
+ * heading says outright — a reader who is not told will take a stale
+ * page for a current one and conclude their fix did nothing.
+ */
+function ErrorPanel({
+  error,
+  onDismiss,
+}: {
+  error: PreviewError;
+  onDismiss: () => void;
+}): JSX.Element {
+  const [expanded, setExpanded] = useState(false);
+  const issues = error.issues ?? [];
+  const isDocument = error.kind === "document";
+  const shown = expanded ? issues : issues.slice(0, ISSUE_PREVIEW_COUNT);
+  const hidden = issues.length - shown.length;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 12,
+        right: 12,
+        bottom: 12,
+        zIndex: 30,
+        maxHeight: "45%",
+        overflow: "auto",
+        padding: "10px 12px",
+        borderRadius: 4,
+        background: "var(--vscode-editorWidget-background, #252526)",
+        border:
+          "1px solid color-mix(in srgb, var(--vscode-errorForeground, #f48771) 55%, transparent)",
+        color: "var(--vscode-foreground, #ccc)",
+        fontSize: 12,
+        lineHeight: 1.55,
+        boxShadow: "0 2px 16px rgba(0,0,0,0.5)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <div
+          style={{
+            color: "var(--vscode-errorForeground, #f48771)",
+            fontWeight: 600,
+            fontSize: 13,
+          }}
+        >
+          {isDocument
+            ? issues.length > 0
+              ? `${issues.length} problem${issues.length > 1 ? "s" : ""} to fix`
+              : "This deck could not be read"
+            : "The preview failed to build"}
+        </div>
+        <div style={{ opacity: 0.8, flex: 1 }}>
+          {isDocument
+            ? "The pages below are the last build that succeeded. Fix these and the preview rebuilds on save."
+            : "This is a failure in the extension or the builder, not in your document."}
+        </div>
+        <button
+          onClick={onDismiss}
+          title="Hide until the next build"
+          style={{
+            background: "none",
+            border: "none",
+            padding: "0 4px",
+            color: "var(--vscode-descriptionForeground, #999)",
+            cursor: "pointer",
+            font: "inherit",
+          }}
+        >
+          Hide
+        </button>
+      </div>
+
+      {isDocument && issues.length > 0 ? (
+        <ul
+          style={{
+            listStyle: "none",
+            margin: "8px 0 0",
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {shown.map((issue, i) => (
+            <IssueRow
+              key={`${issue.file ?? ""}:${issue.line ?? 0}:${i}`}
+              issue={issue}
+            />
+          ))}
+          {hidden > 0 ? (
+            <li>
+              <button
+                onClick={() => setExpanded(true)}
+                style={{
+                  marginTop: 6,
+                  background: "none",
+                  border: "none",
+                  padding: "4px 6px",
+                  color: "var(--vscode-textLink-foreground, #3794ff)",
+                  cursor: "pointer",
+                  font: "inherit",
+                }}
+              >
+                Show {hidden} more
+              </button>
+            </li>
+          ) : null}
+        </ul>
+      ) : (
+        <pre
+          style={{
+            margin: "8px 0 0",
+            whiteSpace: "pre-wrap",
+            fontFamily: "var(--vscode-editor-font-family, monospace)",
+            color: "var(--vscode-descriptionForeground, #999)",
+          }}
+        >
+          {error.message}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function ErrorOverlay({ error }: { error: PreviewError }): JSX.Element {
   const [expanded, setExpanded] = useState(false);
   const issues = error.issues ?? [];

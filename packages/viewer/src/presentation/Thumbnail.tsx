@@ -167,6 +167,11 @@ export function Thumbnail(props: ThumbnailProps): JSX.Element {
       ref={buttonRef}
       style={buttonStyle}
       onClick={onClick}
+      // The tile renders the slide's own SVG, so everything inside it
+      // answers to the same `data-object-name` selectors the stage does.
+      // A host acting on a tile needs to know which page it is looking
+      // at, and the caption is not something to parse.
+      data-slide-number={slide}
       title={t("viewer.slideTitle", { number: slide })}
       aria-label={t("viewer.slideTitle", { number: slide })}
     >

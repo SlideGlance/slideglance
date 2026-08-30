@@ -31,9 +31,11 @@ import {
   type Diagnostic,
   type DiagnosticCode,
   type BuilderSourceMap,
+  type BuilderSourcePos,
   type PositionedNode,
 } from "@slideglance/builder";
 import { CoalescingRunner } from "./coalescingRunner.js";
+import { changedByHash, diffSlides, maxNodeId } from "./slideDiff.js";
 import { createFsImportResolver } from "./importResolver.js";
 import { buildWebviewHtml } from "./webviewHtml.js";
 
@@ -132,6 +134,14 @@ interface BuildSuccess {
   commonHash: string;
   /** Per-slide content hash. Length === slide count. */
   slideHashes: string[];
+  /**
+   * `__nodeId` of each slide's root, in deck order. Lets the panel
+   * answer "where is page 7 written" without re-parsing — the shape
+   * ids in the SVG only reach shapes, and a page is not one.
+   */
+  slideNodeIds: (number | undefined)[];
+  /** Highest `__nodeId` this parse allocated. Closes the last slide's range. */
+  maxNodeId: number;
   /** Laid-out slides, kept so the next build can skip unchanged ones. */
   positionedSlides: PositionedNode[] | undefined;
 }
@@ -179,6 +189,10 @@ interface BuildNoop {
 interface RenderSnapshot {
   commonHash: string;
   slideHashes: string[];
+  /** Slide-root `__nodeId`s from this build, deck order. */
+  slideNodeIds: (number | undefined)[];
+  /** Highest `__nodeId` this build allocated. */
+  maxNodeId: number;
   /**
    * Layout from the build that produced these hashes. Handed back to the
    * next build for the slides whose hash still matches — laying a slide
@@ -213,6 +227,29 @@ interface RenderRequest {
    * confirms it finished — otherwise the button reads as dead.
    */
   refresh?: boolean;
+  /**
+   * Build even when every hash matches the previous render.
+   *
+   * A rebuild the source did not change is normally nothing to ship,
+   * which is why the noop path exists. Someone who pressed Render meant
+   * exactly that build, so this carries their intent past the check —
+   * the layout snapshot is kept, so it is still the cheap path.
+   */
+  force?: boolean;
+  /**
+   * Slides to repaint, in place of the diff this build would compute.
+   * `[]` is not a value here — an empty list means "nothing changed",
+   * which is the opposite of what a Render request asks for.
+   */
+  invalidate?: number[];
+}
+
+/** What a caller of `render()` wants beyond the source itself. */
+interface RenderOptions {
+  full?: boolean;
+  refresh?: boolean;
+  force?: boolean;
+  invalidate?: number[];
 }
 
 /** SHA-1 keyed change detection — not adversarial, just collision-rare. */
@@ -263,6 +300,8 @@ async function buildPptxFromXml(
    * text style, the slide count).
    */
   onPlan?: (changedSlides: number[] | undefined) => void,
+  /** Skip the "nothing changed, ship nothing" shortcut. */
+  force = false,
 ): Promise<BuildSuccess | BuildError | BuildEmpty | BuildNoop> {
   // Reset before each build so removed <Import>s drop out of the set
   // and an emptied document stops triggering rebuilds from prior imports.
@@ -301,6 +340,7 @@ async function buildPptxFromXml(
     const slideHashes = document.nodes.map((node) => hashNode(node));
 
     if (
+      !force &&
       previous &&
       previous.commonHash === commonHash &&
       previous.slideHashes.length === slideHashes.length &&
@@ -310,7 +350,11 @@ async function buildPptxFromXml(
     }
 
     onPlan?.(
-      previous ? diffSlides(previous, { commonHash, slideHashes }) : undefined,
+      previous &&
+        previous.commonHash === commonHash &&
+        previous.slideHashes.length === slideHashes.length
+        ? changedByHash(previous, { slideHashes })
+        : undefined,
     );
 
     // Reuse the layout of every slide whose content hash is unchanged.
@@ -351,6 +395,8 @@ async function buildPptxFromXml(
       sourceMap: built.sourceMap,
       commonHash,
       slideHashes,
+      slideNodeIds: document.nodes.map((node) => node.__nodeId),
+      maxNodeId: maxNodeId(document.sourceMap),
       positionedSlides: built.positionedSlides,
     };
   } catch (err) {
@@ -413,36 +459,6 @@ function parseIssue(raw: string, documentPath: string): BuildIssue {
 }
 
 /**
- * Compute the slide indices whose source XML changed between two
- * successful renders. Returns:
- *
- *  - `undefined`: deck-wide structure changed (slide count differed,
- *    masters changed, etc.) — caller sends a full reload, viewer
- *    flushes the entire cache.
- *  - `[]`: nothing changed (caller should not happen here — that case
- *    is `BuildNoop`, not a successful build with diff `[]`).
- *  - `[i, j, …]`: 1-based indices whose content hash differs. Caller
- *    forwards exactly these to the viewer for selective cache
- *    invalidation.
- */
-function diffSlides(
-  prev: RenderSnapshot,
-  next: { commonHash: string; slideHashes: string[] },
-): number[] | undefined {
-  if (
-    prev.commonHash !== next.commonHash ||
-    prev.slideHashes.length !== next.slideHashes.length
-  ) {
-    return undefined;
-  }
-  const out: number[] = [];
-  for (let i = 0; i < next.slideHashes.length; i++) {
-    if (prev.slideHashes[i] !== next.slideHashes[i]) out.push(i + 1);
-  }
-  return out;
-}
-
-/**
  * Parse `node#N` out of a `data-object-name` value. Returns the integer
  * `N` (matching `__nodeId` on BuilderNodes) or `undefined` when the value
  * does not follow the pom convention.
@@ -494,6 +510,8 @@ export class PreviewPanel {
     | ErrorPayload
     | undefined;
   private sourceMap: BuilderSourceMap | undefined;
+  /** Slide-root ids from the most recent successful build, deck order. */
+  private slideNodeIds: (number | undefined)[] = [];
   private lastRender: RenderSnapshot | undefined;
   /** Absolute paths of every file the most recent build pulled in via
    *  `<Import>`. Used by `isTrackedImport` so the host re-renders the
@@ -546,7 +564,7 @@ export class PreviewPanel {
     // so the user can recover from a stale viewer state. Bump the deck
     // generation so the webview also remounts the viewer shell.
     inst.deckGeneration++;
-    void inst.renderFromTargetUri(true, true);
+    void inst.renderFromTargetUri({ full: true, refresh: true });
   }
 
   static createOrShow(
@@ -567,7 +585,7 @@ export class PreviewPanel {
       }
       PreviewPanel.instance.documentUri = document.uri;
       PreviewPanel.instance.panel.reveal(vscode.ViewColumn.Beside);
-      PreviewPanel.instance.render(document.getText(), swapped);
+      PreviewPanel.instance.render(document.getText(), { full: swapped });
       return;
     }
 
@@ -596,6 +614,32 @@ export class PreviewPanel {
     PreviewPanel.instance = new PreviewPanel(panel, extensionUri, document);
   }
 
+  /**
+   * Rebuild because a file changed on disk rather than in the editor.
+   *
+   * Reached from the file-system watcher, which is the only thing that
+   * hears a build script rewriting a generated master or fragment. The
+   * source is re-read from the target document rather than from `uri`,
+   * because `uri` is usually an `<Import>` several files below the deck
+   * root and the build always starts from the root.
+   */
+  static updateFromDisk(uri: vscode.Uri): void {
+    const inst = PreviewPanel.instance;
+    if (!inst || inst.disposed) return;
+    // A file the editor has open and dirty is the editor's version, not
+    // the disk's; the text listeners already carry those edits and the
+    // resolver prefers the buffer. Rebuilding here would render the
+    // saved bytes over the ones the author is looking at.
+    const openDirty = vscode.workspace.textDocuments.some(
+      (doc) => doc.uri.fsPath === uri.fsPath && doc.isDirty,
+    );
+    if (openDirty) return;
+    if (inst.debounceTimer) clearTimeout(inst.debounceTimer);
+    inst.debounceTimer = setTimeout(() => {
+      void inst.renderFromTargetUri({});
+    }, DEBOUNCE_MS);
+  }
+
   static update(document: vscode.TextDocument): void {
     const inst = PreviewPanel.instance;
     if (!inst || inst.disposed) return;
@@ -603,7 +647,7 @@ export class PreviewPanel {
     if (inst.debounceTimer) clearTimeout(inst.debounceTimer);
     inst.debounceTimer = setTimeout(() => {
       if (isTarget) inst.render(document.getText());
-      else void inst.renderFromTargetUri();
+      else void inst.renderFromTargetUri({});
     }, DEBOUNCE_MS);
   }
 
@@ -628,6 +672,19 @@ export class PreviewPanel {
         ...next,
         full: superseded.full || next.full,
         refresh: superseded.refresh || next.refresh,
+        force: superseded.force || next.force,
+        // Union rather than newest-wins: a Render page request that a
+        // keystroke overtakes still has to repaint the page it named.
+        ...(superseded.invalidate || next.invalidate
+          ? {
+              invalidate: [
+                ...new Set([
+                  ...(superseded.invalidate ?? []),
+                  ...(next.invalidate ?? []),
+                ]),
+              ],
+            }
+          : {}),
       }),
     );
 
@@ -652,6 +709,9 @@ export class PreviewPanel {
         objectName?: string;
         file?: string;
         line?: number;
+        scope?: string;
+        slide?: number;
+        text?: string;
       };
       if (m.type === "ready") {
         this.webviewReady = true;
@@ -660,6 +720,29 @@ export class PreviewPanel {
       }
       if (m.type === "revealSource" && typeof m.objectName === "string") {
         this.revealFromObjectName(m.objectName);
+        return;
+      }
+      if (m.type === "rerender") {
+        this.handleRerender(
+          m.scope === "all" ? "all" : "slide",
+          typeof m.slide === "number" ? m.slide : 1,
+        );
+        return;
+      }
+      if (m.type === "copyText" && typeof m.text === "string") {
+        void PreviewPanel.copyToClipboard(m.text, "Copied the shape's text.");
+        return;
+      }
+      if (m.type === "copyPagePrompt") {
+        this.handleCopyPagePrompt(typeof m.slide === "number" ? m.slide : 1);
+        return;
+      }
+      if (m.type === "copyPrompt" && typeof m.objectName === "string") {
+        this.handleCopyPrompt(
+          m.objectName,
+          typeof m.slide === "number" ? m.slide : 1,
+          typeof m.text === "string" ? m.text : "",
+        );
         return;
       }
       if (m.type === "revealAt" && typeof m.line === "number") {
@@ -674,13 +757,10 @@ export class PreviewPanel {
     this.render(document.getText());
   }
 
-  private async renderFromTargetUri(
-    full = false,
-    refresh = false,
-  ): Promise<void> {
+  private async renderFromTargetUri(opts: RenderOptions = {}): Promise<void> {
     try {
       const doc = await vscode.workspace.openTextDocument(this.documentUri);
-      this.render(doc.getText(), full, refresh);
+      this.render(doc.getText(), opts);
     } catch (err) {
       PreviewPanel.log(
         `renderFromTargetUri failed: ${
@@ -695,8 +775,15 @@ export class PreviewPanel {
    * behind `this.renders`, which holds one build in flight and collapses
    * everything queued behind it into the newest request.
    */
-  private render(content: string, full = false, refresh = false): void {
-    this.renders.submit({ content, uri: this.documentUri, full, refresh });
+  private render(content: string, opts: RenderOptions = {}): void {
+    this.renders.submit({
+      content,
+      uri: this.documentUri,
+      full: opts.full ?? false,
+      ...(opts.refresh ? { refresh: true } : {}),
+      ...(opts.force ? { force: true } : {}),
+      ...(opts.invalidate ? { invalidate: opts.invalidate } : {}),
+    });
   }
 
   private async runBuild(request: RenderRequest): Promise<void> {
@@ -738,6 +825,7 @@ export class PreviewPanel {
         this.lastRender,
         this.importedPaths,
         (changedSlides) => this.sendPending(changedSlides),
+        request.force,
       );
     } finally {
       if (noticeTimer !== undefined) clearTimeout(noticeTimer);
@@ -763,7 +851,12 @@ export class PreviewPanel {
         error: "No slides to preview",
         kind: "document",
       });
-      this.sourceMap = undefined;
+      // `sourceMap` and `slideNodeIds` describe the deck on screen, and
+      // that deck is still the last build that succeeded — clearing them
+      // here would break source-reveal and the copy actions for pages
+      // the reader can still see and click. `lastRender` is different:
+      // it is the diff baseline, and the next successful build has to
+      // ship in full rather than against a deck that never landed.
       this.lastRender = undefined;
       PreviewPanel.diagnosticCollection?.delete(request.uri);
       return;
@@ -775,7 +868,12 @@ export class PreviewPanel {
         kind: result.kind,
         ...(result.issues ? { issues: result.issues } : {}),
       });
-      this.sourceMap = undefined;
+      // `sourceMap` and `slideNodeIds` describe the deck on screen, and
+      // that deck is still the last build that succeeded — clearing them
+      // here would break source-reveal and the copy actions for pages
+      // the reader can still see and click. `lastRender` is different:
+      // it is the diff baseline, and the next successful build has to
+      // ship in full rather than against a deck that never landed.
       this.lastRender = undefined;
       PreviewPanel.diagnosticCollection?.delete(request.uri);
       return;
@@ -787,21 +885,30 @@ export class PreviewPanel {
     //     (viewer falls back to flushing the whole cache).
     //   - subsequent same-shape render → array of 1-based indices
     //     whose source XML changed since `lastRender`.
-    const diff = this.lastRender
-      ? diffSlides(this.lastRender, {
-          commonHash: result.commonHash,
-          slideHashes: result.slideHashes,
-        })
-      : undefined;
+    // A Render request names the pages it wants repainted; everything
+    // else asks the diff which pages the edit touched.
+    const diff = request.invalidate
+      ? request.invalidate
+      : this.lastRender
+        ? diffSlides(this.lastRender, {
+            commonHash: result.commonHash,
+            slideHashes: result.slideHashes,
+            slideNodeIds: result.slideNodeIds,
+            maxNodeId: result.maxNodeId,
+          })
+        : undefined;
 
     this.lastRender = {
       commonHash: result.commonHash,
       slideHashes: result.slideHashes,
+      slideNodeIds: result.slideNodeIds,
+      maxNodeId: result.maxNodeId,
       ...(result.positionedSlides
         ? { positionedSlides: result.positionedSlides }
         : {}),
     };
     this.sourceMap = result.sourceMap;
+    this.slideNodeIds = result.slideNodeIds;
     const fileName = path.basename(request.uri.fsPath);
     this.queueOrSend({
       bytes: result.bytes,
@@ -935,6 +1042,172 @@ export class PreviewPanel {
         ? { invalidatedSlides: payload.invalidatedSlides }
         : {}),
     });
+  }
+
+  /**
+   * Rebuild on demand.
+   *
+   * `"all"` bumps the deck generation so the webview remounts the
+   * viewer and every cached page goes — the reader keeps their place
+   * because the viewer is told which page to open on. `"slide"` leaves
+   * the deck mounted and names one page to repaint, which is the whole
+   * point of the narrower button: a hundred-page deck should not
+   * re-rasterise to refresh the one page on screen.
+   *
+   * Both carry `force`, so a build whose source is byte-identical to
+   * the last one still ships. Someone who presses Render is saying the
+   * screen and the source have drifted, and the hashes are exactly what
+   * they are disputing.
+   */
+  private handleRerender(scope: "all" | "slide", slide: number): void {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (scope === "all") {
+      this.deckGeneration++;
+      void this.renderFromTargetUri({ full: true, refresh: true, force: true });
+      return;
+    }
+    void this.renderFromTargetUri({
+      force: true,
+      refresh: true,
+      invalidate: [Math.max(1, Math.trunc(slide))],
+    });
+  }
+
+  /**
+   * Copy a description of one shape precise enough for an LLM to edit
+   * the right lines without opening the deck.
+   *
+   * What it has to carry, and why: the page, because a chapter file
+   * holds several and the reader is looking at one; the file and line
+   * range, because that is the edit target; the template chain, because
+   * a shape drawn on page 7 can be defined in a template two files away
+   * and the line under the cursor is the `<Use>` that called it, not
+   * the markup that drew it.
+   */
+  /** `file:line` or `file:line-endLine` for one source position. */
+  private formatSpan(
+    file: string | undefined,
+    line: number,
+    endLine: number | undefined,
+  ): string {
+    const where = file ?? this.documentUri.fsPath;
+    return endLine && endLine > line
+      ? `${where}:${line}-${endLine}`
+      : `${where}:${line}`;
+  }
+
+  /**
+   * The lines every copied prompt opens with.
+   *
+   * An LLM reading this has to know it is looking at a SlideGlance
+   * `.sgx` deck rather than loose XML, or it edits the markup by
+   * guesswork instead of loading the grammar. Naming the product and
+   * the skill up front is what makes the rest of the coordinates
+   * usable.
+   */
+  private promptHeader(slide: number): string[] {
+    const total = this.slideNodeIds.length;
+    return [
+      "SlideGlance deck (.sgx) — load the `slideglance-pptx` skill before editing.",
+      "",
+      `Deck: ${path.basename(this.documentUri.fsPath)} (${this.documentUri.fsPath})`,
+      total > 0 ? `Page: ${slide} of ${total}` : `Page: ${slide}`,
+    ];
+  }
+
+  /**
+   * Render a template chain under whatever named the element.
+   *
+   * A shape drawn through a template has two edit targets and they are
+   * not interchangeable: the `<Use>` carries the arguments, each
+   * template below carries the markup that draws it. Naming only one
+   * sends the reader to the wrong file half the time.
+   */
+  private templateChainLines(pos: BuilderSourcePos): string[] {
+    const via = pos.via ?? [];
+    if (via.length === 0) return [];
+    return [
+      ...via.map(
+        (v) =>
+          `  drawn by <Template name="${v.template}"> at ${this.formatSpan(
+            v.file,
+            v.line,
+            v.endLine,
+          )}`,
+      ),
+      "  (the first location is the <Use> call; the template lines are the markup)",
+    ];
+  }
+
+  /**
+   * Copy where one whole page is written.
+   *
+   * Reached from a right-click on a thumbnail, where the shape under
+   * the cursor is incidental — the reader picked a page, so the answer
+   * is the page's `<Slide>` and the chapter file holding it, not
+   * whichever rectangle the pointer happened to be over.
+   */
+  private handleCopyPagePrompt(slide: number): void {
+    const id = this.slideNodeIds[slide - 1];
+    const pos = id === undefined ? undefined : this.sourceMap?.get(id);
+    if (!pos) {
+      void vscode.window.showWarningMessage(
+        `No source position for page ${slide} — rebuild the preview and try again.`,
+      );
+      return;
+    }
+    const lines = [
+      ...this.promptHeader(slide),
+      `Slide: ${this.formatSpan(pos.file, pos.line, pos.endLine)}`,
+      ...this.templateChainLines(pos),
+    ];
+    void PreviewPanel.copyToClipboard(
+      lines.join("\n"),
+      `Copied the source location of page ${slide}.`,
+    );
+  }
+
+  private handleCopyPrompt(
+    objectName: string,
+    slide: number,
+    text: string,
+  ): void {
+    const id = parsePomObjectName(objectName);
+    const pos = id === undefined ? undefined : this.sourceMap?.get(id);
+    if (!pos) {
+      void vscode.window.showWarningMessage(
+        "No source position for that shape — rebuild the preview and try again.",
+      );
+      return;
+    }
+    const lines = [
+      ...this.promptHeader(slide),
+      `Element: ${this.formatSpan(pos.file, pos.line, pos.endLine)}`,
+      ...this.templateChainLines(pos),
+    ];
+    if (text) lines.push(`Text: ${JSON.stringify(text)}`);
+
+    void PreviewPanel.copyToClipboard(
+      lines.join("\n"),
+      `Copied the source location of the shape on page ${slide}.`,
+    );
+  }
+
+  private static async copyToClipboard(
+    text: string,
+    confirmation: string,
+  ): Promise<void> {
+    try {
+      await vscode.env.clipboard.writeText(text);
+      void vscode.window.setStatusBarMessage(confirmation, 3000);
+    } catch (err) {
+      PreviewPanel.log(
+        `clipboard write failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      void vscode.window.showErrorMessage("Could not write to the clipboard.");
+    }
   }
 
   /**

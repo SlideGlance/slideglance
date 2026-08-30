@@ -244,6 +244,25 @@ export interface PptxPresentationProps {
    *    them, the rest stay cached.
    */
   invalidatedSlides?: number[];
+  /**
+   * 1-based slide to open on. Defaults to 1.
+   *
+   * A host that re-keys this component to remount it — the pom VS Code
+   * preview does so on a Refresh — otherwise lands the reader back on
+   * page 1 of a deck they were reading in the middle of. Passing the
+   * page they were on makes the remount invisible to them.
+   *
+   * Out-of-range values clamp to the deck once its length is known.
+   */
+  initialSlide?: number;
+  /**
+   * Fires whenever the visible slide changes, with the 1-based index.
+   *
+   * Hosts that need to name the current page — a "re-render this page"
+   * button, a context menu that quotes the page a shape is on — track
+   * it through this rather than reaching into the viewer.
+   */
+  onSlideChange?: (slide: number) => void;
 }
 
 // `CachedSlide` lives in `presentation/types.ts` so the sub-component
@@ -278,6 +297,8 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     noPrefetch = false,
     onReady,
     pendingSlides,
+    initialSlide,
+    onSlideChange,
   } = props;
   // One-shot guard for `onReady` — the SVG mount effect re-runs on
   // every layout / sidebar / notes / view-mode change, but the host
@@ -345,7 +366,16 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   // FontFaceSet (which is invisible to the document) and the SVG would
   // silently fall through the chain to a system font.
   const [fontDefsCss, setFontDefsCss] = useState<string>("");
-  const [currentSlide, setCurrentSlide] = useState<number>(1);
+  const [currentSlide, setCurrentSlide] = useState<number>(
+    () => initialSlide ?? 1,
+  );
+  // The reset effects below fire long after mount, so they cannot read
+  // the prop through a stale closure — a ref keeps them on the value the
+  // host holds right now.
+  const initialSlideRef = useRef<number>(initialSlide ?? 1);
+  useEffect(() => {
+    initialSlideRef.current = initialSlide ?? 1;
+  }, [initialSlide]);
   const [zoom, setZoom] = useState<number>(1);
   const [panX, setPanX] = useState<number>(0);
   const [panY, setPanY] = useState<number>(0);
@@ -392,6 +422,23 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
   // actions stop showing partial output. Mirrors the historic Lit
   // shell's `allSlidesReady` flag.
   const [allSlidesReady, setAllSlidesReady] = useState<boolean>(false);
+
+  // `initialSlide` is the host's guess at where the reader was; the deck
+  // decides whether that page exists. Clamping here rather than at the
+  // reset sites is what makes a shrunk deck safe — a stale index would
+  // otherwise reach the worker as `renderSlide(200)` on a 40-page deck
+  // and come back as "slide not found".
+  useEffect(() => {
+    if (slideCount <= 0) return;
+    setCurrentSlide((prev) => clamp(prev, 1, slideCount));
+  }, [slideCount]);
+
+  // Report the visible page to the host. Fires on mount too, so a host
+  // that renders a "this page" control has a value before the reader
+  // navigates anywhere.
+  useEffect(() => {
+    onSlideChange?.(currentSlide);
+  }, [currentSlide, onSlideChange]);
   // Selection model — set of `data-sp-id` strings for shapes selected
   // on the active slide, plus a live rubber-band rect (viewport coords)
   // when the user is dragging on empty stage. Both are derived data the
@@ -479,7 +526,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     if (typeof externalSlideCount !== "number") return;
     deckEpochRef.current += 1; // invalidate every in-flight task
     setSlideCount(externalSlideCount);
-    setCurrentSlide(1);
+    setCurrentSlide(initialSlideRef.current);
     setAllSlidesReady(false);
     setSelectedIds(new Set());
     setTextEditId(null);
@@ -515,7 +562,7 @@ export function PptxPresentation(props: PptxPresentationProps): JSX.Element {
     if (typeof externalSlideCount === "number") return;
     deckEpochRef.current += 1;
     setSlideCount(0);
-    setCurrentSlide(1);
+    setCurrentSlide(initialSlideRef.current);
     setZoom(1);
     setPanX(0);
     setPanY(0);

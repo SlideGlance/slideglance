@@ -261,6 +261,34 @@ export function activate(context: vscode.ExtensionContext): void {
       if (shouldTriggerPreview(doc)) PreviewPanel.update(doc);
     }),
   );
+
+  // Watch the disk as well as the editor.
+  //
+  // The two listeners above hear about documents VS Code has open. A
+  // deck whose masters, figures or chapter fragments are written by a
+  // build script produces none of those events — the file changes and
+  // nothing in the editor's model moved — so the preview kept showing
+  // the deck, or the failure, from before the script ran. That reads as
+  // a preview that will not rebuild no matter what you fix, because
+  // the file you fixed is the one nobody is listening to.
+  //
+  // An editor save fires both this and `onDidSaveTextDocument`; the
+  // panel debounces and the content hashes make the second a no-op.
+  const watcher = vscode.workspace.createFileSystemWatcher("**/*.{sgx,xml}");
+  const onDiskChange = (uri: vscode.Uri): void => {
+    // Only the previewed deck and the files it actually pulls in. The
+    // glob is workspace-wide, and every build starts from the deck
+    // root, so an unrelated `.sgx` elsewhere would otherwise rebuild
+    // this deck for no reason.
+    const previewed = PreviewPanel.getDocumentUri();
+    if (previewed?.fsPath === uri.fsPath || PreviewPanel.isTrackedImport(uri)) {
+      PreviewPanel.updateFromDisk(uri);
+    }
+  };
+  watcher.onDidChange(onDiskChange);
+  watcher.onDidCreate(onDiskChange);
+  watcher.onDidDelete(onDiskChange);
+  context.subscriptions.push(watcher);
 }
 
 export function deactivate(): void {
